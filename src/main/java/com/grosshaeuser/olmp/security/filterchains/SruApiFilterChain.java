@@ -4,6 +4,7 @@ import com.grosshaeuser.olmp.security.filters.SruApiFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -23,6 +24,11 @@ public class SruApiFilterChain {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(e -> e
+                        .authenticationEntryPoint((_, response, _) -> {
+                            response.sendError(HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.getReasonPhrase());
+                        })
                 )
                 .addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class)
                 .build();
