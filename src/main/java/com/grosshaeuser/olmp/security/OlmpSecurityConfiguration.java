@@ -12,7 +12,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,33 +26,39 @@ public class OlmpSecurityConfiguration {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(UserRepository userRepository) {
-        return new UserDetailsService() {
+    public OlmpUserDetailsService userDetailsService(UserRepository userRepository) {
+        return new OlmpUserDetailsService() {
             @Override
             @NonNull
             public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
                 return userRepository.findByUsernameWithRolesAndPrivileges(username)
-                        .map(user ->
-                                User.withUsername(user.getUsername())
-                                        .password(user.getPassword())
-                                        .roles(user.getRoles().stream()
-                                                .map(Role::getName)
-                                                .toArray(String[]::new))
-                                        .authorities(
-                                                user.getRoles().stream()
-                                                        .flatMap(role -> role.getPrivileges().stream())
-                                                        .map(Privilege::getName)
-                                                        .distinct()
-                                                        .toArray(String[]::new))
-                                        .build()
-                        )
+                        .map(this::createFromUserInstance)
                         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            }
+
+            public UserDetails fromUserInstance(com.grosshaeuser.olmp.security.entities.User user) {
+                return createFromUserInstance(user);
+            }
+
+            private UserDetails createFromUserInstance(com.grosshaeuser.olmp.security.entities.User user) {
+                return User.withUsername(user.getUsername())
+                        .password(user.getPassword())
+                        .roles(user.getRoles().stream()
+                                .map(Role::getName)
+                                .toArray(String[]::new))
+                        .authorities(
+                                user.getRoles().stream()
+                                        .flatMap(role -> role.getPrivileges().stream())
+                                        .map(Privilege::getName)
+                                        .distinct()
+                                        .toArray(String[]::new))
+                        .build();
             }
         };
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) {
         return configuration.getAuthenticationManager();
     }
 }
