@@ -26,7 +26,7 @@ CREATE TABLE users (
 );
 
 
-CREATE TABLE roles_privileges (
+CREATE TABLE role_privileges (
     role_id BIGINT NOT NULL,
     privilege_id BIGINT NOT NULL,
     PRIMARY KEY (role_id, privilege_id),
@@ -35,7 +35,7 @@ CREATE TABLE roles_privileges (
 );
 
 
-CREATE TABLE users_roles (
+CREATE TABLE user_roles (
     user_id BIGINT NOT NULL,
     role_id BIGINT NOT NULL,
     PRIMARY KEY (user_id, role_id),
@@ -44,5 +44,16 @@ CREATE TABLE users_roles (
 );
 
 
+CREATE TABLE api_keys(
+    id UUID PRIMARY KEY,
+    secret VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE DEFAULT date_add(CURRENT_TIMESTAMP, '1 year'::interval),
+    user_id BIGINT NOT NULL,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_api_keys_id ON api_keys(id);

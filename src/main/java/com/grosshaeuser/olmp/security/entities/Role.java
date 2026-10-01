@@ -32,7 +32,7 @@ public class Role {
     @Builder.Default
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "roles_privileges",
+            name = "role_privileges",
             joinColumns = @JoinColumn(name = "role_id"),
             inverseJoinColumns = @JoinColumn(name = "privilege_id")
     )
