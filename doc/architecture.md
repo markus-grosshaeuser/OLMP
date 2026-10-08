@@ -56,8 +56,8 @@ flowchart TD
     JPA --> DB
 
     %% Styling
-    style OLMP_Server fill:#111,stroke:#333,stroke-width:2px
-    style Data_Layer fill:#eee,stroke:#333,stroke-width:2px
+    style OLMP_Server fill:#eee,stroke:#333,stroke-width:2px
+    style Data_Layer fill:#fff,stroke:#333,stroke-width:2px
     style Users fill:#fff,stroke:#333,stroke-dasharray: 5 5
 ```
 
