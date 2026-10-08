@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: olmp_db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - ../olmp_db_data:/var/lib/postgresql
+    networks:
+      - olmp_network
+
+networks:
+  olmp_network:
+    driver: bridge
+
+volumes:
+  olmp_db_data:
