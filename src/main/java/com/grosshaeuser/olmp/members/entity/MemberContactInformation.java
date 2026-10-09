@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.security.entity;
+package com.grosshaeuser.olmp.members.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

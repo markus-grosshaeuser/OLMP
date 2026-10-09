@@ -1,5 +1,6 @@
-package com.grosshaeuser.olmp.security.entity;
+package com.grosshaeuser.olmp.members.entity;
 
+import com.grosshaeuser.olmp.membership.entity.Membership;
 import jakarta.persistence.*;
 import lombok.*;
 
