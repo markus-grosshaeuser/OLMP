@@ -1,8 +1,8 @@
 package com.grosshaeuser.olmp.security.service;
 
-import com.grosshaeuser.olmp.security.entity.EmployeeAccount;
+import com.grosshaeuser.olmp.employee.entity.EmployeeAccount;
 import com.grosshaeuser.olmp.security.principal.EmployeePrincipal;
-import com.grosshaeuser.olmp.security.repository.EmployeeAccountRepository;
+import com.grosshaeuser.olmp.employee.repository.EmployeeAccountRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;

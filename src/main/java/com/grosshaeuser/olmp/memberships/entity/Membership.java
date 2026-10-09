@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.membership.entity;
+package com.grosshaeuser.olmp.memberships.entity;
 
 import com.grosshaeuser.olmp.members.entity.Member;
 import jakarta.persistence.*;

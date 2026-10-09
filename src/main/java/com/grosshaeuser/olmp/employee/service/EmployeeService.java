@@ -1,7 +1,7 @@
 package com.grosshaeuser.olmp.employee.service;
 
 import com.grosshaeuser.olmp.employee.repository.EmployeeRepository;
-import com.grosshaeuser.olmp.security.repository.EmployeeAccountRepository;
+import com.grosshaeuser.olmp.employee.repository.EmployeeAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

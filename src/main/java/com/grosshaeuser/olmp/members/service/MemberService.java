@@ -2,7 +2,7 @@ package com.grosshaeuser.olmp.members.service;
 
 import com.grosshaeuser.olmp.members.repository.MemberContactInformationRepository;
 import com.grosshaeuser.olmp.members.repository.MemberRepository;
-import com.grosshaeuser.olmp.security.repository.MemberAccountRepository;
+import com.grosshaeuser.olmp.members.repository.MemberAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

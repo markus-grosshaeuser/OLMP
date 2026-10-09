@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.security.principal;
 
-import com.grosshaeuser.olmp.security.entity.MemberAccount;
+import com.grosshaeuser.olmp.members.entity.MemberAccount;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

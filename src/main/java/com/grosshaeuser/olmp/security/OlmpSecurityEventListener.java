@@ -2,8 +2,8 @@ package com.grosshaeuser.olmp.security;
 
 import com.grosshaeuser.olmp.security.principal.EmployeePrincipal;
 import com.grosshaeuser.olmp.security.principal.MemberPrincipal;
-import com.grosshaeuser.olmp.security.repository.EmployeeAccountRepository;
-import com.grosshaeuser.olmp.security.repository.MemberAccountRepository;
+import com.grosshaeuser.olmp.employee.repository.EmployeeAccountRepository;
+import com.grosshaeuser.olmp.members.repository.MemberAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;

@@ -1,8 +1,8 @@
 package com.grosshaeuser.olmp.security.service;
 
-import com.grosshaeuser.olmp.security.entity.MemberAccount;
+import com.grosshaeuser.olmp.members.entity.MemberAccount;
 import com.grosshaeuser.olmp.security.principal.MemberPrincipal;
-import com.grosshaeuser.olmp.security.repository.MemberAccountRepository;
+import com.grosshaeuser.olmp.members.repository.MemberAccountRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

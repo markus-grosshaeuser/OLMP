@@ -1,6 +1,6 @@
-package com.grosshaeuser.olmp.security.repository;
+package com.grosshaeuser.olmp.employee.repository;
 
-import com.grosshaeuser.olmp.security.entity.EmployeeAccount;
+import com.grosshaeuser.olmp.employee.entity.EmployeeAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
