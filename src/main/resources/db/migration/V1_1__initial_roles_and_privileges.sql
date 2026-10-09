@@ -1,0 +1,102 @@
+INSERT INTO roles (name) VALUES ('MEMBER');
+INSERT INTO roles (name) VALUES ('STAFF');
+INSERT INTO roles (name) VALUES ('ADMIN');
+INSERT INTO roles (name) VALUES ('ROOT_ADMIN');
+
+INSERT INTO privileges (name) VALUES ('MEMBER:VERIFY');
+INSERT INTO privileges (name) VALUES ('MEMBER:CREATE_MEMBERSHIP');
+INSERT INTO privileges (name) VALUES ('MEMBER:READ_MEMBERSHIP');
+INSERT INTO privileges (name) VALUES ('MEMBER:UPDATE_MEMBERSHIP');
+INSERT INTO privileges (name) VALUES ('MEMBER:CANCEL_MEMBERSHIP');
+
+INSERT INTO privileges (name) VALUES ('USER:ENABLE');
+INSERT INTO privileges (name) VALUES ('USER:DISABLE');
+INSERT INTO privileges (name) VALUES ('USER:LOCK');
+INSERT INTO privileges (name) VALUES ('USER:UNLOCK');
+
+INSERT INTO privileges (name) VALUES ('USER:RESET_PASSWORD');
+
+INSERT INTO privileges (name) VALUES ('USER:CREATE_ADMIN_ACCOUNT');
+INSERT INTO privileges (name) VALUES ('USER:READ_ADMIN_ACCOUNT');
+INSERT INTO privileges (name) VALUES ('USER:UPDATE_ADMIN_ACCOUNT');
+INSERT INTO privileges (name) VALUES ('USER:DELETE_ADMIN_ACCOUNT');
+
+INSERT INTO privileges (name) VALUES ('USER:CREATE_STAFF_ACCOUNT');
+INSERT INTO privileges (name) VALUES ('USER:READ_STAFF_ACCOUNT');
+INSERT INTO privileges (name) VALUES ('USER:UPDATE_STAFF_ACCOUNT');
+INSERT INTO privileges (name) VALUES ('USER:DELETE_STAFF_ACCOUNT');
+
+INSERT INTO privileges (name) VALUES ('USER:CREATE_MEMBER_ACCOUNT');
+INSERT INTO privileges (name) VALUES ('USER:READ_MEMBER_ACCOUNT');
+INSERT INTO privileges (name) VALUES ('USER:UPDATE_MEMBER_ACCOUNT');
+INSERT INTO privileges (name) VALUES ('USER:DELETE_MEMBER_ACCOUNT');
+
+INSERT INTO privileges (name) VALUES ('USER:ASSIGN_MEMBER_ROLE');
+INSERT INTO privileges (name) VALUES ('USER:REVOKE_MEMBER_ROLE');
+INSERT INTO privileges (name) VALUES ('USER:ASSIGN_STAFF_ROLE');
+INSERT INTO privileges (name) VALUES ('USER:REVOKE_STAFF_ROLE');
+INSERT INTO privileges (name) VALUES ('USER:ASSIGN_ADMIN_ROLE');
+INSERT INTO privileges (name) VALUES ('USER:REVOKE_ADMIN_ROLE');
+
+
+
+INSERT INTO role_privileges (role_id, privilege_id)
+SELECT (SELECT id FROM roles WHERE name = 'STAFF'), id FROM privileges
+WHERE name IN (
+    'MEMBER:VERIFY',
+    'MEMBER:CREATE_MEMBERSHIP',
+    'MEMBER:READ_MEMBERSHIP',
+    'MEMBER:UPDATE_MEMBERSHIP',
+    'MEMBER:CANCEL_MEMBERSHIP',
+    'USER:ENABLE',
+    'USER:DISABLE',
+    'USER:LOCK',
+    'USER:UNLOCK',
+    'USER:RESET_PASSWORD',
+    'USER:CREATE_MEMBER_ACCOUNT',
+    'USER:READ_MEMBER_ACCOUNT',
+    'USER:UPDATE_MEMBER_ACCOUNT',
+    'USER:ASSIGN_MEMBER_ROLE',
+    'USER:REVOKE_MEMBER_ROLE'
+);
+
+
+
+INSERT INTO role_privileges (role_id, privilege_id)
+SELECT (SELECT id FROM roles WHERE name = 'ADMIN'), privilege_id
+FROM role_privileges
+WHERE role_id = (SELECT id FROM roles WHERE name = 'STAFF');
+
+INSERT INTO role_privileges (role_id, privilege_id)
+SELECT (SELECT id FROM roles WHERE name = 'ADMIN'), id FROM privileges
+WHERE name IN (
+    'USER:CREATE_STAFF_ACCOUNT',
+    'USER:READ_STAFF_ACCOUNT',
+    'USER:UPDATE_STAFF_ACCOUNT',
+    'USER:DELETE_STAFF_ACCOUNT',
+    'USER:DELETE_ADMIN_ACCOUNT',
+    'USER:ASSIGN_STAFF_ROLE',
+    'USER:REVOKE_STAFF_ROLE'
+);
+
+
+
+INSERT INTO role_privileges (role_id, privilege_id)
+SELECT (SELECT id FROM roles WHERE name = 'ROOT_ADMIN'), id FROM privileges
+WHERE name IN (
+    'USER:ENABLE',
+    'USER:DISABLE',
+    'USER:LOCK',
+    'USER:UNLOCK',
+    'USER:RESET_PASSWORD',
+    'USER:CREATE_ADMIN_ACCOUNT',
+    'USER:READ_ADMIN_ACCOUNT',
+    'USER:UPDATE_ADMIN_ACCOUNT',
+    'USER:DELETE_ADMIN_ACCOUNT',
+    'USER:ASSIGN_ADMIN_ROLE',
+    'USER:REVOKE_ADMIN_ROLE'
+);
+
+INSERT INTO employees (last_name, first_name) VALUES ('admin', 'root');
+INSERT INTO employee_accounts (employee_id, username, password_hash) SELECT (SELECT id FROM employees WHERE last_name = 'admin'), 'root', '{noop}root';
+INSERT INTO employee_roles (employee_id, role_id) SELECT(SELECT id FROM employees WHERE last_name = 'admin'), (SELECT id FROM roles WHERE name = 'ROOT_ADMIN');
