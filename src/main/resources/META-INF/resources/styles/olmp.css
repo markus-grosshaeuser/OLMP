@@ -1,0 +1,8 @@
+.header {
+    padding: var(--lumo-space-s) var(--lumo-space-m);
+    align-items: baseline;
+}
+
+.side-nav {
+    padding: var(--lumo-space-s);
+}
