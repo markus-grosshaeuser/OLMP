@@ -1,6 +1,7 @@
 
 package com.grosshaeuser.olmp.security.entity;
 
+import com.grosshaeuser.olmp.employee.entity.Employee;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

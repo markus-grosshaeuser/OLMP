@@ -5,10 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "roles")
@@ -34,8 +31,12 @@ public class Role {
             inverseJoinColumns = @JoinColumn(name = "privilege_id")
     )
     @Builder.Default
-    @Getter(AccessLevel.PRIVATE)
+    @Setter(AccessLevel.PRIVATE)
     private Set<Privilege> privileges = new HashSet<>();
+
+    public Set<Privilege> getPrivileges() {
+        return Collections.unmodifiableSet(privileges);
+    }
 
     public void addPrivilege(Privilege privilege) {
         privileges.add(privilege);

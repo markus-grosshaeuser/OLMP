@@ -1,6 +1,7 @@
 
-package com.grosshaeuser.olmp.security.entity;
+package com.grosshaeuser.olmp.employee.entity;
 
+import com.grosshaeuser.olmp.security.entity.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -47,7 +49,7 @@ public class Employee {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     @Builder.Default
-    @Getter(AccessLevel.PRIVATE)
+    @Setter(AccessLevel.PRIVATE)
     private Set<Role> roles = new HashSet<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -65,6 +67,10 @@ public class Employee {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = OffsetDateTime.now();
+    }
+
+    public Set<Role> getRoles() {
+        return Collections.unmodifiableSet(roles);
     }
 
     public void addRole(Role role) {
