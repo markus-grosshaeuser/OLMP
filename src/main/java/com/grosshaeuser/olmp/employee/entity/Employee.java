@@ -41,7 +41,7 @@ public class Employee {
     @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "employee_roles",
             joinColumns = @JoinColumn(name = "employee_id"),

@@ -1,13 +1,9 @@
 package com.grosshaeuser.olmp.employee.service;
 
-import com.grosshaeuser.olmp.employee.repository.EmployeeRepository;
-import com.grosshaeuser.olmp.employee.repository.EmployeeAccountRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.grosshaeuser.olmp.employee.dto.EmployeeDTO;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 
-@Service
-@RequiredArgsConstructor
-public class EmployeeService {
-    private final EmployeeRepository employeeRepository;
-    private final EmployeeAccountRepository employeeAccountRepository;
+public interface EmployeeService {
+    Slice<EmployeeDTO> getEmployees(String searchTerm, Pageable pageable);
 }
