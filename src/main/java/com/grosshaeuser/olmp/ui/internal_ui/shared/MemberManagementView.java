@@ -4,6 +4,7 @@ import com.grosshaeuser.olmp.members.dto.MemberCreateDTO;
 import com.grosshaeuser.olmp.members.dto.MemberDTO;
 import com.grosshaeuser.olmp.members.service.MemberService;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.components.MemberCreateDialog;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;

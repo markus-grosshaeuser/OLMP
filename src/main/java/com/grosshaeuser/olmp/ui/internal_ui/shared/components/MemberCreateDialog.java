@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.ui.internal_ui.shared;
+package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
 import com.grosshaeuser.olmp.members.dto.MemberCreateDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
@@ -6,6 +6,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -25,21 +26,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
-public class MemberCreateDialog extends BaseDialog{
+public class MemberCreateDialog extends Dialog implements Structurable, Delegatable {
 
     private static final int PASSWORD_MIN_LENGTH = 8;
 
-    @FunctionalInterface
-    public interface SaveCallback {
-        void save(MemberCreateDTO dto);
-    }
-
-    @FunctionalInterface
-    public interface ErrorCallback {
-        void handleException(RuntimeException e);
-    }
-
-    private final SaveCallback saveCallback;
+    private final CreateCallback<MemberCreateDTO> createCallback;
     private final ErrorCallback errorCallback;
 
     private final BeanValidationBinder<MemberCreateDTO> binder = new BeanValidationBinder<>(MemberCreateDTO.class);
@@ -59,8 +50,12 @@ public class MemberCreateDialog extends BaseDialog{
     private final MemberContactDetailsForm contactDetailsForm;
     private final MembershipDetailsForm membershipDetailsForm;
 
-    public MemberCreateDialog(SaveCallback saveCallback, ErrorCallback errorCallback, HashMap<String, Integer> membershipPeriodsInMonths){
-        this.saveCallback = saveCallback;
+    public MemberCreateDialog(
+            CreateCallback<MemberCreateDTO> createCallback,
+            ErrorCallback errorCallback,
+            HashMap<String, Integer> membershipPeriodsInMonths
+    ){
+        this.createCallback = createCallback;
         this.errorCallback = errorCallback;
 
         this.contactDetailsForm = new MemberContactDetailsForm(binder);
@@ -72,7 +67,7 @@ public class MemberCreateDialog extends BaseDialog{
 
         binder.setBean(new MemberCreateDTO());
 
-        getHeader().add(createDialogHeader("Create Member Account", "Create a new account by providing profile, membership and contact information."));
+        getHeader().add(createDialogHeader("Create Member Account", "Create a new account by providing profile, membership and contact information.", this::close));
         add(createFormLayout());
         getFooter().add(createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{cancelButton}));
 
@@ -134,7 +129,7 @@ public class MemberCreateDialog extends BaseDialog{
             if (binder.validate().isOk()) {
                 try {
                     MemberCreateDTO member = binder.getBean();
-                    saveCallback.save(member);
+                    createCallback.create(member);
                     notifyUser("New user account for " + member.getFirstName() + " " + member.getLastName() + " was created successfully.", NotificationVariant.INFO);
                     close();
                 } catch (RuntimeException e) {

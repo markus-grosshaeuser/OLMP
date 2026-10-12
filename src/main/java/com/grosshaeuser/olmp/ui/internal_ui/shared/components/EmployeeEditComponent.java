@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
 import com.grosshaeuser.olmp.employee.dto.EmployeeEditDTO;
+import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -19,28 +20,13 @@ import com.vaadin.flow.data.binder.ValidationException;
 import java.util.Optional;
 import java.util.Set;
 
-public class EmployeeEditComponent extends BaseEditComponent {
+public class EmployeeEditComponent extends Composite<VerticalLayout> implements Structurable, Delegatable {
     private static final int PASSWORD_MIN_LENGTH = 8;
-
-    @FunctionalInterface
-    public interface SaveCallback {
-        EmployeeEditDTO save(EmployeeEditDTO employeeEditDTO);
-    }
-
-    @FunctionalInterface
-    public interface DeleteCallback {
-        void delete(EmployeeEditDTO employeeEditDTO);
-    }
-
-    @FunctionalInterface
-    public interface ErrorCallback {
-        void handleException(RuntimeException e);
-    }
 
     private final Set<String> assignableRoles;
 
-    private final SaveCallback saveCallback;
-    private final DeleteCallback deleteCallback;
+    private final UpdateCallback<EmployeeEditDTO> updateCallback;
+    private final DeleteCallback<EmployeeEditDTO> deleteCallback;
     private final ErrorCallback errorCallback;
 
     private final BeanValidationBinder<EmployeeEditDTO> binder = new BeanValidationBinder<>(EmployeeEditDTO.class);
@@ -72,12 +58,12 @@ public class EmployeeEditComponent extends BaseEditComponent {
     public EmployeeEditComponent(
             EmployeeEditDTO employeeEditDTO,
             Set<String> assignableRoles,
-            SaveCallback saveCallback,
-            DeleteCallback deleteCallback,
+            UpdateCallback<EmployeeEditDTO> updateCallback,
+            DeleteCallback<EmployeeEditDTO> deleteCallback,
             ErrorCallback errorCallback
     ) {
         this.assignableRoles = assignableRoles;
-        this.saveCallback = saveCallback;
+        this.updateCallback = updateCallback;
         this.deleteCallback = deleteCallback;
         this.errorCallback = errorCallback;
 
@@ -91,7 +77,7 @@ public class EmployeeEditComponent extends BaseEditComponent {
         registerDirtyStateListeners();
 
         getContent().add(
-                createHeader("Employee details", "Review profile information, account state and assigned roles."),
+                createComponentHeader("Employee details", "Review profile information, account state and assigned roles."),
                 createFormElementBase(),
                 createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{deleteButton})
         );
@@ -265,7 +251,7 @@ public class EmployeeEditComponent extends BaseEditComponent {
         getFormDataObject().ifPresent(user -> {
             try {
                 setActionsEnabled(false);
-                EmployeeEditDTO savedUser = saveCallback.save(user);
+                EmployeeEditDTO savedUser = updateCallback.update(user);
                 binder.setBean(savedUser);
                 this.snapshot = savedUser;
                 handleDataChange();

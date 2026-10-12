@@ -1,8 +1,7 @@
-package com.grosshaeuser.olmp.ui.internal_ui.shared;
+package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -13,19 +12,39 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import org.jspecify.annotations.NonNull;
 
-public abstract class BaseDialog extends Dialog {
+public interface Structurable {
 
-    protected Div createDialogHeader(String title, String subtitle) {
+    @FunctionalInterface
+    interface Closeable {
+        void close();
+    }
+
+    default Div createDialogHeader(String title, String subtitle, Closeable closeable) {
         H2 dialogTitle = new H2(title);
         dialogTitle.addClassName("dialog-title");
 
         Button closeButton = new Button(new Icon(VaadinIcon.CLOSE));
-        closeButton.addClickListener(_ -> close());
+        closeButton.addClickListener(_ -> closeable.close());
 
         HorizontalLayout topRow = new HorizontalLayout();
         topRow.addToStart(dialogTitle);
         topRow.addToEnd(closeButton);
+        return createCommonHeaderPart(subtitle, topRow);
+    }
+
+    default Div createComponentHeader(String title, String subtitle) {
+        H2 dialogTitle = new H2(title);
+        dialogTitle.addClassName("dialog-title");
+
+        HorizontalLayout topRow = new HorizontalLayout();
+        topRow.addToStart(dialogTitle);
+        return createCommonHeaderPart(subtitle, topRow);
+    }
+
+    @NonNull
+    private Div createCommonHeaderPart(String subtitle, HorizontalLayout topRow) {
         topRow.setAlignItems(FlexComponent.Alignment.START);
         topRow.addClassName("dialog-top-row");
 
@@ -39,7 +58,7 @@ public abstract class BaseDialog extends Dialog {
         return dialogHeader;
     }
 
-    protected Div createSection(String title, String description, Component... components) {
+    default Div createSection(String title, String description, Component... components) {
         H3 sectionTitle = new H3(title);
         sectionTitle.addClassName("dialog-section-title");
 
@@ -62,7 +81,7 @@ public abstract class BaseDialog extends Dialog {
         return section;
     }
 
-    protected HorizontalLayout createActionBar(Button[] primaryButtons, Button[] secondaryButtons, Button[] tertiaryButtons)
+    default HorizontalLayout createActionBar(Button[] primaryButtons, Button[] secondaryButtons, Button[] tertiaryButtons)
     {
         Div primaryActions = new Div(primaryButtons);
         primaryActions.addClassName("dialog-action-bar-primary");
@@ -84,7 +103,7 @@ public abstract class BaseDialog extends Dialog {
         return actionBar;
     }
 
-    protected void notifyUser(String message, NotificationVariant variant) {
+    default void notifyUser(String message, NotificationVariant variant) {
         Notification notification = new Notification(message);
         notification.setPosition(Notification.Position.MIDDLE);
         notification.addThemeVariants(variant);

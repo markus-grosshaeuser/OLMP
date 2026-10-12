@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.ui.internal_ui.shared;
+package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
 import com.grosshaeuser.olmp.employee.dto.EmployeeCreateDTO;
 import com.vaadin.flow.component.button.Button;
@@ -6,6 +6,7 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.checkbox.CheckboxGroupVariant;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -19,21 +20,11 @@ import com.vaadin.flow.data.binder.BeanValidationBinder;
 import java.util.HashSet;
 import java.util.Set;
 
-public class EmployeeCreateDialog extends BaseDialog{
+public class EmployeeCreateDialog extends Dialog implements Structurable, Delegatable {
 
     private static final int PASSWORD_MIN_LENGTH = 8;
 
-    @FunctionalInterface
-    public interface SaveCallback {
-        void save(EmployeeCreateDTO dto);
-    }
-
-    @FunctionalInterface
-    public interface ErrorCallback {
-        void handleException(RuntimeException e);
-    }
-
-    private final SaveCallback saveCallback;
+    private final CreateCallback<EmployeeCreateDTO> saveCallback;
     private final ErrorCallback errorCallback;
 
     private final Set<String> roles;
@@ -51,8 +42,12 @@ public class EmployeeCreateDialog extends BaseDialog{
     private final Button saveButton = new Button("Save");
     private final Button cancelButton = new Button("Cancel");
 
-    public EmployeeCreateDialog(HashSet<String> roles, SaveCallback saveCallback, ErrorCallback errorCallback) {
-        this.saveCallback = saveCallback;
+    public EmployeeCreateDialog(
+            HashSet<String> roles,
+            CreateCallback<EmployeeCreateDTO> createCallback,
+            ErrorCallback errorCallback
+    ) {
+        this.saveCallback = createCallback;
         this.errorCallback = errorCallback;
         this.roles = roles;
 
@@ -62,7 +57,7 @@ public class EmployeeCreateDialog extends BaseDialog{
 
         binder.setBean(new EmployeeCreateDTO());
 
-        getHeader().add(createDialogHeader("Create Employee Account", "Create a new account by providing profile information, account state and assigned roles."));
+        getHeader().add(createDialogHeader("Create Employee Account", "Create a new account by providing profile information, account state and assigned roles.", this::close));
         add(createFormLayout());
         getFooter().add(createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{cancelButton}));
 
@@ -111,7 +106,7 @@ public class EmployeeCreateDialog extends BaseDialog{
             if (binder.validate().isOk()) {
                 try {
                     EmployeeCreateDTO employee = binder.getBean();
-                    saveCallback.save(employee);
+                    saveCallback.create(employee);
                     notifyUser("New user account for " + employee.getFirstName() + " " + employee.getLastName() + " was created successfully.", NotificationVariant.INFO);
                     close();
                 } catch (RuntimeException e) {

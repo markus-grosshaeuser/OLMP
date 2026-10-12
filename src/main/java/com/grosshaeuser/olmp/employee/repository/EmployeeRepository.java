@@ -25,6 +25,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
             "WHERE r.name IN :roles AND " +
             "(lower(e.lastName) LIKE lower(concat('%',:searchTerm,'%')) OR " +
             "lower(e.firstName) LIKE lower(concat('%',:searchTerm,'%')) OR " +
-            "lower(e.email) LIKE lower(concat('%',:searchTerm,'%')))")
+            "lower(e.email) LIKE lower(concat('%',:searchTerm,'%'))) " +
+            "ORDER BY e.lastName ASC")
     Page<Employee> searchWithRolesIn(@Param("searchTerm") String searchTerm, @Param("roles") Set<String> roles, Pageable pageable);
 }
