@@ -2,9 +2,11 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared;
 
 import com.grosshaeuser.olmp.employee.dto.EmployeeCreateDTO;
 import com.grosshaeuser.olmp.employee.dto.EmployeeDTO;
+import com.grosshaeuser.olmp.employee.dto.EmployeeEditDTO;
 import com.grosshaeuser.olmp.employee.mapper.RoleMapper;
 import com.grosshaeuser.olmp.employee.service.EmployeeService;
 import com.grosshaeuser.olmp.employee.service.RoleService;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeEditComponent;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
@@ -14,7 +16,10 @@ import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -52,6 +57,7 @@ public class EmployeeManagementView extends VerticalLayout {
         TextField textField = new TextField();
         textField.setPlaceholder("Search ...");
         textField.setPrefixComponent(VaadinIcon.SEARCH.create());
+        textField.setClearButtonVisible(true);
         textField.setValueChangeMode(ValueChangeMode.LAZY);
         textField.addValueChangeListener(
                 _ ->
@@ -110,9 +116,35 @@ public class EmployeeManagementView extends VerticalLayout {
                         employeeService.getEmployees(searchField.getValue().trim(),pageable).getContent()
         );
 
-        grid.setDetailsVisibleOnClick(false);
+        grid.setDetailsVisibleOnClick(true);
+        grid.setItemDetailsRenderer(createEmployeeEditRenderer());
         grid.setSizeFull();
         return grid;
+    }
+
+    private Renderer<EmployeeDTO> createEmployeeEditRenderer() {
+        return new ComponentRenderer<>(element -> employeeService
+                .getDetailedEmployeeById(element.id())
+                .map(employeeEditDTO -> new EmployeeEditComponent(
+                        employeeEditDTO,
+                        RoleMapper.mapToStringHashSet(roleService.getAssignableRoles()),
+                        this::updateEmployee,
+                        this::deleteEmployee,
+                        this::handleException))
+                .orElse(null)
+        );
+    }
+
+    private EmployeeEditDTO updateEmployee(EmployeeEditDTO dto) {
+        return employeeService.updateEmployee(dto).map(result -> {
+            employeeGrid.getDataProvider().refreshAll();
+            return result;
+        }).orElse(null);
+    }
+
+    private void deleteEmployee(EmployeeEditDTO dto) {
+        employeeService.deleteEmployee(dto.getId());
+        employeeGrid.getDataProvider().refreshAll();
     }
 
     private void saveNewEmployee(EmployeeCreateDTO employeeCreateDTO) {
@@ -125,6 +157,7 @@ public class EmployeeManagementView extends VerticalLayout {
         });
     }
 
+
     private void handleException(RuntimeException e) {
         switch (e) {
             case OptimisticLockingFailureException _ -> {
@@ -134,7 +167,7 @@ public class EmployeeManagementView extends VerticalLayout {
                 notification.setDuration(3000);
                 notification.open();
             }
-            case AccessDeniedException _, IllegalArgumentException _ -> {
+            case AccessDeniedException _, IllegalArgumentException _, DataIntegrityViolationException _ -> {
                 var notification = new Notification(e.getMessage());
                 notification.setPosition(Notification.Position.MIDDLE);
                 notification.addThemeVariants(NotificationVariant.ERROR);

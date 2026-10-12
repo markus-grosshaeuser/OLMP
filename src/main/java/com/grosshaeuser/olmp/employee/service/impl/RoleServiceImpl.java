@@ -1,7 +1,8 @@
-package com.grosshaeuser.olmp.employee.service;
+package com.grosshaeuser.olmp.employee.service.impl;
 
 import com.grosshaeuser.olmp.employee.entity.Role;
 import com.grosshaeuser.olmp.employee.repository.RoleRepository;
+import com.grosshaeuser.olmp.employee.service.RoleService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import lombok.RequiredArgsConstructor;

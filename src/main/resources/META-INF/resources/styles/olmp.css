@@ -6,3 +6,31 @@
 .side-nav {
     padding: var(--lumo-space-s);
 }
+
+.employee-edit-component {
+    background: linear-gradient(
+            180deg,
+            var(--lumo-base-color),
+            var(--lumo-contrast-5pct)
+    );
+    border: 1px solid var(--lumo-primary-color-10pct);
+    border-left: 4px solid var(--lumo-primary-color);
+    border-radius: var(--lumo-border-radius-l);
+    box-shadow: var(--lumo-box-shadow-s);
+    box-sizing: border-box;
+    margin: var(--lumo-space-s) 0 var(--lumo-space-m);
+    max-width: none;
+    overflow: hidden;
+    width: 100%;
+    padding: var(--lumo-space-m);
+}
+
+.employee-edit-component-identity-form {
+    padding: var(--lumo-space-m);
+    background: var(--lumo-base-color);
+}
+
+.employee-edit-component-account-form {
+    padding: var(--lumo-space-m);
+    background: var(--lumo-base-color);
+}

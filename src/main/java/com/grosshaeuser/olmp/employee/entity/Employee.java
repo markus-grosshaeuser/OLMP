@@ -80,6 +80,10 @@ public class Employee {
         roles.remove(role);
     }
 
+    public void replaceRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
     public boolean hasRole(String roleName) {
         return roles.stream()
                 .anyMatch(role -> role.getName().equalsIgnoreCase(roleName));

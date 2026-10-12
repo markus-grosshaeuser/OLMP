@@ -18,6 +18,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     @NonNull
     Optional<Employee> findById(@NonNull Long id);
 
+    boolean existsByEmail(String email);
+
     @Query("SELECT DISTINCT e FROM Employee e " +
             "JOIN e.roles r " +
             "WHERE r.name IN :roles AND " +
