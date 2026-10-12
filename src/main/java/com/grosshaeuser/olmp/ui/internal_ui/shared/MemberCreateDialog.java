@@ -1,0 +1,342 @@
+package com.grosshaeuser.olmp.ui.internal_ui.shared;
+
+import com.grosshaeuser.olmp.members.dto.MemberCreateDTO;
+import com.grosshaeuser.olmp.memberships.entity.Membership;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.tabs.Tab;
+import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.component.textfield.PasswordField;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.BeanValidationBinder;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.stream.Collectors;
+
+public class MemberCreateDialog extends BaseDialog{
+
+    private static final int PASSWORD_MIN_LENGTH = 8;
+
+    @FunctionalInterface
+    public interface SaveCallback {
+        void save(MemberCreateDTO dto);
+    }
+
+    @FunctionalInterface
+    public interface ErrorCallback {
+        void handleException(RuntimeException e);
+    }
+
+    private final SaveCallback saveCallback;
+    private final ErrorCallback errorCallback;
+
+    private final BeanValidationBinder<MemberCreateDTO> binder = new BeanValidationBinder<>(MemberCreateDTO.class);
+
+    private final TextField firstNameField = new TextField("First name");
+    private final TextField lastNameField = new TextField("Last name");
+    private final DatePicker birthdateField = new DatePicker("Birthdate");
+
+    private final TextField emailField = new TextField("Email");
+    private final PasswordField passwordField = new PasswordField("Password");
+    private final Checkbox verifiedField = new Checkbox("Verified");
+    private final Checkbox enabledField = new Checkbox("Enabled");
+
+    private final Button saveButton = new Button("Save");
+    private final Button cancelButton = new Button("Cancel");
+
+    private final MemberContactDetailsForm contactDetailsForm;
+    private final MembershipDetailsForm membershipDetailsForm;
+
+    public MemberCreateDialog(SaveCallback saveCallback, ErrorCallback errorCallback, HashMap<String, Integer> membershipPeriodsInMonths){
+        this.saveCallback = saveCallback;
+        this.errorCallback = errorCallback;
+
+        this.contactDetailsForm = new MemberContactDetailsForm(binder);
+        this.membershipDetailsForm = new MembershipDetailsForm(binder, membershipPeriodsInMonths);
+
+        configureFields();
+        configureActions();
+        configureBinder();
+
+        binder.setBean(new MemberCreateDTO());
+
+        getHeader().add(createDialogHeader("Create Member Account", "Create a new account by providing profile, membership and contact information."));
+        add(createFormLayout());
+        getFooter().add(createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{cancelButton}));
+
+        setKeepInViewport(true);
+        setCloseOnEsc(true);
+        setCloseOnOutsideClick(false);
+    }
+
+    private HorizontalLayout createFormLayout() {
+        HorizontalLayout formLayout = new HorizontalLayout();
+        formLayout.setSpacing(false);
+        formLayout.setPadding(false);
+        formLayout.setMargin(false);
+        formLayout.setWidthFull();
+        VerticalLayout layout = new VerticalLayout(createBaseDataSection(), createAccountStatusSection());
+        formLayout.add(layout);
+        formLayout.add(createTabSheet());
+        return formLayout;
+    }
+
+    private TabSheet createTabSheet() {
+        TabSheet tabSheet = new TabSheet();
+        tabSheet.add("Contact Details", contactDetailsForm);
+        tabSheet.add("Membership Details", membershipDetailsForm);
+        tabSheet.setSizeFull();
+        return tabSheet;
+    }
+
+    private Div createBaseDataSection() {
+        FormLayout form = new FormLayout();
+        form.addClassName("member-creation-dialog-form");
+        form.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("40rem", 2),
+                new FormLayout.ResponsiveStep("64rem", 3)
+        );
+        form.add(firstNameField, lastNameField, emailField, passwordField, birthdateField);
+        return createSection("Profile", "Core identity and sign-in information.", form);
+    }
+
+    private Div createAccountStatusSection() {
+        Div statusItems = new Div(enabledField, verifiedField);
+        statusItems.addClassName("member-creation-dialog_status-list");
+        return createSection("Account Status", "Account status and verification.", statusItems);
+    }
+
+    private void configureFields() {
+        passwordField.setHelperText("Use at least " + PASSWORD_MIN_LENGTH + " characters.");
+        passwordField.setRevealButtonVisible(true);
+        passwordField.setWidthFull();
+        passwordField.setRequiredIndicatorVisible(true);
+    }
+
+    private void configureActions() {
+        saveButton.addClickListener(_ -> {
+            if (binder.getBean() == null) {
+                throw new IllegalStateException("No use data object set.");
+            }
+            if (binder.validate().isOk()) {
+                try {
+                    MemberCreateDTO member = binder.getBean();
+                    saveCallback.save(member);
+                    notifyUser("New user account for " + member.getFirstName() + " " + member.getLastName() + " was created successfully.", NotificationVariant.INFO);
+                    close();
+                } catch (RuntimeException e) {
+                    errorCallback.handleException(e);
+                }
+            }
+        });
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+
+        cancelButton.addClickListener(_ -> close());
+        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
+    }
+
+    private void configureBinder() {
+        binder.forField(firstNameField)
+                .asRequired("First name is required")
+                .bind(MemberCreateDTO::getFirstName, MemberCreateDTO::setFirstName);
+        binder.forField(lastNameField)
+                .asRequired("Last name is required")
+                .bind(MemberCreateDTO::getLastName, MemberCreateDTO::setLastName);
+        binder.forField(emailField)
+                .asRequired("Email is required")
+                .bind(MemberCreateDTO::getEmail, MemberCreateDTO::setEmail);
+        binder.forField(passwordField)
+                .asRequired("Password is required")
+                .bind(MemberCreateDTO::getPassword, MemberCreateDTO::setPassword);
+        binder.forField(birthdateField)
+                .bind(MemberCreateDTO::getDateOfBirth, MemberCreateDTO::setDateOfBirth);
+        binder.forField(enabledField)
+                .bind(MemberCreateDTO::isEnabled, MemberCreateDTO::setEnabled);
+        binder.forField(verifiedField)
+                .bind(MemberCreateDTO::isVerified, MemberCreateDTO::setVerified);
+    }
+
+
+
+    @Getter
+    @Setter
+    private static class MemberContactDetailsForm extends Tab{
+        private final Checkbox withContactDetails = new Checkbox("Save Contact Details");
+
+        private final TextField phoneNumberField = new TextField("Phone Number");
+        private final TextField streetField = new TextField("Street");
+        private final TextField houseNumberField = new TextField("House Number");
+        private final TextField postalCodeField = new TextField("Postal Code");
+        private final TextField cityField = new TextField("City");
+        private final TextField countryField = new TextField("Country");
+
+        private final BeanValidationBinder<MemberCreateDTO> binder;
+
+        public MemberContactDetailsForm(BeanValidationBinder<MemberCreateDTO> binder) {
+            this.binder = binder;
+            VerticalLayout layout = new VerticalLayout();
+            HorizontalLayout streetAndHouseNumber = new HorizontalLayout(streetField, houseNumberField);
+            HorizontalLayout postalCodeAndCity = new HorizontalLayout(postalCodeField, cityField);
+            layout.add(withContactDetails, phoneNumberField, streetAndHouseNumber, postalCodeAndCity, countryField);
+            configureBinder();
+            add(layout);
+        }
+
+        private void updateContactDetailsRequired(boolean required) {
+            streetField.setRequired(required);
+            streetField.setRequiredIndicatorVisible(required);
+            houseNumberField.setRequired(required);
+            houseNumberField.setRequiredIndicatorVisible(required);
+            postalCodeField.setRequired(required);
+            postalCodeField.setRequiredIndicatorVisible(required);
+            cityField.setRequired(required);
+            cityField.setRequiredIndicatorVisible(required);
+            countryField.setRequired(required);
+            countryField.setRequiredIndicatorVisible(required);
+        }
+
+        private void configureBinder() {
+            binder.forField(withContactDetails)
+                    .bind(MemberCreateDTO::isWithContactDetails, MemberCreateDTO::setWithContactDetails);
+
+            withContactDetails.addValueChangeListener(event ->
+                    updateContactDetailsRequired(event.getValue())
+            );
+
+            binder.forField(phoneNumberField)
+                    .bind(MemberCreateDTO::getPhoneNumber, MemberCreateDTO::setPhoneNumber);
+            binder.forField(streetField)
+                    .withValidator(value ->
+                                    !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
+                            "Street is required")
+                    .bind(MemberCreateDTO::getStreet, MemberCreateDTO::setStreet);
+            binder.forField(houseNumberField)
+                    .withValidator(value ->
+                                    !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
+                            "House number is required")
+                    .bind(MemberCreateDTO::getHouseNumber, MemberCreateDTO::setHouseNumber);
+            binder.forField(postalCodeField)
+                    .withValidator(value ->
+                                    !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
+                            "Postal code is required")
+                    .bind(MemberCreateDTO::getPostalCode, MemberCreateDTO::setPostalCode);
+            binder.forField(cityField)
+                    .withValidator(value ->
+                                    !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
+                            "City is required")
+                    .bind(MemberCreateDTO::getCity, MemberCreateDTO::setCity);
+            binder.forField(countryField)
+                    .withValidator(value ->
+                                    !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
+                            "Country is required")
+                    .bind(MemberCreateDTO::getCountry, MemberCreateDTO::setCountry);
+        }
+    }
+
+    @Getter
+    @Setter
+    private static class MembershipDetailsForm extends Tab{
+        private final Checkbox withMembershipDetails = new Checkbox("Create Membership");
+
+        private final Select<String> membershipTypeField = new Select<>("Membership Type");
+        private final Select<String> membershipStatusField = new Select<>("Membership Status");
+        private final DatePicker membershipStartDateField = new DatePicker("Membership Start Date");
+        private final DatePicker membershipEndDateField = new DatePicker("Membership End Date");
+        private final DatePicker membershipRenewalDateField = new DatePicker("Membership Renewal Date");
+        private final DatePicker membershipCancellationDateField = new DatePicker("Membership Cancellation Date");
+
+        private final BeanValidationBinder<MemberCreateDTO> binder;
+
+        private final HashMap<String, Integer> membershipPeriodsInMonths;
+
+
+        public MembershipDetailsForm(BeanValidationBinder<MemberCreateDTO> binder, HashMap<String, Integer> membershipPeriodsInMonths) {
+            this.binder = binder;
+            this.membershipPeriodsInMonths = membershipPeriodsInMonths;
+            VerticalLayout layout = new VerticalLayout();
+            HorizontalLayout membershipTypeAndStatus = new HorizontalLayout(membershipTypeField, membershipStatusField);
+            HorizontalLayout membershipStartAndEndDate = new HorizontalLayout(membershipStartDateField, membershipEndDateField);
+            HorizontalLayout membershipRenewalAndCancellationDate = new HorizontalLayout(membershipRenewalDateField, membershipCancellationDateField);
+            layout.add(withMembershipDetails, membershipTypeAndStatus, membershipStartAndEndDate, membershipRenewalAndCancellationDate);
+
+            membershipTypeField.setItems(Arrays.stream(Membership.MembershipType.values()).map(Enum::name).collect(Collectors.toList()));
+            membershipStatusField.setItems(Arrays.stream(Membership.MembershipStatus.values()).map(Enum::name).collect(Collectors.toList()));
+
+            configureBinder();
+            setChangeListener();
+            add(layout);
+        }
+
+        private void updateMembershipDetailsRequired(boolean required) {
+            membershipStartDateField.setRequired(required);
+            membershipStartDateField.setRequiredIndicatorVisible(required);
+            membershipTypeField.setRequiredIndicatorVisible(required);
+            membershipStatusField.setRequiredIndicatorVisible(required);
+            membershipEndDateField.setRequired(required);
+            membershipEndDateField.setRequiredIndicatorVisible(required);
+        }
+
+        private void configureBinder() {
+            binder.forField(withMembershipDetails)
+                    .bind(MemberCreateDTO::isWithMembership, MemberCreateDTO::setWithMembership);
+
+            withMembershipDetails.addValueChangeListener(event ->
+                    updateMembershipDetailsRequired(event.getValue())
+            );
+            binder.forField(membershipTypeField)
+                    .withValidator(value ->
+                                    !getWithMembershipDetails().getValue() || (value != null && !value.isBlank()),
+                            "Membership type is required")
+                    .bind(MemberCreateDTO::getMembershipType, MemberCreateDTO::setMembershipType);
+            binder.forField(membershipStatusField)
+                    .withValidator(value ->
+                                    !getWithMembershipDetails().getValue() || (value != null && !value.isBlank()),
+                            "Membership status is required")
+                    .bind(MemberCreateDTO::getMembershipStatus, MemberCreateDTO::setMembershipStatus);
+            binder.forField(membershipStartDateField)
+                    .withValidator(value ->
+                                    !getWithMembershipDetails().getValue() || (value != null),
+                            "Membership start date is required")
+                    .bind(MemberCreateDTO::getMembershipStartDate, MemberCreateDTO::setMembershipStartDate);
+            binder.forField(membershipEndDateField)
+                    .withValidator(value ->
+                                    !getWithMembershipDetails().getValue() || (value != null),
+                            "Membership end date is required")
+                    .bindReadOnly(MemberCreateDTO::getMembershipEndDate);
+            binder.forField(membershipRenewalDateField)
+                    .bind(MemberCreateDTO::getMembershipRenewalDate, MemberCreateDTO::setMembershipRenewalDate);
+            binder.forField(membershipCancellationDateField)
+                    .bind(MemberCreateDTO::getMembershipCancellationDate, MemberCreateDTO::setMembershipCancellationDate);
+        }
+
+        private void setChangeListener() {
+            membershipStartDateField.addValueChangeListener(_ -> updateExpirationDate());
+            membershipTypeField.addValueChangeListener(_ -> updateExpirationDate());
+        }
+
+        private void updateExpirationDate() {
+            LocalDate startDate = membershipStartDateField.getValue();
+            if (startDate == null)
+                return;
+            String membershipType = membershipTypeField.getValue();
+            if (membershipType == null)
+                return;
+            if (membershipPeriodsInMonths.containsKey(membershipType)) {
+                membershipEndDateField.setValue(startDate.plusMonths(membershipPeriodsInMonths.get(membershipType)));
+            }
+        }
+    }
+}

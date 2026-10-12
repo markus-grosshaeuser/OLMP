@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.admin.pages;
 
 import com.grosshaeuser.olmp.members.service.MemberService;
+import com.grosshaeuser.olmp.memberships.service.MembershipService;
 import com.grosshaeuser.olmp.ui.internal_ui.admin.AdminLayout;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.MemberManagementView;
 import com.vaadin.flow.router.PageTitle;
@@ -11,7 +12,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("Member Management")
 @RolesAllowed("ADMIN")
 public class MemberManagementPage extends MemberManagementView {
-    public MemberManagementPage(MemberService memberService) {
-        super(memberService);
+    public MemberManagementPage(MemberService memberService, MembershipService membershipService) {
+        super(memberService, membershipService);
     }
 }
