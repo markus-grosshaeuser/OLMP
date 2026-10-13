@@ -1,12 +1,13 @@
-package com.grosshaeuser.olmp.memberships.service;
+package com.grosshaeuser.olmp.memberships.service.impl;
 
+import com.grosshaeuser.olmp.memberships.service.MembershipNumberGenerator;
 import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 
 @Component
-public class UlidMembershipNumberGenerator implements MembershipNumberGenerator{
+public class UlidMembershipNumberGenerator implements MembershipNumberGenerator {
     private static final char[] ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
     private static final SecureRandom RANDOM = new SecureRandom();
 

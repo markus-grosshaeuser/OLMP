@@ -7,7 +7,7 @@
     padding: var(--lumo-space-s);
 }
 
-.employee-edit-component {
+.employee-edit-component, .member-edit-component {
     background: linear-gradient(
             180deg,
             var(--lumo-base-color),

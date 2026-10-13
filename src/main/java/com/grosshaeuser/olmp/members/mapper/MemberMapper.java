@@ -2,6 +2,8 @@ package com.grosshaeuser.olmp.members.mapper;
 
 import com.grosshaeuser.olmp.members.dto.*;
 import com.grosshaeuser.olmp.members.entity.Member;
+import com.grosshaeuser.olmp.members.entity.MemberAccount;
+import com.grosshaeuser.olmp.members.entity.MemberContactInformation;
 
 import java.time.format.DateTimeFormatter;
 
@@ -12,8 +14,8 @@ public class MemberMapper {
                 member.getLastName(),
                 member.getFirstName(),
                 member.getDateOfBirth() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd").format(member.getDateOfBirth()) : "",
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getCreatedAt()),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getUpdatedAt())
+                member.getCreatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getCreatedAt()) : "",
+                member.getUpdatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getUpdatedAt()) : ""
         );
     }
 
@@ -45,5 +47,53 @@ public class MemberMapper {
                 dto.getCity(),
                 dto.getCountry()
         );
+    }
+
+    public static MemberEditDTO mergeMemberInformationToEditDto(Member member, MemberAccount account, MemberContactInformation contactInformation) {
+        return MemberEditDTO.builder()
+                .id(member.getId())
+                .firstName(member.getFirstName())
+                .lastName(member.getLastName())
+                .birthDate(member.getDateOfBirth())
+                .createdAt(member.getCreatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getCreatedAt()) : "")
+                .updatedAt(member.getUpdatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getUpdatedAt()) : "")
+
+                .account(mapMemberAccountToEditDto(account))
+                .contact(mapMemberContactInformationToEditDto(contactInformation))
+                .build();
+    }
+
+    public static MemberAccountEditDTO mapMemberAccountToEditDto(MemberAccount account) {
+        if (account != null) {
+            return MemberAccountEditDTO.builder()
+                    .id(account.getId())
+                    .email(account.getEmail())
+                    .verified(account.isVerified())
+                    .enabled(account.isEnabled())
+                    .failedLoginAttempts(account.getFailedLoginAttempts())
+                    .lockoutUntil(account.getLockoutUntil() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getLockoutUntil()) : "")
+                    .locked(account.isLocked())
+                    .accountCreatedAt(account.getCreatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getCreatedAt()) : "")
+                    .accountUpdatedAt(account.getUpdatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getUpdatedAt()) : "")
+                    .accountLastAccessedAt(account.getLastAccess() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getLastAccess()) : "")
+                    .build();
+        }
+        return new MemberAccountEditDTO();
+    }
+
+    public static MemberContactInformationEditDTO mapMemberContactInformationToEditDto(MemberContactInformation memberContactInformation) {
+        if (memberContactInformation != null && memberContactInformation.getMember() != null){
+            return MemberContactInformationEditDTO.builder()
+                    .id(memberContactInformation.getId())
+                    .memberId(memberContactInformation.getMember().getId())
+                    .phoneNumber(memberContactInformation.getPhoneNumber())
+                    .street(memberContactInformation.getStreet())
+                    .houseNumber(memberContactInformation.getHouseNumber())
+                    .postalCode(memberContactInformation.getPostalCode())
+                    .city(memberContactInformation.getCity())
+                    .country(memberContactInformation.getCountry())
+                    .build();
+        }
+        return new MemberContactInformationEditDTO();
     }
 }
