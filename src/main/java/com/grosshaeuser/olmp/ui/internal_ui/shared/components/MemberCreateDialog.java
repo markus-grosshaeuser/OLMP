@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
-import com.grosshaeuser.olmp.members.dto.MemberCreateDTO;
+import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -30,10 +30,10 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
 
     private static final int PASSWORD_MIN_LENGTH = 8;
 
-    private final CreateCallback<MemberCreateDTO> createCallback;
+    private final CreateCallback<MemberRegistrationDTO> createCallback;
     private final ErrorCallback errorCallback;
 
-    private final BeanValidationBinder<MemberCreateDTO> binder = new BeanValidationBinder<>(MemberCreateDTO.class);
+    private final BeanValidationBinder<MemberRegistrationDTO> binder = new BeanValidationBinder<>(MemberRegistrationDTO.class);
 
     private final TextField firstNameField = new TextField("First name");
     private final TextField lastNameField = new TextField("Last name");
@@ -51,7 +51,7 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
     private final MembershipDetailsForm membershipDetailsForm;
 
     public MemberCreateDialog(
-            CreateCallback<MemberCreateDTO> createCallback,
+            CreateCallback<MemberRegistrationDTO> createCallback,
             ErrorCallback errorCallback,
             HashMap<String, Integer> membershipPeriodsInMonths
     ){
@@ -65,7 +65,7 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
         configureActions();
         configureBinder();
 
-        binder.setBean(new MemberCreateDTO());
+        binder.setBean(new MemberRegistrationDTO());
 
         getHeader().add(createDialogHeader("Create Member Account", "Create a new account by providing profile, membership and contact information.", this::close));
         add(createFormLayout());
@@ -128,7 +128,7 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
             }
             if (binder.validate().isOk()) {
                 try {
-                    MemberCreateDTO member = binder.getBean();
+                    MemberRegistrationDTO member = binder.getBean();
                     createCallback.create(member);
                     notifyUser("New user account for " + member.getFirstName() + " " + member.getLastName() + " was created successfully.", NotificationVariant.INFO);
                     close();
@@ -146,22 +146,22 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
     private void configureBinder() {
         binder.forField(firstNameField)
                 .asRequired("First name is required")
-                .bind(MemberCreateDTO::getFirstName, MemberCreateDTO::setFirstName);
+                .bind(MemberRegistrationDTO::getFirstName, MemberRegistrationDTO::setFirstName);
         binder.forField(lastNameField)
                 .asRequired("Last name is required")
-                .bind(MemberCreateDTO::getLastName, MemberCreateDTO::setLastName);
+                .bind(MemberRegistrationDTO::getLastName, MemberRegistrationDTO::setLastName);
         binder.forField(emailField)
                 .asRequired("Email is required")
-                .bind(MemberCreateDTO::getEmail, MemberCreateDTO::setEmail);
+                .bind(MemberRegistrationDTO::getEmail, MemberRegistrationDTO::setEmail);
         binder.forField(passwordField)
                 .asRequired("Password is required")
-                .bind(MemberCreateDTO::getPassword, MemberCreateDTO::setPassword);
+                .bind(MemberRegistrationDTO::getPassword, MemberRegistrationDTO::setPassword);
         binder.forField(birthdateField)
-                .bind(MemberCreateDTO::getDateOfBirth, MemberCreateDTO::setDateOfBirth);
+                .bind(MemberRegistrationDTO::getDateOfBirth, MemberRegistrationDTO::setDateOfBirth);
         binder.forField(enabledField)
-                .bind(MemberCreateDTO::isEnabled, MemberCreateDTO::setEnabled);
+                .bind(MemberRegistrationDTO::isEnabled, MemberRegistrationDTO::setEnabled);
         binder.forField(verifiedField)
-                .bind(MemberCreateDTO::isVerified, MemberCreateDTO::setVerified);
+                .bind(MemberRegistrationDTO::isVerified, MemberRegistrationDTO::setVerified);
     }
 
 
@@ -178,9 +178,9 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
         private final TextField cityField = new TextField("City");
         private final TextField countryField = new TextField("Country");
 
-        private final BeanValidationBinder<MemberCreateDTO> binder;
+        private final BeanValidationBinder<MemberRegistrationDTO> binder;
 
-        public MemberContactDetailsForm(BeanValidationBinder<MemberCreateDTO> binder) {
+        public MemberContactDetailsForm(BeanValidationBinder<MemberRegistrationDTO> binder) {
             this.binder = binder;
             VerticalLayout layout = new VerticalLayout();
             HorizontalLayout streetAndHouseNumber = new HorizontalLayout(streetField, houseNumberField);
@@ -205,39 +205,39 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
 
         private void configureBinder() {
             binder.forField(withContactDetails)
-                    .bind(MemberCreateDTO::isWithContactDetails, MemberCreateDTO::setWithContactDetails);
+                    .bind(MemberRegistrationDTO::isWithContactDetails, MemberRegistrationDTO::setWithContactDetails);
 
             withContactDetails.addValueChangeListener(event ->
                     updateContactDetailsRequired(event.getValue())
             );
 
             binder.forField(phoneNumberField)
-                    .bind(MemberCreateDTO::getPhoneNumber, MemberCreateDTO::setPhoneNumber);
+                    .bind(MemberRegistrationDTO::getPhoneNumber, MemberRegistrationDTO::setPhoneNumber);
             binder.forField(streetField)
                     .withValidator(value ->
                                     !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
                             "Street is required")
-                    .bind(MemberCreateDTO::getStreet, MemberCreateDTO::setStreet);
+                    .bind(MemberRegistrationDTO::getStreet, MemberRegistrationDTO::setStreet);
             binder.forField(houseNumberField)
                     .withValidator(value ->
                                     !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
                             "House number is required")
-                    .bind(MemberCreateDTO::getHouseNumber, MemberCreateDTO::setHouseNumber);
+                    .bind(MemberRegistrationDTO::getHouseNumber, MemberRegistrationDTO::setHouseNumber);
             binder.forField(postalCodeField)
                     .withValidator(value ->
                                     !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
                             "Postal code is required")
-                    .bind(MemberCreateDTO::getPostalCode, MemberCreateDTO::setPostalCode);
+                    .bind(MemberRegistrationDTO::getPostalCode, MemberRegistrationDTO::setPostalCode);
             binder.forField(cityField)
                     .withValidator(value ->
                                     !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
                             "City is required")
-                    .bind(MemberCreateDTO::getCity, MemberCreateDTO::setCity);
+                    .bind(MemberRegistrationDTO::getCity, MemberRegistrationDTO::setCity);
             binder.forField(countryField)
                     .withValidator(value ->
                                     !getWithContactDetails().getValue() || (value != null && !value.isBlank()),
                             "Country is required")
-                    .bind(MemberCreateDTO::getCountry, MemberCreateDTO::setCountry);
+                    .bind(MemberRegistrationDTO::getCountry, MemberRegistrationDTO::setCountry);
         }
     }
 
@@ -253,12 +253,12 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
         private final DatePicker membershipRenewalDateField = new DatePicker("Membership Renewal Date");
         private final DatePicker membershipCancellationDateField = new DatePicker("Membership Cancellation Date");
 
-        private final BeanValidationBinder<MemberCreateDTO> binder;
+        private final BeanValidationBinder<MemberRegistrationDTO> binder;
 
         private final HashMap<String, Integer> membershipPeriodsInMonths;
 
 
-        public MembershipDetailsForm(BeanValidationBinder<MemberCreateDTO> binder, HashMap<String, Integer> membershipPeriodsInMonths) {
+        public MembershipDetailsForm(BeanValidationBinder<MemberRegistrationDTO> binder, HashMap<String, Integer> membershipPeriodsInMonths) {
             this.binder = binder;
             this.membershipPeriodsInMonths = membershipPeriodsInMonths;
             VerticalLayout layout = new VerticalLayout();
@@ -286,7 +286,7 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
 
         private void configureBinder() {
             binder.forField(withMembershipDetails)
-                    .bind(MemberCreateDTO::isWithMembership, MemberCreateDTO::setWithMembership);
+                    .bind(MemberRegistrationDTO::isWithMembership, MemberRegistrationDTO::setWithMembership);
 
             withMembershipDetails.addValueChangeListener(event ->
                     updateMembershipDetailsRequired(event.getValue())
@@ -295,26 +295,26 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
                     .withValidator(value ->
                                     !getWithMembershipDetails().getValue() || (value != null && !value.isBlank()),
                             "Membership type is required")
-                    .bind(MemberCreateDTO::getMembershipType, MemberCreateDTO::setMembershipType);
+                    .bind(MemberRegistrationDTO::getMembershipType, MemberRegistrationDTO::setMembershipType);
             binder.forField(membershipStatusField)
                     .withValidator(value ->
                                     !getWithMembershipDetails().getValue() || (value != null && !value.isBlank()),
                             "Membership status is required")
-                    .bind(MemberCreateDTO::getMembershipStatus, MemberCreateDTO::setMembershipStatus);
+                    .bind(MemberRegistrationDTO::getMembershipStatus, MemberRegistrationDTO::setMembershipStatus);
             binder.forField(membershipStartDateField)
                     .withValidator(value ->
                                     !getWithMembershipDetails().getValue() || (value != null),
                             "Membership start date is required")
-                    .bind(MemberCreateDTO::getMembershipStartDate, MemberCreateDTO::setMembershipStartDate);
+                    .bind(MemberRegistrationDTO::getMembershipStartDate, MemberRegistrationDTO::setMembershipStartDate);
             binder.forField(membershipEndDateField)
                     .withValidator(value ->
                                     !getWithMembershipDetails().getValue() || (value != null),
                             "Membership end date is required")
-                    .bindReadOnly(MemberCreateDTO::getMembershipEndDate);
+                    .bindReadOnly(MemberRegistrationDTO::getMembershipEndDate);
             binder.forField(membershipRenewalDateField)
-                    .bind(MemberCreateDTO::getMembershipRenewalDate, MemberCreateDTO::setMembershipRenewalDate);
+                    .bind(MemberRegistrationDTO::getMembershipRenewalDate, MemberRegistrationDTO::setMembershipRenewalDate);
             binder.forField(membershipCancellationDateField)
-                    .bind(MemberCreateDTO::getMembershipCancellationDate, MemberCreateDTO::setMembershipCancellationDate);
+                    .bind(MemberRegistrationDTO::getMembershipCancellationDate, MemberRegistrationDTO::setMembershipCancellationDate);
         }
 
         private void setChangeListener() {

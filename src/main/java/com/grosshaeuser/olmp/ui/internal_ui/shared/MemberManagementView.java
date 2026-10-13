@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared;
 
-import com.grosshaeuser.olmp.members.dto.MemberCreateDTO;
+import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
 import com.grosshaeuser.olmp.members.dto.MemberDTO;
 import com.grosshaeuser.olmp.members.service.MemberService;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
@@ -105,7 +105,7 @@ public class MemberManagementView extends VerticalLayout {
         return grid;
     }
 
-    private void saveNewMember(MemberCreateDTO dto) {
+    private void saveNewMember(MemberRegistrationDTO dto) {
         memberService.createMember(dto).ifPresent(member -> {
             searchField.clear();
             memberGrid.getDataProvider().refreshItem(member);
