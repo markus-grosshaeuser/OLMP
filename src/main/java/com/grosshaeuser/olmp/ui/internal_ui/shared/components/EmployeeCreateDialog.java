@@ -10,9 +10,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.NotificationVariant;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
@@ -37,7 +35,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
     private final TextField emailField = new TextField("Email");
     private final PasswordField passwordField = new PasswordField("Password");
     private final Checkbox enabledField = new Checkbox("Enabled");
-    private final CheckboxGroup<String> roleCheckBoxGroup = new CheckboxGroup<>();
+    private final CheckboxGroup<String> roleCheckBoxGroup = new CheckboxGroup<>("Roles");
 
     private final Button saveButton = new Button("Save");
     private final Button cancelButton = new Button("Cancel");
@@ -58,7 +56,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
         binder.setBean(new EmployeeRegistrationDTO());
 
         getHeader().add(createDialogHeader("Create Employee Account", "Create a new account by providing profile information, account state and assigned roles.", this::close));
-        add(createFormLayout());
+        add(createFormElementBase());
         getFooter().add(createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{cancelButton}));
 
         setKeepInViewport(true);
@@ -66,36 +64,42 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
         setCloseOnOutsideClick(false);
     }
 
-    private VerticalLayout createFormLayout() {
-        VerticalLayout layout = new VerticalLayout();
-        HorizontalLayout secondaryElements = new HorizontalLayout();
-        secondaryElements.setAlignItems(FlexComponent.Alignment.START);
-        secondaryElements.setWidthFull();
-        secondaryElements.add(createAccountStatusSection(), createAuthorizationSection());
-        layout.add(createIdentitySection(),secondaryElements);
+    private HorizontalLayout createFormElementBase() {
+        Div identitySection = createIdentitySection();
+        Div accountStatusSection = createAccountStatusSection();
+
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.addClassName("employee-create-dialog-form-base");
+        layout.setPadding(true);
+        layout.setSpacing(true);
+        layout.add(identitySection, accountStatusSection);
         return layout;
     }
 
     private Div createIdentitySection() {
         FormLayout form = new FormLayout();
-        form.addClassName("employee-creation-dialog-form");
-        form.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("40rem", 2),
-                new FormLayout.ResponsiveStep("64rem", 3)
-        );
-        form.add(firstNameField, lastNameField, usernameField, emailField, passwordField);
-        return createSection("Profile", "Core identity and sign-in information.", form);
+        form.setAutoResponsive(true);
+        form.setExpandColumns(true);
+        form.setExpandFields(true);
+        form.addFormRow(firstNameField, lastNameField);
+        form.addFormRow(emailField);
+        form.addFormRow(usernameField, passwordField);
+        form.setColspan(emailField, 2);
+        Div section = createSection("Profile", "Core identity and sign-in information.", form);
+        section.addClassName("employee-edit-component-identity-form");
+        return section;
     }
 
     private Div createAccountStatusSection() {
-        Div statusItems = new Div(enabledField);
-        statusItems.addClassName("employee-creation-dialog_status-list");
-        return createSection("Account Settings", "Control whether this user can access the application.", statusItems);
-    }
-
-    private Div createAuthorizationSection() {
-        return createSection("Authorization", "Assign application roles available to your administration level.", roleCheckBoxGroup);
+        FormLayout form = new FormLayout();
+        form.setAutoResponsive(true);
+        form.setExpandColumns(true);
+        form.setExpandFields(true);
+        form.addFormRow(enabledField);
+        form.addFormRow(roleCheckBoxGroup);
+        Div section = createSection("Account Settings", "Control whether this user can access the application.", form);
+        section.addClassName("employee-edit-component-account-form");
+        return section;
     }
 
     private void configureActions() {
