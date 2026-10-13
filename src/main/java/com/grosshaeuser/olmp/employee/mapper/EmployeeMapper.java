@@ -1,9 +1,6 @@
 package com.grosshaeuser.olmp.employee.mapper;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeAccountCreateDTO;
-import com.grosshaeuser.olmp.employee.dto.EmployeeDTO;
-import com.grosshaeuser.olmp.employee.dto.EmployeeEditDTO;
-import com.grosshaeuser.olmp.employee.dto.EmployeeRegistrationDTO;
+import com.grosshaeuser.olmp.employee.dto.*;
 import com.grosshaeuser.olmp.employee.entity.Employee;
 import com.grosshaeuser.olmp.employee.entity.EmployeeAccount;
 import com.grosshaeuser.olmp.employee.entity.Role;
@@ -62,6 +59,19 @@ public class EmployeeMapper {
                 dto.getUsername(),
                 dto.getPassword(),
                 dto.isEnabled()
+        );
+    }
+
+    public static EmployeeAccountEditDTO createAccountEditDtoFromEmployeeUpdateData(EmployeeEditDTO dto, Set<Role> roles) {
+        return new EmployeeAccountEditDTO(
+                dto.getAccountId(),
+                dto.getUsername(),
+                dto.getNewPassword(),
+                dto.isEnabled(),
+                dto.getFailedLoginAttempts(),
+                dto.getLockoutUntil(),
+                dto.isLocked(),
+                roles
         );
     }
 

@@ -89,18 +89,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         Employee updatedEmployee = employeeRepository.save(existingEmployee);
 
-        EmployeeAccountEditDTO accountDto = new EmployeeAccountEditDTO(
-                dto.getAccountId(),
-                dto.getUsername(),
-                dto.getNewPassword(),
-                dto.isEnabled(),
-                dto.getFailedLoginAttempts(),
-                dto.getLockoutUntil(),
-                dto.isLocked(),
-                roles
-        );
-
-        EmployeeAccount updatedAccount = employeeAccountService.updateEmployeeAccount(accountDto)
+        EmployeeAccount updatedAccount = employeeAccountService.updateEmployeeAccount(EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(dto, roles))
                 .orElseThrow(() -> new RuntimeException("Account Update failed."));
 
         return Optional.of(EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(updatedEmployee, updatedAccount));
