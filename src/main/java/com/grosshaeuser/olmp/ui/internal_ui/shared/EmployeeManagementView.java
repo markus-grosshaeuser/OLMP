@@ -1,9 +1,9 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeCreateDTO;
+import com.grosshaeuser.olmp.employee.dto.EmployeeRegistrationDTO;
 import com.grosshaeuser.olmp.employee.dto.EmployeeDTO;
 import com.grosshaeuser.olmp.employee.dto.EmployeeEditDTO;
-import com.grosshaeuser.olmp.employee.mapper.RoleMapper;
+import com.grosshaeuser.olmp.employee.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.employee.service.EmployeeService;
 import com.grosshaeuser.olmp.employee.service.RoleService;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeCreateDialog;
@@ -71,7 +71,7 @@ public class EmployeeManagementView extends VerticalLayout {
         Button button = new Button("Create New Employee");
         button.addClickListener(
                 _ -> {
-                    HashSet<String> roles = RoleMapper.mapToStringHashSet(roleService.getAssignableRoles());
+                    HashSet<String> roles = EmployeeMapper.mapRolesToRoleNames(roleService.getAssignableRoles());
                     new EmployeeCreateDialog(roles, this::saveNewEmployee, this::handleException).open();
                 }
         );
@@ -128,7 +128,7 @@ public class EmployeeManagementView extends VerticalLayout {
                 .getDetailedEmployeeById(element.id())
                 .map(employeeEditDTO -> new EmployeeEditComponent(
                         employeeEditDTO,
-                        RoleMapper.mapToStringHashSet(roleService.getAssignableRoles()),
+                        EmployeeMapper.mapRolesToRoleNames(roleService.getAssignableRoles()),
                         this::updateEmployee,
                         this::deleteEmployee,
                         this::handleException))
@@ -148,8 +148,8 @@ public class EmployeeManagementView extends VerticalLayout {
         employeeGrid.getDataProvider().refreshAll();
     }
 
-    private void saveNewEmployee(EmployeeCreateDTO employeeCreateDTO) {
-        employeeService.createEmployee(employeeCreateDTO).ifPresent(employee -> {
+    private void saveNewEmployee(EmployeeRegistrationDTO employeeRegistrationDTO) {
+        employeeService.createEmployee(employeeRegistrationDTO).ifPresent(employee -> {
             searchField.clear();
             employeeGrid.getDataProvider().refreshAll();
             employeeGrid.sort(GridSortOrder.desc(employeeGrid.getColumnByKey("createdAt")).build());

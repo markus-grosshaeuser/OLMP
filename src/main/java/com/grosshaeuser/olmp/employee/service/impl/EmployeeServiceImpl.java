@@ -40,7 +40,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
-    public Optional<EmployeeDTO> createEmployee(EmployeeCreateDTO dto) {
+    public Optional<EmployeeDTO> createEmployee(EmployeeRegistrationDTO dto) {
         validateAssignableRoles(dto.getRoles());
         validateEmailIsAvailable(dto.getEmail());
 
@@ -53,22 +53,8 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new IllegalArgumentException("The following roles were not found: " + String.join(", ", missingRoles));
         }
 
-        Employee employee = Employee.builder()
-                .email(dto.getEmail())
-                .lastName(dto.getLastName())
-                .firstName(dto.getFirstName())
-                .roles(roles)
-                .build();
-        Employee persistedEmployee = employeeRepository.save(employee);
-
-        EmployeeAccountCreateDTO accountDto= new EmployeeAccountCreateDTO(
-                persistedEmployee,
-                dto.getUsername(),
-                dto.getPassword(),
-                dto.isEnabled()
-        );
-
-        employeeAccountService.createEmployeeAccount(accountDto);
+        Employee persistedEmployee = employeeRepository.save(EmployeeMapper.createEmployeeFromEmployeeRegistrationData(dto, roles));
+        employeeAccountService.createEmployeeAccount(EmployeeMapper.createEmployeeAccountDTOFromEmployeeRegistrationData(dto, persistedEmployee));
 
         return Optional.of(EmployeeMapper.mapEmplyeeToEmployeeDto(persistedEmployee));
     }
@@ -165,15 +151,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
     }
 
-
-
     private void validateEmailIsAvailable(String email) {
         if (employeeRepository.existsByEmail(email)) {
             throw new DataIntegrityViolationException("Email already exists: " + email);
         }
     }
-
-
 
     private void validateEmailIsAvailableForUpdate(Employee existingUser, String requestedEmail) {
         if (!existingUser.getEmail().equals(requestedEmail) && employeeRepository.existsByEmail(requestedEmail)) {

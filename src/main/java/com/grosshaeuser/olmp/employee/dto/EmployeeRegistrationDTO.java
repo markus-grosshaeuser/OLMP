@@ -7,7 +7,7 @@ import java.util.Set;
 
 @Getter
 @Setter
-public class EmployeeCreateDTO {
+public class EmployeeRegistrationDTO {
     private String email;
     private String lastName;
     private String firstName;

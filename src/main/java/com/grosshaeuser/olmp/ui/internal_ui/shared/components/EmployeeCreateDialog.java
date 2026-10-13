@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeCreateDTO;
+import com.grosshaeuser.olmp.employee.dto.EmployeeRegistrationDTO;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -24,12 +24,12 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
 
     private static final int PASSWORD_MIN_LENGTH = 8;
 
-    private final CreateCallback<EmployeeCreateDTO> saveCallback;
+    private final CreateCallback<EmployeeRegistrationDTO> saveCallback;
     private final ErrorCallback errorCallback;
 
     private final Set<String> roles;
 
-    private final BeanValidationBinder<EmployeeCreateDTO> binder = new BeanValidationBinder<>(EmployeeCreateDTO.class);
+    private final BeanValidationBinder<EmployeeRegistrationDTO> binder = new BeanValidationBinder<>(EmployeeRegistrationDTO.class);
 
     private final TextField firstNameField = new TextField("First name");
     private final TextField lastNameField = new TextField("Last name");
@@ -44,7 +44,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
 
     public EmployeeCreateDialog(
             HashSet<String> roles,
-            CreateCallback<EmployeeCreateDTO> createCallback,
+            CreateCallback<EmployeeRegistrationDTO> createCallback,
             ErrorCallback errorCallback
     ) {
         this.saveCallback = createCallback;
@@ -55,7 +55,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
         configureActions();
         configureBinder();
 
-        binder.setBean(new EmployeeCreateDTO());
+        binder.setBean(new EmployeeRegistrationDTO());
 
         getHeader().add(createDialogHeader("Create Employee Account", "Create a new account by providing profile information, account state and assigned roles.", this::close));
         add(createFormLayout());
@@ -105,7 +105,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
             }
             if (binder.validate().isOk()) {
                 try {
-                    EmployeeCreateDTO employee = binder.getBean();
+                    EmployeeRegistrationDTO employee = binder.getBean();
                     saveCallback.create(employee);
                     notifyUser("New user account for " + employee.getFirstName() + " " + employee.getLastName() + " was created successfully.", NotificationVariant.INFO);
                     close();
@@ -134,25 +134,25 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
     private void configureBinder() {
         binder.forField(firstNameField)
                 .asRequired("First name is required")
-                .bind(EmployeeCreateDTO::getFirstName, EmployeeCreateDTO::setFirstName);
+                .bind(EmployeeRegistrationDTO::getFirstName, EmployeeRegistrationDTO::setFirstName);
         binder.forField(lastNameField)
                 .asRequired("Last name is required")
-                .bind(EmployeeCreateDTO::getLastName, EmployeeCreateDTO::setLastName);
+                .bind(EmployeeRegistrationDTO::getLastName, EmployeeRegistrationDTO::setLastName);
         binder.forField(usernameField)
                 .asRequired("Username is required")
-                .bind(EmployeeCreateDTO::getUsername, EmployeeCreateDTO::setUsername);
+                .bind(EmployeeRegistrationDTO::getUsername, EmployeeRegistrationDTO::setUsername);
         binder.forField(emailField)
                 .asRequired("Email is required")
-                .bind(EmployeeCreateDTO::getEmail, EmployeeCreateDTO::setEmail);
+                .bind(EmployeeRegistrationDTO::getEmail, EmployeeRegistrationDTO::setEmail);
         binder.forField(passwordField)
                 .withValidator(
                         value -> value.length() >= PASSWORD_MIN_LENGTH,
                         "Password must be at least " + PASSWORD_MIN_LENGTH + " characters long"
                 )
-                .bind(EmployeeCreateDTO::getPassword, EmployeeCreateDTO::setPassword);
-        binder.forField(enabledField).bind(EmployeeCreateDTO::isEnabled, EmployeeCreateDTO::setEnabled);
+                .bind(EmployeeRegistrationDTO::getPassword, EmployeeRegistrationDTO::setPassword);
+        binder.forField(enabledField).bind(EmployeeRegistrationDTO::isEnabled, EmployeeRegistrationDTO::setEnabled);
         binder.forField(roleCheckBoxGroup)
                 .asRequired("At least one role must be selected")
-                .bind(EmployeeCreateDTO::getRoles, EmployeeCreateDTO::setRoles);
+                .bind(EmployeeRegistrationDTO::getRoles, EmployeeRegistrationDTO::setRoles);
     }
 }

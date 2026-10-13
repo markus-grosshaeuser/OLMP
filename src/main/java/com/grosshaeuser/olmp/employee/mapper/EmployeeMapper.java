@@ -1,7 +1,9 @@
 package com.grosshaeuser.olmp.employee.mapper;
 
+import com.grosshaeuser.olmp.employee.dto.EmployeeAccountCreateDTO;
 import com.grosshaeuser.olmp.employee.dto.EmployeeDTO;
 import com.grosshaeuser.olmp.employee.dto.EmployeeEditDTO;
+import com.grosshaeuser.olmp.employee.dto.EmployeeRegistrationDTO;
 import com.grosshaeuser.olmp.employee.entity.Employee;
 import com.grosshaeuser.olmp.employee.entity.EmployeeAccount;
 import com.grosshaeuser.olmp.employee.entity.Role;
@@ -45,13 +47,26 @@ public class EmployeeMapper {
         );
     }
 
+    public static Employee createEmployeeFromEmployeeRegistrationData(EmployeeRegistrationDTO dto, Set<Role> roles) {
+        return Employee.builder()
+                .email(dto.getEmail())
+                .lastName(dto.getLastName())
+                .firstName(dto.getFirstName())
+                .roles(roles)
+                .build();
+    }
 
-    private static HashSet<String> mapRolesToRoleNames(Set<Role> roles) {
-        HashSet<String> roleNames = new HashSet<>();
-        for (Role role : roles) {
-            roleNames.add(role.getName());
-        }
-        return roleNames;
+    public static EmployeeAccountCreateDTO createEmployeeAccountDTOFromEmployeeRegistrationData(EmployeeRegistrationDTO dto, Employee employee) {
+        return new EmployeeAccountCreateDTO(
+                employee,
+                dto.getUsername(),
+                dto.getPassword(),
+                dto.isEnabled()
+        );
+    }
+
+    public static HashSet<String> mapRolesToRoleNames(Set<Role> roles) {
+        return new HashSet<>(roles.stream().map(Role::getName).toList());
     }
 
 }
