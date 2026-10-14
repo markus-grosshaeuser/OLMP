@@ -21,6 +21,19 @@ public class MembershipMapper {
         );
     }
 
+    public static Membership createMembershipFromMembershipCreateDto(MembershipCreateDTO dto, String membershipNumber) {
+        return Membership.builder()
+                .member(dto.getMember())
+                .membershipNumber(membershipNumber)
+                .type(Membership.MembershipType.valueOf(dto.getMembershipType()))
+                .status(Membership.MembershipStatus.valueOf(dto.getMembershipStatus()))
+                .startDate(dto.getMembershipStartDate())
+                .expirationDate(dto.getMembershipExpirationDate())
+                .renewalDate(dto.getMembershipRenewalDate())
+                .cancellationDate(dto.getMembershipCancellationDate())
+                .build();
+    }
+
     public static MembershipEditDTO mapMembershipToEditDto(Membership membership) {
         if (membership != null && membership.getMember() != null) {
             return new MembershipEditDTO(

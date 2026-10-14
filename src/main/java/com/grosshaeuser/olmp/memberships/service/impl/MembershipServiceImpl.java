@@ -3,6 +3,7 @@ package com.grosshaeuser.olmp.memberships.service.impl;
 import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
+import com.grosshaeuser.olmp.memberships.mapper.MembershipMapper;
 import com.grosshaeuser.olmp.memberships.repository.MembershipRepository;
 import com.grosshaeuser.olmp.memberships.service.MembershipNumberGenerator;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
@@ -24,17 +25,7 @@ public class MembershipServiceImpl implements MembershipService {
     @Override
     @Transactional
     public Optional<Membership> createMembership(MembershipCreateDTO dto) {
-        return Optional.of(membershipRepository.save(
-                Membership.builder()
-                        .member(dto.getMember())
-                        .membershipNumber(membershipNumberGenerator.generate())
-                        .type(Membership.MembershipType.valueOf(dto.getMembershipType()))
-                        .status(Membership.MembershipStatus.valueOf(dto.getMembershipStatus()))
-                        .startDate(dto.getMembershipStartDate())
-                        .expirationDate(dto.getMembershipExpirationDate())
-                        .renewalDate(dto.getMembershipRenewalDate())
-                        .cancellationDate(dto.getMembershipCancellationDate())
-                        .build()));
+        return Optional.of(membershipRepository.save(MembershipMapper.createMembershipFromMembershipCreateDto(dto, membershipNumberGenerator.generate())));
     }
 
     @Override
