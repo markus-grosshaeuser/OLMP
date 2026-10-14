@@ -81,20 +81,20 @@ public class MemberServiceImpl implements MemberService {
 
                     Member updatedMember = memberRepository.save(member);
 
-                    MemberAccount account = memberAccountService.update(dto.getAccount()).orElse(new MemberAccount());
+                    MemberAccount updatedAccount = dto.getAccount() != null
+                            ? memberAccountService.update(dto.getAccount()).orElse(new MemberAccount())
+                            : memberAccountService.findByMemberId(updatedMember.getId()).orElse(null);
 
-                    MemberContactInformation contactInformation = dto.getContact() != null
+                    MemberContactInformation updatedContactInfo = dto.getContact() != null
                             ? memberContactInformationService.updateContactInformation(dto.getContact()).orElse(new MemberContactInformation())
-                            : null;
+                            : memberContactInformationService.findByMemberId(updatedMember.getId()).orElse(null);
 
-                    Membership membership = dto.getMembership() != null
+                    Membership umdatedMembership = dto.getMembership() != null
                             ? membershipService.updateMembership(dto.getMembership()).orElse(new Membership())
-                            : null;
+                            : membershipService.findByMemberId(updatedMember.getId()).orElse(null);
 
-                    MemberEditDTO result = MemberMapper.mergeMemberInformationToEditDto(updatedMember, null, null);
-                    result.setAccount(MemberMapper.mapMemberAccountToEditDto(account));
-                    result.setContact(MemberMapper.mapMemberContactInformationToEditDto(contactInformation));
-                    result.setMembership(MembershipMapper.mapMembershipToEditDto(membership));
+                    MemberEditDTO result = MemberMapper.mergeMemberInformationToEditDto(updatedMember, updatedAccount, updatedContactInfo);
+                    result.setMembership(MembershipMapper.mapMembershipToEditDto(umdatedMembership));
                     return result;
                 });
     }
