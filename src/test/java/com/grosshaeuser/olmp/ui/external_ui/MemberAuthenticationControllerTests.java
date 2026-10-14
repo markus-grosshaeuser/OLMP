@@ -1,5 +1,5 @@
 
-package com.grosshaeuser.olmp.external_ui_tests;
+package com.grosshaeuser.olmp.ui.external_ui;
 
 import tools.jackson.databind.ObjectMapper;
 import com.grosshaeuser.olmp.TestcontainersConfiguration;

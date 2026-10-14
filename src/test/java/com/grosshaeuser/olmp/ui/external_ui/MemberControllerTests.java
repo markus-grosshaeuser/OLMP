@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.external_ui_tests;
+package com.grosshaeuser.olmp.ui.external_ui;
 
 import com.grosshaeuser.olmp.TestcontainersConfiguration;
 import com.grosshaeuser.olmp.members.entity.Member;
