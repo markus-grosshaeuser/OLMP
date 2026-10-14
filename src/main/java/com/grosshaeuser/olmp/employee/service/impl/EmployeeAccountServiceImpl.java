@@ -50,7 +50,10 @@ public class EmployeeAccountServiceImpl implements EmployeeAccountService {
         return Optional.of(employeeAccountRepository.save(existingAccount));
     }
 
-
+    @Override
+    public Optional<EmployeeAccount> findByUsername(String username) {
+        return employeeAccountRepository.findByUsername(username);
+    }
 
     private void validateUsernameIsAvailable(String username) {
         if (employeeAccountRepository.existsByUsername(username)) {

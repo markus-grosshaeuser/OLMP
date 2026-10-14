@@ -16,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -112,6 +113,66 @@ public class EmployeeServiceImpl implements EmployeeService {
         return readableRoles;
     }
 
+    @Override
+    public Optional<EmployeeEditDTO> getCurrentEmployee() {
+        EmployeeAccount currentAccount = getCurrentEmployeeAccount()
+                .orElseThrow(() -> new AccessDeniedException("No authenticated employee account found."));
+        Employee currentEmployee = employeeRepository.findById(currentAccount.getEmployee().getId())
+                .orElseThrow(() -> new AccessDeniedException("No authenticated employee found."));
+
+        return Optional.of(EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(currentEmployee, currentAccount));
+    }
+
+    @Transactional
+    @Override
+    public Optional<EmployeeEditDTO> updateCurrentEmployee(EmployeeEditDTO dto) {
+        EmployeeAccount currentAccount = getCurrentEmployeeAccount()
+                .orElseThrow(() -> new AccessDeniedException("No authenticated employee account found."));
+
+        Employee currentEmployee = currentAccount.getEmployee();
+
+        if (!currentEmployee.getId().equals(dto.getId())) {
+            throw new AccessDeniedException("You may only update your own employee data.");
+        }
+
+        if (!currentAccount.getId().equals(dto.getAccountId())) {
+            throw new AccessDeniedException("You may only update your own employee account.");
+        }
+
+        validateEmailIsAvailableForUpdate(currentEmployee, dto.getEmail());
+
+        currentEmployee.setFirstName(dto.getFirstName());
+        currentEmployee.setLastName(dto.getLastName());
+        currentEmployee.setEmail(dto.getEmail());
+
+        Employee updatedEmployee = employeeRepository.save(currentEmployee);
+
+        EmployeeEditDTO sanitizedDto = dto.toBuilder()
+                .roles(EmployeeMapper.mapRolesToRoleNames(currentEmployee.getRoles()))
+                .enabled(currentAccount.isEnabled())
+                .failedLoginAttempts(currentAccount.getFailedLoginAttempts())
+                .lockoutUntil(currentAccount.getLockoutUntil() != null ? currentAccount.getLockoutUntil().toString() : null)
+                .locked(currentAccount.isLocked())
+                .build();
+
+        EmployeeAccount updatedAccount = employeeAccountService.updateEmployeeAccount(
+                EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(
+                        sanitizedDto,
+                        currentEmployee.getRoles()
+                )
+        ).orElseThrow(() -> new RuntimeException("Account update failed."));
+
+        return Optional.of(EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(
+                updatedEmployee,
+                updatedAccount
+        ));
+    }
+
+    private Optional<EmployeeAccount> getCurrentEmployeeAccount() {
+        return authenticationContext.getAuthenticatedUser(UserDetails.class)
+                .flatMap(userDetails -> employeeAccountService.findByUsername(userDetails.getUsername()));
+    }
+
     private Set<String> getEditableRoles() {
         Set<String> editableRoles = new HashSet<>();
 
@@ -147,7 +208,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     private void validateEmailIsAvailableForUpdate(Employee existingUser, String requestedEmail) {
-        if (!existingUser.getEmail().equals(requestedEmail) && employeeRepository.existsByEmail(requestedEmail)) {
+        if (existingUser.getEmail() != null && !existingUser.getEmail().equals(requestedEmail) && employeeRepository.existsByEmail(requestedEmail)) {
             throw new DataIntegrityViolationException("Email already exists: " + requestedEmail);
         }
     }
