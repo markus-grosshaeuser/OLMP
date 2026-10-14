@@ -46,6 +46,7 @@ public class EmployeeAccountServiceImpl implements EmployeeAccountService {
             existingAccount.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
         }
         existingAccount.setEnabled(dto.isEnabled());
+        existingAccount.setLocked(dto.isLocked());
 
         return Optional.of(employeeAccountRepository.save(existingAccount));
     }

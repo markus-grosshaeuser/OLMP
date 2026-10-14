@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -45,17 +46,25 @@ public class OlmpSecurityConfiguration {
     }
 
     @Bean
-    AuthenticationManager employeeAuthenticationManager(PasswordEncoder passwordEncoder) {
+    AuthenticationManager employeeAuthenticationManager(
+            PasswordEncoder passwordEncoder,
+            AuthenticationEventPublisher authenticationEventPublisher) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(employeeUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
-        return new ProviderManager(provider);
+        ProviderManager providerManager = new ProviderManager(provider);
+        providerManager.setAuthenticationEventPublisher(authenticationEventPublisher);
+        return providerManager;
     }
 
     @Bean
-    AuthenticationManager memberAuthenticationManager(PasswordEncoder passwordEncoder) {
+    AuthenticationManager memberAuthenticationManager(
+            PasswordEncoder passwordEncoder,
+            AuthenticationEventPublisher authenticationEventPublisher) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(memberUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
-        return new ProviderManager(provider);
+        ProviderManager providerManager = new ProviderManager(provider);
+        providerManager.setAuthenticationEventPublisher(authenticationEventPublisher);
+        return providerManager;
     }
     @Bean
     AuthenticationProvider memberAuthenticationProvider(PasswordEncoder passwordEncoder) {

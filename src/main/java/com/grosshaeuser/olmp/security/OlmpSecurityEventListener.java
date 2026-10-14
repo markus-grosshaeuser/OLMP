@@ -33,6 +33,7 @@ public class OlmpSecurityEventListener {
                 account.setLockoutUntil(null);
                 account.setLocked(false);
                 account.setLastAccess(OffsetDateTime.now());
+                employeeAccountRepository.save(account);
             });
         }
 
@@ -42,6 +43,7 @@ public class OlmpSecurityEventListener {
                 account.setLockoutUntil(null);
                 account.setLocked(false);
                 account.setLastAccess(OffsetDateTime.now());
+                memberAccountRepository.save(account);
             });
         }
     }
@@ -59,6 +61,7 @@ public class OlmpSecurityEventListener {
                 account.setLocked(true);
                 account.setLockoutUntil(OffsetDateTime.now().plusMinutes(15));
             }
+            employeeAccountRepository.save(account);
         });
 
         memberAccountRepository.findByEmail(username).ifPresent(account -> {
@@ -69,6 +72,7 @@ public class OlmpSecurityEventListener {
                 account.setLocked(true);
                 account.setLockoutUntil(OffsetDateTime.now().plusMinutes(15));
             }
+            memberAccountRepository.save(account);
         });
     }
 }
