@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui;
 
+import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.grosshaeuser.olmp.ui.internal_ui.admin.AdminHome;
 import com.grosshaeuser.olmp.ui.internal_ui.employee.EmployeeHome;
 import com.grosshaeuser.olmp.ui.internal_ui.root_admin.RootAdminHome;
@@ -13,7 +14,7 @@ import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.RolesAllowed;
 
 @Route("/")
-@RolesAllowed({"STAFF", "ADMIN", "ROOT_ADMIN"})
+@RolesAllowed({SecurityConstants.Roles.STAFF, SecurityConstants.Roles.ADMIN, SecurityConstants.Roles.ROOT_ADMIN})
 public class RootView extends VerticalLayout implements BeforeEnterObserver {
     private final AuthenticationContext authenticationContext;
 

@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui;
 
+import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H1;
@@ -11,7 +12,7 @@ import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.security.core.userdetails.UserDetails;
 
-@RolesAllowed({"STAFF", "ADMIN", "ROOT_ADMIN"})
+@RolesAllowed({SecurityConstants.Roles.STAFF, SecurityConstants.Roles.ADMIN, SecurityConstants.Roles.ROOT_ADMIN})
 public abstract class MainLayout extends AppLayout {
     protected HorizontalLayout header;
     protected SideNav sideNav;

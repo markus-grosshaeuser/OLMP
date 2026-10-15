@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.employee;
 
+import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.grosshaeuser.olmp.ui.internal_ui.MainLayout;
 import com.grosshaeuser.olmp.ui.internal_ui.employee.pages.MemberManagementPage;
 import com.grosshaeuser.olmp.ui.internal_ui.employee.pages.SelfServiceEditPage;
@@ -8,7 +9,7 @@ import com.vaadin.flow.component.sidenav.SideNavItem;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import jakarta.annotation.security.RolesAllowed;
 
-@RolesAllowed("STAFF")
+@RolesAllowed(SecurityConstants.Roles.STAFF)
 public class EmployeeLayout extends MainLayout {
     public EmployeeLayout(AuthenticationContext authenticationContext) {
         super(authenticationContext);

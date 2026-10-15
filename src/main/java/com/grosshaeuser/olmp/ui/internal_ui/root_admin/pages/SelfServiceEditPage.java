@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.root_admin.pages;
 
 import com.grosshaeuser.olmp.employee.service.EmployeeService;
+import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.grosshaeuser.olmp.ui.internal_ui.root_admin.RootAdminLayout;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.EmployeeSelfServiceView;
 import com.vaadin.flow.router.PageTitle;
@@ -9,7 +10,7 @@ import jakarta.annotation.security.RolesAllowed;
 
 @Route(value = "root-admin/self-service", layout = RootAdminLayout.class)
 @PageTitle("My Profile")
-@RolesAllowed({"ROOT_ADMIN"})
+@RolesAllowed(SecurityConstants.Roles.ROOT_ADMIN)
 public class SelfServiceEditPage extends EmployeeSelfServiceView {
     public SelfServiceEditPage(EmployeeService employeeService) {
         super(employeeService);
