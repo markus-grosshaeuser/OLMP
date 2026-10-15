@@ -38,7 +38,7 @@ public class EmployeeAccountServiceImpl implements EmployeeAccountService {
     @Override
     public Optional<EmployeeAccount> updateEmployeeAccount(EmployeeAccountEditDTO dto) {
         EmployeeAccount existingAccount = employeeAccountRepository.findById(dto.getId())
-                .orElseThrow(() -> new RuntimeException("Account not found: " + dto.getId()));
+                .orElseThrow(() -> new IllegalArgumentException("Account not found: " + dto.getId()));
         validateUsernameIsAvailableForUpdate(existingAccount, dto.getUsername());
 
         existingAccount.setUsername(dto.getUsername());

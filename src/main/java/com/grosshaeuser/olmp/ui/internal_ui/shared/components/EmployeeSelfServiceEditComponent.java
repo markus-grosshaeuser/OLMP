@@ -7,14 +7,13 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> implements Structurable, Delegatable {
@@ -55,14 +54,18 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
         configureBinder();
         configureActions();
 
-        this.snapshot = createComparableSnapshot(employeeEditDTO);
-        binder.setBean(employeeEditDTO);
-        registerDirtyStateListeners();
+        loadEmployee(employeeEditDTO);
 
         getContent().add(
                 createFormElementBase(),
                 createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{})
         );
+    }
+
+    private void loadEmployee(EmployeeEditDTO employee) {
+        snapshot = createComparableSnapshot(employee);
+        binder.readBean(snapshot);
+        handleDataChange();
     }
 
     private void configureRootLayout() {
@@ -97,7 +100,6 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
         newPasswordField.setPlaceholder("Leave empty to keep current password");
         newPasswordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
         newPasswordField.setRevealButtonVisible(false);
-        newPasswordField.setWidthFull();
     }
 
     private void configureBinder() {
@@ -135,14 +137,8 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
 
         binder.forField(lastAccessedField)
                 .bindReadOnly(EmployeeEditDTO::getAccountLastAccessed);
-    }
 
-    private void registerDirtyStateListeners() {
-        firstNameField.addValueChangeListener(_ -> handleDataChange());
-        lastNameField.addValueChangeListener(_ -> handleDataChange());
-        emailField.addValueChangeListener(_ -> handleDataChange());
-        usernameField.addValueChangeListener(_ -> handleDataChange());
-        newPasswordField.addValueChangeListener(_ -> handleDataChange());
+        binder.addValueChangeListener(_ -> handleDataChange());
     }
 
     private void configureActions() {
@@ -160,7 +156,9 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
     }
 
     private void handleDataChange() {
-        saveButton.setEnabled(binder.getBean() != null && !createComparableSnapshot(binder.getBean()).equals(snapshot));
+        saveButton.setEnabled(getFormDataObject()
+                .map(formData -> hasChanges(createComparableSnapshot(formData)))
+                .orElse(false));
     }
 
     private void setActionsEnabled(boolean enabled) {
@@ -174,17 +172,11 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
     }
 
     private Optional<EmployeeEditDTO> getFormDataObject() {
-        if (binder.getBean() == null) {
-            throw new IllegalStateException("No employee data object set");
-        }
-
-        if (!binder.validate().isOk()) {
-            return Optional.empty();
-        }
+        EmployeeEditDTO formData = snapshot.toBuilder().build();
 
         try {
-            binder.writeBean(binder.getBean());
-            return Optional.of(binder.getBean());
+            binder.writeBean(formData);
+            return Optional.of(createComparableSnapshot(formData));
         } catch (ValidationException e) {
             return Optional.empty();
         }
@@ -194,16 +186,8 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
         getFormDataObject().ifPresent(employee -> {
             try {
                 setActionsEnabled(false);
-
                 EmployeeEditDTO savedEmployee = updateCallback.update(employee);
-                binder.setBean(savedEmployee);
-                snapshot = createComparableSnapshot(savedEmployee);
-
-                Notification notification = new Notification("Your profile was updated.");
-                notification.setPosition(Notification.Position.MIDDLE);
-                notification.addThemeVariants(NotificationVariant.SUCCESS);
-                notification.setDuration(3000);
-                notification.open();
+                loadEmployee(savedEmployee);
             } catch (RuntimeException e) {
                 errorCallback.handleException(e);
             } finally {
@@ -211,5 +195,17 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
                 handleDataChange();
             }
         });
+    }
+
+    private boolean hasChanges(EmployeeEditDTO employee) {
+        return !Objects.equals(employee.getFirstName(), snapshot.getFirstName())
+                || !Objects.equals(employee.getLastName(), snapshot.getLastName())
+                || !Objects.equals(employee.getEmail(), snapshot.getEmail())
+                || !Objects.equals(employee.getUsername(), snapshot.getUsername())
+                || !Objects.equals(normalizePassword(employee.getNewPassword()), normalizePassword(snapshot.getNewPassword()));
+    }
+
+    private String normalizePassword(String password) {
+        return password == null || password.trim().isEmpty() ? null : password.trim();
     }
 }

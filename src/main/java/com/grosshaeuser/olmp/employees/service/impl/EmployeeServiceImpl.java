@@ -80,7 +80,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         validateRolePermission(editableRoles, roles);
 
         Employee existingEmployee = employeeRepository.findById(dto.getId())
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + dto.getId()));
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + dto.getId()));
 
         validateEmailIsAvailableForUpdate(existingEmployee, dto.getEmail());
         existingEmployee.setFirstName(dto.getFirstName());
