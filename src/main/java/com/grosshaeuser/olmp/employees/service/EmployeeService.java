@@ -1,8 +1,8 @@
-package com.grosshaeuser.olmp.employee.service;
+package com.grosshaeuser.olmp.employees.service;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeRegistrationDTO;
-import com.grosshaeuser.olmp.employee.dto.EmployeeDTO;
-import com.grosshaeuser.olmp.employee.dto.EmployeeEditDTO;
+import com.grosshaeuser.olmp.employees.dto.EmployeeRegistrationDTO;
+import com.grosshaeuser.olmp.employees.dto.EmployeeDTO;
+import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

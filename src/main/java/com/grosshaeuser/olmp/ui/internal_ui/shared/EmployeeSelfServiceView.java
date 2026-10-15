@@ -1,7 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeEditDTO;
-import com.grosshaeuser.olmp.employee.service.EmployeeService;
+import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
+import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeSelfServiceEditComponent;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;

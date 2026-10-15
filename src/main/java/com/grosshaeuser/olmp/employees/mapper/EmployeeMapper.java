@@ -1,9 +1,9 @@
-package com.grosshaeuser.olmp.employee.mapper;
+package com.grosshaeuser.olmp.employees.mapper;
 
-import com.grosshaeuser.olmp.employee.dto.*;
-import com.grosshaeuser.olmp.employee.entity.Employee;
-import com.grosshaeuser.olmp.employee.entity.EmployeeAccount;
-import com.grosshaeuser.olmp.employee.entity.Role;
+import com.grosshaeuser.olmp.employees.dto.*;
+import com.grosshaeuser.olmp.employees.entity.Employee;
+import com.grosshaeuser.olmp.employees.entity.EmployeeAccount;
+import com.grosshaeuser.olmp.employees.entity.Role;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;

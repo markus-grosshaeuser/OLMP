@@ -1,10 +1,10 @@
-package com.grosshaeuser.olmp.employee.service.impl;
+package com.grosshaeuser.olmp.employees.service.impl;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeAccountCreateDTO;
-import com.grosshaeuser.olmp.employee.dto.EmployeeAccountEditDTO;
-import com.grosshaeuser.olmp.employee.entity.EmployeeAccount;
-import com.grosshaeuser.olmp.employee.repository.EmployeeAccountRepository;
-import com.grosshaeuser.olmp.employee.service.EmployeeAccountService;
+import com.grosshaeuser.olmp.employees.dto.EmployeeAccountCreateDTO;
+import com.grosshaeuser.olmp.employees.dto.EmployeeAccountEditDTO;
+import com.grosshaeuser.olmp.employees.entity.EmployeeAccount;
+import com.grosshaeuser.olmp.employees.repository.EmployeeAccountRepository;
+import com.grosshaeuser.olmp.employees.service.EmployeeAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;

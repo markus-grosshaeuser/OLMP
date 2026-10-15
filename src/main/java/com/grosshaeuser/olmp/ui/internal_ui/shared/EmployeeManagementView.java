@@ -1,11 +1,11 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeRegistrationDTO;
-import com.grosshaeuser.olmp.employee.dto.EmployeeDTO;
-import com.grosshaeuser.olmp.employee.dto.EmployeeEditDTO;
-import com.grosshaeuser.olmp.employee.mapper.EmployeeMapper;
-import com.grosshaeuser.olmp.employee.service.EmployeeService;
-import com.grosshaeuser.olmp.employee.service.RoleService;
+import com.grosshaeuser.olmp.employees.dto.EmployeeRegistrationDTO;
+import com.grosshaeuser.olmp.employees.dto.EmployeeDTO;
+import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
+import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
+import com.grosshaeuser.olmp.employees.service.EmployeeService;
+import com.grosshaeuser.olmp.employees.service.RoleService;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeCreateDialog;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeEditComponent;
 import com.vaadin.flow.component.button.Button;

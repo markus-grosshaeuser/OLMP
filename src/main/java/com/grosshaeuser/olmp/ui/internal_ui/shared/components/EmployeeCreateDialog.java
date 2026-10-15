@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeRegistrationDTO;
+import com.grosshaeuser.olmp.employees.dto.EmployeeRegistrationDTO;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;

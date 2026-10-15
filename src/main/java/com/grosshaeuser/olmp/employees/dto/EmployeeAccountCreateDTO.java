@@ -1,6 +1,6 @@
-package com.grosshaeuser.olmp.employee.dto;
+package com.grosshaeuser.olmp.employees.dto;
 
-import com.grosshaeuser.olmp.employee.entity.Employee;
+import com.grosshaeuser.olmp.employees.entity.Employee;
 import lombok.*;
 
 @Getter

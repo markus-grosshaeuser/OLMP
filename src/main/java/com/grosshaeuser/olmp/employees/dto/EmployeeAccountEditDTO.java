@@ -1,6 +1,6 @@
-package com.grosshaeuser.olmp.employee.dto;
+package com.grosshaeuser.olmp.employees.dto;
 
-import com.grosshaeuser.olmp.employee.entity.Role;
+import com.grosshaeuser.olmp.employees.entity.Role;
 import lombok.*;
 
 import java.util.Set;

@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.employee.dto;
+package com.grosshaeuser.olmp.employees.dto;
 
 import lombok.Getter;
 import lombok.Setter;

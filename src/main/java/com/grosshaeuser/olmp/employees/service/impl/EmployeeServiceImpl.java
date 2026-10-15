@@ -1,14 +1,14 @@
-package com.grosshaeuser.olmp.employee.service.impl;
+package com.grosshaeuser.olmp.employees.service.impl;
 
-import com.grosshaeuser.olmp.employee.dto.*;
-import com.grosshaeuser.olmp.employee.entity.Employee;
-import com.grosshaeuser.olmp.employee.entity.EmployeeAccount;
-import com.grosshaeuser.olmp.employee.entity.Role;
-import com.grosshaeuser.olmp.employee.mapper.EmployeeMapper;
-import com.grosshaeuser.olmp.employee.repository.EmployeeRepository;
-import com.grosshaeuser.olmp.employee.repository.RoleRepository;
-import com.grosshaeuser.olmp.employee.service.EmployeeAccountService;
-import com.grosshaeuser.olmp.employee.service.EmployeeService;
+import com.grosshaeuser.olmp.employees.dto.*;
+import com.grosshaeuser.olmp.employees.entity.Employee;
+import com.grosshaeuser.olmp.employees.entity.EmployeeAccount;
+import com.grosshaeuser.olmp.employees.entity.Role;
+import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
+import com.grosshaeuser.olmp.employees.repository.EmployeeRepository;
+import com.grosshaeuser.olmp.employees.repository.RoleRepository;
+import com.grosshaeuser.olmp.employees.service.EmployeeAccountService;
+import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import lombok.RequiredArgsConstructor;

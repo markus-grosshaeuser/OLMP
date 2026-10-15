@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.admin.pages;
 
-import com.grosshaeuser.olmp.employee.service.EmployeeService;
+import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.grosshaeuser.olmp.ui.internal_ui.admin.AdminLayout;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.EmployeeSelfServiceView;

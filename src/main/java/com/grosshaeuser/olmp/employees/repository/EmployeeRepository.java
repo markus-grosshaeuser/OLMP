@@ -1,6 +1,6 @@
-package com.grosshaeuser.olmp.employee.repository;
+package com.grosshaeuser.olmp.employees.repository;
 
-import com.grosshaeuser.olmp.employee.entity.Employee;
+import com.grosshaeuser.olmp.employees.entity.Employee;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

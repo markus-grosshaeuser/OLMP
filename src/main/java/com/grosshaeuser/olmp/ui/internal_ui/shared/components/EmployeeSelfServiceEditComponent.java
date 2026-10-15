@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeEditDTO;
+import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;

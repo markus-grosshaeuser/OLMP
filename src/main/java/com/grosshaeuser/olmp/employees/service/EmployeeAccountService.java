@@ -1,8 +1,8 @@
-package com.grosshaeuser.olmp.employee.service;
+package com.grosshaeuser.olmp.employees.service;
 
-import com.grosshaeuser.olmp.employee.dto.EmployeeAccountCreateDTO;
-import com.grosshaeuser.olmp.employee.dto.EmployeeAccountEditDTO;
-import com.grosshaeuser.olmp.employee.entity.EmployeeAccount;
+import com.grosshaeuser.olmp.employees.dto.EmployeeAccountCreateDTO;
+import com.grosshaeuser.olmp.employees.dto.EmployeeAccountEditDTO;
+import com.grosshaeuser.olmp.employees.entity.EmployeeAccount;
 
 import java.util.Optional;
 

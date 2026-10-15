@@ -1,5 +1,5 @@
 
-package com.grosshaeuser.olmp.employee.entity;
+package com.grosshaeuser.olmp.employees.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
