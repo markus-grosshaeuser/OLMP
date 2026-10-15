@@ -3,6 +3,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.admin.pages;
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.employees.service.RoleService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.admin.AdminLayout;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.EmployeeManagementView;
 import com.vaadin.flow.router.PageTitle;
@@ -13,7 +14,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("Employee Management")
 @RolesAllowed(SecurityConstants.Roles.ADMIN)
 public class EmployeeManagementPage extends EmployeeManagementView {
-    public EmployeeManagementPage(EmployeeService employeeService, RoleService roleService) {
-        super(employeeService, roleService);
+    public EmployeeManagementPage(EmployeeService employeeService, RoleService roleService, PasswordProperties passwordProperties) {
+        super(employeeService, roleService, passwordProperties);
     }
 }

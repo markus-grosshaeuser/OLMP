@@ -1,5 +1,7 @@
 package com.grosshaeuser.olmp.security;
 
+import com.grosshaeuser.olmp.security.properties.JwtProperties;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.security.service.EmployeeUserDetailsService;
 import com.grosshaeuser.olmp.security.service.MemberUserDetailsService;
 import com.grosshaeuser.olmp.security.filter.JwtAuthenticationFilter;
@@ -31,7 +33,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration(proxyBeanMethods = false)
 @EnableWebSecurity
 @EnableMethodSecurity
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, PasswordProperties.class})
 @RequiredArgsConstructor
 @Import(VaadinAwareSecurityContextHolderStrategy.class)
 public class OlmpSecurityConfiguration {

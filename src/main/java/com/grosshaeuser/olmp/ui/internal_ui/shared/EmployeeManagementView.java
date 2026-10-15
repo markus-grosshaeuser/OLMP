@@ -6,6 +6,7 @@ import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
 import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.employees.service.RoleService;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeCreateDialog;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeEditComponent;
 import com.vaadin.flow.component.button.Button;
@@ -30,14 +31,17 @@ public class EmployeeManagementView extends VerticalLayout {
 
     private final EmployeeService employeeService;
     private final RoleService roleService;
+    private final PasswordProperties passwordProperties;
 
     private final Grid<EmployeeDTO> employeeGrid;
     private final TextField searchField;
 
 
-    public EmployeeManagementView(EmployeeService employeeService, RoleService roleService) {
+    public EmployeeManagementView(EmployeeService employeeService, RoleService roleService, PasswordProperties passwordProperties) {
         this.employeeService = employeeService;
         this.roleService = roleService;
+        this.passwordProperties = passwordProperties;
+
         this.employeeGrid = getPreconfiguredGrid();
 
         this.searchField = getPreconfiguredSearchField();
@@ -72,7 +76,7 @@ public class EmployeeManagementView extends VerticalLayout {
         button.addClickListener(
                 _ -> {
                     HashSet<String> roles = EmployeeMapper.mapRolesToRoleNames(roleService.getAssignableRoles());
-                    new EmployeeCreateDialog(roles, this::saveNewEmployee, this::handleException).open();
+                    new EmployeeCreateDialog(roles, this::saveNewEmployee, this::handleException, passwordProperties).open();
                 }
         );
         return button;
@@ -131,7 +135,9 @@ public class EmployeeManagementView extends VerticalLayout {
                         EmployeeMapper.mapRolesToRoleNames(roleService.getAssignableRoles()),
                         this::updateEmployee,
                         this::deleteEmployee,
-                        this::handleException))
+                        this::handleException,
+                        passwordProperties)
+                )
                 .orElse(null)
         );
     }

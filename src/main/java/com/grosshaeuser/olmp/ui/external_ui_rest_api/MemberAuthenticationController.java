@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.external_ui_rest_api;
 
-import com.grosshaeuser.olmp.security.JwtProperties;
+import com.grosshaeuser.olmp.security.properties.JwtProperties;
 import com.grosshaeuser.olmp.security.dto.MemberLoginRequest;
 import com.grosshaeuser.olmp.security.dto.MemberLoginResponse;
 import com.grosshaeuser.olmp.security.principal.MemberPrincipal;

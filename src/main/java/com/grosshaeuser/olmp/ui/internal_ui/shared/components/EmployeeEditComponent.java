@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -21,13 +22,14 @@ import java.util.Optional;
 import java.util.Set;
 
 public class EmployeeEditComponent extends Composite<VerticalLayout> implements Structurable, Delegatable {
-    private static final int PASSWORD_MIN_LENGTH = 8;
 
     private final Set<String> assignableRoles;
 
     private final UpdateCallback<EmployeeEditDTO> updateCallback;
     private final DeleteCallback<EmployeeEditDTO> deleteCallback;
     private final ErrorCallback errorCallback;
+
+    private final PasswordProperties passwordProperties;
 
     private final BeanValidationBinder<EmployeeEditDTO> binder = new BeanValidationBinder<>(EmployeeEditDTO.class);
 
@@ -60,12 +62,14 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
             Set<String> assignableRoles,
             UpdateCallback<EmployeeEditDTO> updateCallback,
             DeleteCallback<EmployeeEditDTO> deleteCallback,
-            ErrorCallback errorCallback
+            ErrorCallback errorCallback,
+            PasswordProperties passwordProperties
     ) {
         this.assignableRoles = assignableRoles;
         this.updateCallback = updateCallback;
         this.deleteCallback = deleteCallback;
         this.errorCallback = errorCallback;
+        this.passwordProperties = passwordProperties;
 
         configureRootLayout();
         configureFields();
@@ -135,7 +139,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
 
     private void configureFields() {
         newPasswordField.setPlaceholder("Leave empty to keep current password");
-        newPasswordField.setTooltipText("Use at least " + PASSWORD_MIN_LENGTH + " characters when setting a new password.");
+        newPasswordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
         newPasswordField.setRevealButtonVisible(false);
         newPasswordField.setWidthFull();
 
@@ -168,8 +172,8 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
                 .bind(EmployeeEditDTO::getUsername, EmployeeEditDTO::setUsername);
         binder.forField(newPasswordField)
                 .withValidator(
-                        value -> value == null || value.isBlank() || value.length() >= PASSWORD_MIN_LENGTH,
-                        "Password must be at least " + PASSWORD_MIN_LENGTH + " characters long"
+                        value -> value == null || value.isBlank() || value.matches(passwordProperties.getRegExPattern()),
+                        passwordProperties.getPasswordRequirementDescription()
                 )
                 .bind(EmployeeEditDTO::getNewPassword, EmployeeEditDTO::setNewPassword);
         binder.forField(enabledCheckBox).bind(EmployeeEditDTO::isEnabled, EmployeeEditDTO::setEnabled);

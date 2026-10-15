@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeRegistrationDTO;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -20,10 +21,10 @@ import java.util.Set;
 
 public class EmployeeCreateDialog extends Dialog implements Structurable, Delegatable {
 
-    private static final int PASSWORD_MIN_LENGTH = 8;
-
     private final CreateCallback<EmployeeRegistrationDTO> saveCallback;
     private final ErrorCallback errorCallback;
+
+    private final PasswordProperties passwordProperties;
 
     private final Set<String> roles;
 
@@ -43,10 +44,12 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
     public EmployeeCreateDialog(
             HashSet<String> roles,
             CreateCallback<EmployeeRegistrationDTO> createCallback,
-            ErrorCallback errorCallback
+            ErrorCallback errorCallback,
+            PasswordProperties passwordProperties
     ) {
         this.saveCallback = createCallback;
         this.errorCallback = errorCallback;
+        this.passwordProperties = passwordProperties;
         this.roles = roles;
 
         configureFields();
@@ -125,7 +128,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
     }
 
     private void configureFields() {
-        passwordField.setHelperText("Use at least " + PASSWORD_MIN_LENGTH + " characters.");
+        passwordField.setHelperText(passwordProperties.getPasswordRequirementDescription());
         passwordField.setRevealButtonVisible(true);
         passwordField.setWidthFull();
         passwordField.setRequiredIndicatorVisible(true);
@@ -150,8 +153,8 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
                 .bind(EmployeeRegistrationDTO::getEmail, EmployeeRegistrationDTO::setEmail);
         binder.forField(passwordField)
                 .withValidator(
-                        value -> value.length() >= PASSWORD_MIN_LENGTH,
-                        "Password must be at least " + PASSWORD_MIN_LENGTH + " characters long"
+                        value -> value.matches(passwordProperties.getRegExPattern()),
+                        passwordProperties.getPasswordRequirementDescription()
                 )
                 .bind(EmployeeRegistrationDTO::getPassword, EmployeeRegistrationDTO::setPassword);
         binder.forField(enabledField).bind(EmployeeRegistrationDTO::isEnabled, EmployeeRegistrationDTO::setEnabled);

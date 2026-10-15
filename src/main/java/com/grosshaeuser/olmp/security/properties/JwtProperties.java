@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.security;
+package com.grosshaeuser.olmp.security.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.security.service;
 
-import com.grosshaeuser.olmp.security.JwtProperties;
+import com.grosshaeuser.olmp.security.properties.JwtProperties;
 import com.grosshaeuser.olmp.security.principal.MemberPrincipal;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
