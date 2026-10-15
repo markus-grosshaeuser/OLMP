@@ -16,6 +16,6 @@ public class MembershipEditDTO {
     private String membershipStatus;
     private String startDate;
     private String expirationDate;
-    private String  renewalDate;
+    private String renewalDate;
     private String cancellationDate;
 }

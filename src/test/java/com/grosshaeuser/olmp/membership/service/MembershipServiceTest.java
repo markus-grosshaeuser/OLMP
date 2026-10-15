@@ -8,6 +8,7 @@ import com.grosshaeuser.olmp.memberships.repository.MembershipRepository;
 import com.grosshaeuser.olmp.memberships.service.MembershipNumberGenerator;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
 import com.grosshaeuser.olmp.memberships.service.impl.MembershipServiceImpl;
+import com.vaadin.flow.spring.security.AuthenticationContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,15 +29,19 @@ class MembershipServiceTest {
     private MembershipRepository membershipRepository;
     private MembershipNumberGenerator membershipNumberGenerator;
     private MembershipService membershipService;
+    private AuthenticationContext authenticationContext;
 
     @BeforeEach
     void setUp() {
         membershipRepository = mock(MembershipRepository.class);
         membershipNumberGenerator = mock(MembershipNumberGenerator.class);
+        authenticationContext = mock(AuthenticationContext.class);
+
 
         membershipService = new MembershipServiceImpl(
                 membershipRepository,
-                membershipNumberGenerator
+                membershipNumberGenerator,
+                authenticationContext
         );
     }
 

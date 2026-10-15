@@ -5,7 +5,10 @@ import com.grosshaeuser.olmp.members.dto.MemberAccountEditDTO;
 import com.grosshaeuser.olmp.members.entity.MemberAccount;
 import com.grosshaeuser.olmp.members.repository.MemberAccountRepository;
 import com.grosshaeuser.olmp.members.service.MemberAccountService;
+import com.grosshaeuser.olmp.security.SecurityConstants;
+import com.vaadin.flow.spring.security.AuthenticationContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +23,12 @@ public class MemberAccountServiceImpl implements MemberAccountService {
 
     private final MemberAccountRepository memberAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticationContext authenticationContext;
 
     @Override
     @Transactional
     public Optional<MemberAccount> createMemberAccount(MemberAccountCreateDTO dto) {
+        checkPermission(SecurityConstants.Privileges.CREATE_MEMBER_ACCOUNT, "You have no permission to create a member account.");
         MemberAccount account = MemberAccount.builder()
                 .member(dto.getMember())
                 .email(dto.getEmail())
@@ -36,11 +41,16 @@ public class MemberAccountServiceImpl implements MemberAccountService {
 
     @Override
     public Optional<MemberAccount> findByMemberId(Long memberId) {
+        checkPermission(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT, "You have no permission to read a member account.");
         return memberAccountRepository.findByMemberId(memberId);
     }
 
     @Override
     public Optional<MemberAccount> update(MemberAccountEditDTO memberAccountEditDTO) {
+        checkPermission(SecurityConstants.Privileges.UPDATE_MEMBER_ACCOUNT, "You have no permission to update a member account.");
+        if (memberAccountEditDTO.isVerified()) {
+            checkPermission(SecurityConstants.Privileges.VERIFY_MEMBER, "You have no permission to verify a member.");
+        }
         return memberAccountRepository.findById(memberAccountEditDTO.getId())
                 .map(account -> {
                     account.setEmail(memberAccountEditDTO.getEmail());
@@ -62,6 +72,12 @@ public class MemberAccountServiceImpl implements MemberAccountService {
             return OffsetDateTime.parse(dateTimeString);
         } catch (DateTimeParseException e) {
             return null;
+        }
+    }
+
+    private void checkPermission(String privilege, String errorMessage) {
+        if (!authenticationContext.hasAuthority(privilege)) {
+            throw new AccessDeniedException(errorMessage);
         }
     }
 }

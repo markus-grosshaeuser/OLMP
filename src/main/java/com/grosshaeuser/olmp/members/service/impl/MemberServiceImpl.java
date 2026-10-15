@@ -36,18 +36,14 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Page<MemberDTO> getMembers(String searchTerm, Pageable pageable) {
-        if (!authenticationContext.hasAuthority(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT)) {
-            throw new AccessDeniedException("Access denied");
-        }
+        checkPermission(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT, "You have no permission to read memberships.");
         return memberRepository.search(searchTerm, pageable).map(MemberMapper::mapMemberToMemberDTO);
     }
 
     @Override
     @Transactional
     public Optional<MemberDTO> createMember(MemberRegistrationDTO dto) {
-        if (!authenticationContext.hasAuthority(SecurityConstants.Privileges.CREATE_MEMBER_ACCOUNT)) {
-            throw new AccessDeniedException("You have no permission to create a member account.");
-        }
+        checkPermission(SecurityConstants.Privileges.CREATE_MEMBER_ACCOUNT, "You have no permission to create a member account.");
         Member persistedMember = memberRepository.save(MemberMapper.createMemberFromMemberRegistrationData(dto));
         memberAccountService.createMemberAccount(MemberMapper.createAccountDtoFromMemberRegistrationData(dto, persistedMember));
         if (dto.isWithContactDetails()) {
@@ -61,6 +57,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Optional<MemberEditDTO> getDetailedMember(Long memberId) {
+        checkPermission(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT, "You have no permission to read memberships.");
         return memberRepository.findById(memberId).flatMap(member -> {
             MemberAccount account = memberAccountService.findByMemberId(member.getId()).orElse(new MemberAccount());
             MemberContactInformation contact = memberContactInformationService.findByMemberId(member.getId()).orElse(new MemberContactInformation());
@@ -73,6 +70,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Optional<MemberEditDTO> updateMember(MemberEditDTO dto) {
+        checkPermission(SecurityConstants.Privileges.UPDATE_MEMBER_ACCOUNT, "You have no permission to update memberships.");
         return memberRepository.findById(dto.getId())
                 .map(member -> {
                     member.setFirstName(dto.getFirstName());
@@ -101,6 +99,13 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public void deleteMember(Long memberId) {
+        checkPermission(SecurityConstants.Privileges.DELETE_MEMBER_ACCOUNT, "You have no permission to delete memberships.");
         memberRepository.deleteById(memberId);
+    }
+
+    private void checkPermission(String privilege, String errorMessage) {
+        if (!authenticationContext.hasAuthority(privilege)) {
+            throw new AccessDeniedException(errorMessage);
+        }
     }
 }
