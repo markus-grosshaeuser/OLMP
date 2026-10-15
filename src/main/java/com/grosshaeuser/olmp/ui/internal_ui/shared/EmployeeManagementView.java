@@ -153,7 +153,7 @@ public class EmployeeManagementView extends VerticalLayout {
 
     private EmployeeEditDTO updateEmployee(EmployeeEditDTO dto) {
         return employeeService.updateEmployee(dto).map(result -> {
-            uiNotificationHandler.showSuccessNotification("Employee updated successfully");
+            uiNotificationHandler.showSuccessNotification("User account for " + result.getFirstName() + " " + result.getLastName() + " was updated successfully.");
             employeeGrid.getDataProvider().refreshAll();
             return result;
         }).orElse(null);
@@ -166,7 +166,7 @@ public class EmployeeManagementView extends VerticalLayout {
 
     private void saveNewEmployee(EmployeeRegistrationDTO employeeRegistrationDTO) {
         employeeService.createEmployee(employeeRegistrationDTO).ifPresent(employee -> {
-            uiNotificationHandler.showSuccessNotification("Employee created successfully");
+            uiNotificationHandler.showSuccessNotification("New user account for " + employee.firstName() + " " + employee.lastName() + " was created successfully.");
             searchField.clear();
             employeeGrid.getDataProvider().refreshAll();
             employeeGrid.sort(GridSortOrder.desc(employeeGrid.getColumnByKey("createdAt")).build());

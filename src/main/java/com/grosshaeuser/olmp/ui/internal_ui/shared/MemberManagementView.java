@@ -9,12 +9,12 @@ import com.grosshaeuser.olmp.memberships.service.MembershipService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.MemberCreateDialog;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.MemberEditComponent;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.handler.UiExceptionHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.handler.UiNotificationHandler;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -22,8 +22,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
-import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -33,14 +31,27 @@ public class MemberManagementView extends VerticalLayout {
     private final MemberService memberService;
     private final MembershipService membershipService;
 
+    private final UiExceptionHandler uiExceptionHandler;
+    private final UiNotificationHandler uiNotificationHandler;
+
     private final PasswordProperties passwordProperties;
     
     private final Grid<MemberDTO> memberGrid;
     private final TextField searchField;
     
-    public MemberManagementView(MemberService memberService, MembershipService membershipService, PasswordProperties passwordProperties) {
+    public MemberManagementView(
+            MemberService memberService,
+            MembershipService membershipService,
+            PasswordProperties passwordProperties,
+            UiExceptionHandler uiExceptionHandler,
+            UiNotificationHandler uiNotificationHandler
+    ) {
         this.memberService = memberService;
         this.membershipService = membershipService;
+
+        this.uiExceptionHandler = uiExceptionHandler;
+        this.uiNotificationHandler = uiNotificationHandler;
+
         this.passwordProperties = passwordProperties;
         this.memberGrid = getPreconfiguredGrid();
 
@@ -77,7 +88,7 @@ public class MemberManagementView extends VerticalLayout {
                 _ ->
                         new MemberCreateDialog(
                                 this::saveNewMember,
-                                this::handleException,
+                                uiExceptionHandler::handleException,
                                 membershipService.getMembershipPeriodsInMonths(),
                                 passwordProperties
                         ).open()
@@ -131,7 +142,7 @@ public class MemberManagementView extends VerticalLayout {
                         Arrays.stream(Membership.MembershipStatus.values()).map(Membership.MembershipStatus::name).collect(Collectors.toSet()),
                         this::updateMember,
                         this::deleteMember,
-                        this::handleException,
+                        uiExceptionHandler::handleException,
                         passwordProperties
                 ))
                 .orElse(null)
@@ -139,18 +150,17 @@ public class MemberManagementView extends VerticalLayout {
     }
 
     private MemberEditDTO updateMember(MemberEditDTO dto) {
-        MemberEditDTO result = memberService.updateMember(dto).orElse(null);
-        memberGrid.getDataProvider().refreshAll();
-        if (result != null) {
+        return memberService.updateMember(dto).map(result -> {
+            uiNotificationHandler.showSuccessNotification("Member " + result.getFirstName() + " " + result.getLastName() + " was updated successfully.");
+            memberGrid.getDataProvider().refreshAll();
             memberService.getMembers(searchField.getValue().trim(), null)
                     .getContent()
                     .stream()
                     .filter(member -> member.id().equals(result.getId()))
                     .findFirst().ifPresent(refreshedRow -> memberGrid.setDetailsVisible(refreshedRow, false));
-
-        }
-
-        return result;    }
+            return result;
+        }).orElse(null);
+    }
 
     private void deleteMember(MemberEditDTO dto) {
         memberService.deleteMember(dto.getId());
@@ -159,33 +169,13 @@ public class MemberManagementView extends VerticalLayout {
 
     private void saveNewMember(MemberRegistrationDTO dto) {
         memberService.createMember(dto).ifPresent(member -> {
+            uiNotificationHandler.showSuccessNotification("New member account for " + member.firstName() + " " + member.lastName() + " was created successfully.");
             searchField.clear();
             memberGrid.getDataProvider().refreshAll();
             memberGrid.sort(GridSortOrder.desc(memberGrid.getColumnByKey("createdAt")).build());
             memberGrid.select(member);
             memberGrid.scrollToIndex(0);
         });
-    }
-
-    private void handleException(RuntimeException e) {
-        switch (e) {
-            case OptimisticLockingFailureException _ -> {
-                var notification = new Notification("Someone has edited the same Employee. Please refresh and try again.");
-                notification.setPosition(Notification.Position.MIDDLE);
-                notification.addThemeVariants(NotificationVariant.WARNING);
-                notification.setDuration(3000);
-                notification.open();
-            }
-            case AccessDeniedException _, IllegalArgumentException _ -> {
-                var notification = new Notification(e.getMessage());
-                notification.setPosition(Notification.Position.MIDDLE);
-                notification.addThemeVariants(NotificationVariant.ERROR);
-                notification.setDuration(4000);
-                notification.open();
-            }
-            case null -> {}
-            default -> throw e;
-        }
     }
 
 }

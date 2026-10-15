@@ -10,7 +10,6 @@ import com.vaadin.flow.component.checkbox.CheckboxGroupVariant;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -67,6 +66,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
         setCloseOnOutsideClick(false);
     }
 
+
     private HorizontalLayout createFormElementBase() {
         Div identitySection = createIdentitySection();
         Div accountStatusSection = createAccountStatusSection();
@@ -114,7 +114,6 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
                 try {
                     EmployeeRegistrationDTO employee = binder.getBean();
                     saveCallback.create(employee);
-                    notifyUser("New user account for " + employee.getFirstName() + " " + employee.getLastName() + " was created successfully.", NotificationVariant.INFO);
                     close();
                 } catch (RuntimeException e) {
                     errorCallback.handleException(e);
@@ -128,7 +127,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
     }
 
     private void configureFields() {
-        passwordField.setHelperText(passwordProperties.getPasswordRequirementDescription());
+        passwordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
         passwordField.setRevealButtonVisible(true);
         passwordField.setWidthFull();
         passwordField.setRequiredIndicatorVisible(true);

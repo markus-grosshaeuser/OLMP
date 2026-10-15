@@ -10,7 +10,6 @@ import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
@@ -132,7 +131,6 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
                 try {
                     MemberRegistrationDTO member = binder.getBean();
                     createCallback.create(member);
-                    notifyUser("New user account for " + member.getFirstName() + " " + member.getLastName() + " was created successfully.", NotificationVariant.INFO);
                     close();
                 } catch (RuntimeException e) {
                     errorCallback.handleException(e);

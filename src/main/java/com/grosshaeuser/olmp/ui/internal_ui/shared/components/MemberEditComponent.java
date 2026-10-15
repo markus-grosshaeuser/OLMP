@@ -25,6 +25,7 @@ import com.vaadin.flow.data.binder.ValidationException;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -38,6 +39,11 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
     @FunctionalInterface
     interface WithMembershipDetailsCallback {
         void withMembership(boolean value);
+    }
+
+    @FunctionalInterface
+    interface AccountDataChangedCallback {
+        void accountDataChanged(boolean value);
     }
 
     private final UpdateCallback<MemberEditDTO> updateCallback;
@@ -62,6 +68,10 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
 
     private MemberEditDTO snapshot;
 
+    private boolean accountDataChanged;
+    private boolean contactInformationDataChanged;
+    private boolean membershipDataChanged;
+
 
     public MemberEditComponent(
             MemberEditDTO memberEditDTO,
@@ -76,15 +86,36 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         this.deleteCallback = deleteCallback;
         this.errorCallback = errorCallback;
 
-        this.snapshot = createComparableSnapshot(memberEditDTO);
 
-        primaryBinder.setBean(memberEditDTO);
         configureBinder();
         configureActions();
 
-        memberAccountEditForm = new MemberAccountEditForm(memberEditDTO.getAccount(), passwordProperties);
-        memberContactInformationEditForm = new MemberContactInformationEditForm(memberEditDTO.getContact(), memberEditDTO::setWithContactInformation);
-        membershipDetailsEditForm = new MembershipDetailsEditForm(memberEditDTO.getMembership(), membershipTypes, membershipStatuses, memberEditDTO::setWithMembershipDetails);
+        loadMember(memberEditDTO);
+
+        memberAccountEditForm = new MemberAccountEditForm(
+                memberEditDTO.getAccount(),
+                passwordProperties,
+                value -> {
+                    accountDataChanged = value;
+                    handleDataChange();
+                }
+        );
+        memberContactInformationEditForm = new MemberContactInformationEditForm(
+                memberEditDTO.getContact(), value -> {
+                    memberEditDTO.setWithContactInformation(value);
+                    contactInformationDataChanged = value;
+                    handleDataChange();
+                });
+        membershipDetailsEditForm = new MembershipDetailsEditForm(
+                memberEditDTO.getMembership(),
+                membershipTypes,
+                membershipStatuses,
+                value -> {
+                    memberEditDTO.setWithMembershipDetails(value);
+                    membershipDataChanged = value;
+                    handleDataChange();
+                }
+        );
 
         configureRootLayout();
 
@@ -93,6 +124,17 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
                 createFormElementBase(),
                 createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{deleteButton})
         );
+
+        accountDataChanged = false;
+        contactInformationDataChanged = false;
+        membershipDataChanged = false;
+        handleDataChange();
+    }
+
+    private void loadMember(MemberEditDTO dto) {
+        snapshot = createComparableSnapshot(dto);
+        primaryBinder.readBean(dto);
+        handleDataChange();
     }
 
     private void configureRootLayout() {
@@ -133,7 +175,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
 
     private void configureActions() {
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-//        saveButton.setEnabled(false);
+        saveButton.setEnabled(false);
         saveButton.addClickListener(_ -> save());
 
         deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
@@ -147,6 +189,8 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         primaryBinder.forField(birthDateField).bind(MemberEditDTO::getBirthDate, MemberEditDTO::setBirthDate);
         primaryBinder.forField(createdAtField).bindReadOnly(MemberEditDTO::getCreatedAt);
         primaryBinder.forField(updatedAtField).bindReadOnly(MemberEditDTO::getUpdatedAt);
+
+        primaryBinder.addValueChangeListener(_ -> handleDataChange());
     }
 
     private MemberEditDTO createComparableSnapshot(MemberEditDTO member) {
@@ -154,20 +198,20 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
     }
 
     private void handleDataChange() {
-        saveButton.setEnabled(primaryBinder.getBean() != null && !createComparableSnapshot(primaryBinder.getBean()).equals(snapshot));
+        saveButton.setEnabled(getFormDataObject()
+                .map(formData -> {
+                    boolean fieldValueChanges = hasChanges(createComparableSnapshot(formData));
+                    return fieldValueChanges || accountDataChanged || contactInformationDataChanged || membershipDataChanged;
+                })
+                .orElse(false)
+        );
     }
 
     public Optional<MemberEditDTO> getFormDataObject() {
-        if (primaryBinder.getBean() == null) {
-            throw new IllegalStateException("No member data object set");
-        }
-        if (!primaryBinder.validate().isOk()) {
-            return Optional.empty();
-        }
-
+        MemberEditDTO formData = snapshot.toBuilder().build();
         try {
-            primaryBinder.writeBean(primaryBinder.getBean());
-            return Optional.of(primaryBinder.getBean());
+            primaryBinder.writeBean(formData);
+            return Optional.of(createComparableSnapshot(formData));
         } catch (ValidationException e) {
             return Optional.empty();
         }
@@ -182,9 +226,9 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
                 MemberEditDTO savedUser = updateCallback.update(dto);
                 primaryBinder.setBean(savedUser);
                 this.snapshot = createComparableSnapshot(savedUser);
-                memberAccountEditForm.setFormDataObject(savedUser.getAccount());
-                membershipDetailsEditForm.setFormDataObject(savedUser.getMembership());
-                memberContactInformationEditForm.setFormDataObject(savedUser.getContact());
+                memberAccountEditForm.loadMemberAccount(savedUser.getAccount());
+                membershipDetailsEditForm.loadMembershipDetails(savedUser.getMembership());
+                memberContactInformationEditForm.loadMembershipContactInformation(savedUser.getContact());
                 handleDataChange();
             } catch (RuntimeException e) {
                 errorCallback.handleException(e);
@@ -218,6 +262,14 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         }
     }
 
+    private boolean hasChanges(MemberEditDTO dto) {
+        return !Objects.equals(dto.getFirstName(), snapshot.getFirstName())
+                || !Objects.equals(dto.getLastName(), snapshot.getLastName())
+                || !Objects.equals(dto.getBirthDate(), snapshot.getBirthDate())
+                || !Objects.equals(dto.isWithContactInformation(), snapshot.isWithContactInformation())
+                || !Objects.equals(dto.isWithMembershipDetails(), snapshot.isWithMembershipDetails());
+    }
+
 
 
 
@@ -240,33 +292,22 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
 
         private final BeanValidationBinder<MemberAccountEditDTO> binder = new BeanValidationBinder<>(MemberAccountEditDTO.class);
         private final PasswordProperties passwordProperties;
+        private final AccountDataChangedCallback accountDataChangedCallback;
         private MemberAccountEditDTO snapshot;
 
-        private MemberAccountEditForm(MemberAccountEditDTO dto, PasswordProperties passwordProperties) {
-            binder.setBean(dto);
+        private MemberAccountEditForm(MemberAccountEditDTO dto, PasswordProperties passwordProperties, AccountDataChangedCallback accountDataChangedCallback) {
             this.passwordProperties = passwordProperties;
-            this.snapshot = createComparableSnapshot(binder.getBean());
+            this.accountDataChangedCallback = accountDataChangedCallback;
             configureFields();
             configureBinder();
+            loadMemberAccount(dto);
             add(createFormLayout());
         }
 
-        private FormLayout createFormLayout() {
-            FormLayout layout = new FormLayout();
-            layout.setAutoResponsive(true);
-            layout.setExpandColumns(true);
-            layout.setExpandFields(true);
-
-            Div checkboxes =  new Div(enabledField, verifiedField, lockedField);
-            layout.addFormRow(accountIdField, checkboxes);
-            layout.addFormRow(emailField, newPasswordField);
-            layout.addFormRow(failedLoginAttemptsField, lockoutUntilField, accountLastAccessedAtField);
-            layout.addFormRow(accountCreatedAtField, accountUpdatedAtField);
-            layout.setColspan(checkboxes, 2);
-            layout.setColspan(emailField, 2);
-            layout.setSizeFull();
-
-            return layout;
+        private void loadMemberAccount(MemberAccountEditDTO dto) {
+            binder.readBean(dto);
+            snapshot = createComparableSnapshot(dto);
+            handleDataChange();
         }
 
         private void configureFields() {
@@ -293,6 +334,33 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             binder.forField(accountCreatedAtField).bindReadOnly(MemberAccountEditDTO::getAccountCreatedAt);
             binder.forField(accountUpdatedAtField).bindReadOnly(MemberAccountEditDTO::getAccountUpdatedAt);
             binder.forField(accountLastAccessedAtField).bindReadOnly(MemberAccountEditDTO::getAccountLastAccessedAt);
+
+            binder.addValueChangeListener(_ -> handleDataChange());
+        }
+
+        private void handleDataChange() {
+            accountDataChangedCallback.accountDataChanged(getFormDataObject()
+                    .map(formData -> hasChanges(createComparableSnapshot(formData)))
+                    .orElse(false)
+            );
+        }
+
+        private FormLayout createFormLayout() {
+            FormLayout layout = new FormLayout();
+            layout.setAutoResponsive(true);
+            layout.setExpandColumns(true);
+            layout.setExpandFields(true);
+
+            Div checkboxes =  new Div(enabledField, verifiedField, lockedField);
+            layout.addFormRow(accountIdField, checkboxes);
+            layout.addFormRow(emailField, newPasswordField);
+            layout.addFormRow(failedLoginAttemptsField, lockoutUntilField, accountLastAccessedAtField);
+            layout.addFormRow(accountCreatedAtField, accountUpdatedAtField);
+            layout.setColspan(checkboxes, 2);
+            layout.setColspan(emailField, 2);
+            layout.setSizeFull();
+
+            return layout;
         }
 
         private MemberAccountEditDTO createComparableSnapshot(MemberAccountEditDTO member) {
@@ -303,24 +371,27 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             return snapshot;
         }
 
-        private void setFormDataObject(MemberAccountEditDTO dto) {
-            binder.setBean(dto);
-            this.snapshot = createComparableSnapshot(dto);
-        }
-
         private Optional<MemberAccountEditDTO> getFormDataObject() {
-            if (binder.getBean() == null || binder.getBean().equals(snapshot)) {
-                return Optional.empty();
-            }
-            if (!binder.validate().isOk()) {
-                throw new RuntimeException("Account form data is invalid");
-            }
+            MemberAccountEditDTO formData = snapshot.toBuilder().build();
             try {
-                binder.writeBean(binder.getBean());
-                return Optional.of(binder.getBean());
+                binder.writeBean(formData);
+                return Optional.of(createComparableSnapshot(formData));
             } catch (ValidationException e) {
                 return Optional.empty();
             }
+        }
+
+        private boolean hasChanges(MemberAccountEditDTO account) {
+            return !Objects.equals(account.getEmail(), snapshot.getEmail())
+                    || !Objects.equals(account.isVerified(), snapshot.isVerified())
+                    || !Objects.equals(account.isEnabled(), snapshot.isEnabled())
+                    || !Objects.equals(account.isLocked(), snapshot.isLocked())
+                    || !Objects.equals(normalizePassword(account.getNewPassword()), normalizePassword(snapshot.getNewPassword()));
+
+        }
+
+        private String normalizePassword(String password) {
+            return password == null || password.trim().isEmpty() ? null : password.trim();
         }
     }
 
@@ -337,23 +408,22 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         private TextField countryField = new TextField("Country");
 
         private final BeanValidationBinder<MemberContactInformationEditDTO> binder = new BeanValidationBinder<>(MemberContactInformationEditDTO.class);
-        private final MemberContactInformationEditDTO dto;
+
         private MemberContactInformationEditDTO snapshot;
         private final WithContactInformationCallback callback;
 
         private MemberContactInformationEditForm(MemberContactInformationEditDTO dto, WithContactInformationCallback callback) {
-            this.dto = dto;
-            binder.setBean(dto);
-            this.snapshot = createComparableSnapshot(binder.getBean());
-
             this.callback = callback;
-            registerDirtyStateListeners();
-            if (this.dto != null && this.dto.equals(snapshot)) {
-                callback.withContactInformation(false);
-            }
 
             configureBinder();
+            loadMembershipContactInformation(dto);
             add(createFormLayout());
+        }
+
+        private void loadMembershipContactInformation(MemberContactInformationEditDTO dto) {
+            binder.readBean(dto);
+            snapshot = createComparableSnapshot(dto);
+            handleDataChange();
         }
 
         private void configureBinder() {
@@ -363,19 +433,15 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             binder.forField(postalCodeField).bind(MemberContactInformationEditDTO::getPostalCode, MemberContactInformationEditDTO::setPostalCode);
             binder.forField(cityField).bind(MemberContactInformationEditDTO::getCity, MemberContactInformationEditDTO::setCity);
             binder.forField(countryField).bind(MemberContactInformationEditDTO::getCountry, MemberContactInformationEditDTO::setCountry);
-        }
 
-        private void registerDirtyStateListeners() {
-            phoneNumberField.addValueChangeListener(_ -> handleDataChange());
-            streetField.addValueChangeListener(_ -> handleDataChange());
-            houseNumberField.addValueChangeListener(_ -> handleDataChange());
-            postalCodeField.addValueChangeListener(_ -> handleDataChange());
-            cityField.addValueChangeListener(_ -> handleDataChange());
-            countryField.addValueChangeListener(_ -> handleDataChange());
+            binder.addValueChangeListener(_ -> handleDataChange());
         }
 
         private void handleDataChange() {
-            callback.withContactInformation(binder.getBean() != null && !createComparableSnapshot(binder.getBean()).equals(snapshot));
+            callback.withContactInformation(getFormDataObject()
+                    .map(formData -> hasChanges(createComparableSnapshot(formData)))
+                    .orElse(false)
+            );
         }
 
         private FormLayout createFormLayout() {
@@ -397,26 +463,27 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             return contactInformation.toBuilder().build();
         }
 
-        private void setFormDataObject(MemberContactInformationEditDTO dto) {
-            binder.setBean(dto);
-            this.snapshot = createComparableSnapshot(dto);
-        }
-
         private Optional<MemberContactInformationEditDTO> getFormDataObject() {
-            if (binder.getBean() == null || binder.getBean().equals(snapshot)) {
-                return Optional.empty();
-            }
-            if (!binder.validate().isOk()) {
-                throw new RuntimeException("Contact Information form data is invalid");
-            }
+            MemberContactInformationEditDTO formData = snapshot.toBuilder().build();
             try {
-                binder.writeBean(binder.getBean());
-                return Optional.of(binder.getBean());
+                binder.writeBean(formData);
+                return Optional.of(createComparableSnapshot(formData));
             } catch (ValidationException e) {
                 return Optional.empty();
             }
         }
+
+        private boolean hasChanges(MemberContactInformationEditDTO contactInformation) {
+            return !Objects.equals(contactInformation.getPhoneNumber(), snapshot.getPhoneNumber())
+                    || !Objects.equals(contactInformation.getStreet(), snapshot.getStreet())
+                    || !Objects.equals(contactInformation.getHouseNumber(), snapshot.getHouseNumber())
+                    || !Objects.equals(contactInformation.getPostalCode(), snapshot.getPostalCode())
+                    || !Objects.equals(contactInformation.getCity(), snapshot.getCity())
+                    || !Objects.equals(contactInformation.getCountry(), snapshot.getCountry());
+        }
     }
+
+
 
 
 
@@ -439,24 +506,21 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         private MembershipDetailsEditForm(MembershipEditDTO dto, Set<String> membershipTypes, Set<String> membershipStatuses, WithMembershipDetailsCallback callback) {
             this.callback = callback;
 
-            binder.setBean(dto);
-            this.snapshot = createComparableSnapshot(binder.getBean());
-
             this.membershipTypeSelectField.setItems(membershipTypes);
             this.membershipTypeSelectField.setEmptySelectionAllowed(false);
 
             this.membershipStatusSelectField.setItems(membershipStatuses);
             this.membershipStatusSelectField.setEmptySelectionAllowed(false);
 
-
-            registerDirtyStateListeners();
-
-            if (dto != null && dto.equals(snapshot)) {
-                callback.withMembership(false);
-            }
-
             configureBinder();
+            loadMembershipDetails(dto);
             add(createFormLayout());
+        }
+
+        private void loadMembershipDetails(MembershipEditDTO dto) {
+            binder.readBean(dto);
+            snapshot = createComparableSnapshot(dto);
+            handleDataChange();
         }
 
         private void configureBinder() {
@@ -467,18 +531,15 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             binder.forField(expirationDateField).bind(MembershipEditDTO::getExpirationDate, MembershipEditDTO::setExpirationDate);
             binder.forField(renewalDateField).bind(MembershipEditDTO::getRenewalDate, MembershipEditDTO::setRenewalDate);
             binder.forField(cancellationDateField).bind(MembershipEditDTO::getCancellationDate, MembershipEditDTO::setCancellationDate);
-        }
 
-        private void registerDirtyStateListeners() {
-            membershipTypeSelectField.addValueChangeListener(_ -> handleDataChange());
-            membershipStatusSelectField.addValueChangeListener(_ -> handleDataChange());
-            expirationDateField.addValueChangeListener(_ -> handleDataChange());
-            renewalDateField.addValueChangeListener(_ -> handleDataChange());
-            cancellationDateField.addValueChangeListener(_ -> handleDataChange());
+            binder.addValueChangeListener(_ -> handleDataChange());
         }
 
         private void handleDataChange() {
-            callback.withMembership(binder.getBean() != null && !createComparableSnapshot(binder.getBean()).equals(snapshot));
+            callback.withMembership(getFormDataObject()
+                    .map(formData -> hasChanges(createComparableSnapshot(formData)))
+                    .orElse(false)
+            );
         }
 
         private FormLayout createFormLayout() {
@@ -502,24 +563,23 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             return membership.toBuilder().build();
         }
 
-        private void setFormDataObject(MembershipEditDTO dto) {
-            binder.setBean(dto);
-            this.snapshot = createComparableSnapshot(dto);
-        }
 
         private Optional<MembershipEditDTO> getFormDataObject() {
-            if (binder.getBean() == null || binder.getBean().equals(snapshot)) {
-                return Optional.empty();
-            }
-            if (!binder.validate().isOk()) {
-                throw new RuntimeException("Membership form data is invalid");
-            }
+            MembershipEditDTO formData = snapshot.toBuilder().build();
             try {
-                binder.writeBean(binder.getBean());
-                return Optional.of(binder.getBean());
+                binder.writeBean(formData);
+                return Optional.of(createComparableSnapshot(formData));
             } catch (ValidationException e) {
                 return Optional.empty();
             }
+        }
+
+        private boolean hasChanges(MembershipEditDTO membership) {
+            return !Objects.equals(membership.getMembershipType(), snapshot.getMembershipType())
+                    || !Objects.equals(membership.getMembershipStatus(), snapshot.getMembershipStatus())
+                    || !Objects.equals(membership.getExpirationDate(), snapshot.getExpirationDate())
+                    || !Objects.equals(membership.getRenewalDate(), snapshot.getRenewalDate())
+                    || !Objects.equals(membership.getCancellationDate(), snapshot.getCancellationDate());
         }
     }
 }

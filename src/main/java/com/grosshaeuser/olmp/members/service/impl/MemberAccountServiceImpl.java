@@ -8,6 +8,7 @@ import com.grosshaeuser.olmp.members.service.MemberAccountService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -53,8 +54,11 @@ public class MemberAccountServiceImpl implements MemberAccountService {
         }
         return memberAccountRepository.findById(memberAccountEditDTO.getId())
                 .map(account -> {
+                    validateEmailIsAvailableForUpdate(account, memberAccountEditDTO.getEmail());
                     account.setEmail(memberAccountEditDTO.getEmail());
-                    account.setPasswordHash(passwordEncoder.encode(memberAccountEditDTO.getNewPassword()));
+                    if (memberAccountEditDTO.getNewPassword() != null && !memberAccountEditDTO.getNewPassword().isBlank()) {
+                        account.setPasswordHash(passwordEncoder.encode(memberAccountEditDTO.getNewPassword()));
+                    }
                     account.setVerified(memberAccountEditDTO.isVerified());
                     account.setEnabled(memberAccountEditDTO.isEnabled());
                     account.setLocked(memberAccountEditDTO.isLocked());
@@ -78,6 +82,12 @@ public class MemberAccountServiceImpl implements MemberAccountService {
     private void checkPermission(String privilege, String errorMessage) {
         if (!authenticationContext.hasAuthority(privilege)) {
             throw new AccessDeniedException(errorMessage);
+        }
+    }
+
+    private void validateEmailIsAvailableForUpdate(MemberAccount existingAccount, String requestedEmail) {
+        if (!existingAccount.getEmail().equals(requestedEmail) && memberAccountRepository.existsByEmail((requestedEmail))) {
+            throw new DataIntegrityViolationException("Email already exists: " + requestedEmail);
         }
     }
 }
