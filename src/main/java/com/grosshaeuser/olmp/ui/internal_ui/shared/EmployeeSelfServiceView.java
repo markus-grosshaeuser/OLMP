@@ -2,6 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeSelfServiceEditComponent;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.notification.Notification;
@@ -15,8 +16,9 @@ import org.springframework.security.access.AccessDeniedException;
 public class EmployeeSelfServiceView extends VerticalLayout {
     private final EmployeeService employeeService;
 
-    public EmployeeSelfServiceView(EmployeeService employeeService) {
+    public EmployeeSelfServiceView(EmployeeService employeeService, PasswordProperties passwordProperties) {
         this.employeeService = employeeService;
+
 
         setSizeFull();
         setPadding(true);
@@ -28,7 +30,8 @@ public class EmployeeSelfServiceView extends VerticalLayout {
                 .map(employee -> new EmployeeSelfServiceEditComponent(
                         employee,
                         this::updateCurrentEmployee,
-                        this::handleException
+                        this::handleException,
+                        passwordProperties
                 ))
                 .ifPresentOrElse(
                         this::add,

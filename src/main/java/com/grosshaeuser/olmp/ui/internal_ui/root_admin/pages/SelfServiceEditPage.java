@@ -2,6 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.root_admin.pages;
 
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.root_admin.RootAdminLayout;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.EmployeeSelfServiceView;
 import com.vaadin.flow.router.PageTitle;
@@ -12,7 +13,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("My Profile")
 @RolesAllowed(SecurityConstants.Roles.ROOT_ADMIN)
 public class SelfServiceEditPage extends EmployeeSelfServiceView {
-    public SelfServiceEditPage(EmployeeService employeeService) {
-        super(employeeService);
+    public SelfServiceEditPage(EmployeeService employeeService, PasswordProperties passwordProperties) {
+        super(employeeService, passwordProperties);
     }
 }
