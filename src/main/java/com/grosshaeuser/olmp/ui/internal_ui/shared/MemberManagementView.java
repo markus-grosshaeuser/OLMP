@@ -6,6 +6,7 @@ import com.grosshaeuser.olmp.members.dto.MemberDTO;
 import com.grosshaeuser.olmp.members.service.MemberService;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.MemberCreateDialog;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.MemberEditComponent;
 import com.vaadin.flow.component.button.Button;
@@ -31,13 +32,16 @@ public class MemberManagementView extends VerticalLayout {
     
     private final MemberService memberService;
     private final MembershipService membershipService;
+
+    private final PasswordProperties passwordProperties;
     
     private final Grid<MemberDTO> memberGrid;
     private final TextField searchField;
     
-    public MemberManagementView(MemberService memberService, MembershipService membershipService) {
+    public MemberManagementView(MemberService memberService, MembershipService membershipService, PasswordProperties passwordProperties) {
         this.memberService = memberService;
         this.membershipService = membershipService;
+        this.passwordProperties = passwordProperties;
         this.memberGrid = getPreconfiguredGrid();
 
         this.searchField = getPreconfiguredSearchField();
@@ -74,7 +78,8 @@ public class MemberManagementView extends VerticalLayout {
                         new MemberCreateDialog(
                                 this::saveNewMember,
                                 this::handleException,
-                                membershipService.getMembershipPeriodsInMonths()
+                                membershipService.getMembershipPeriodsInMonths(),
+                                passwordProperties
                         ).open()
         );
         return button;
@@ -126,7 +131,8 @@ public class MemberManagementView extends VerticalLayout {
                         Arrays.stream(Membership.MembershipStatus.values()).map(Membership.MembershipStatus::name).collect(Collectors.toSet()),
                         this::updateMember,
                         this::deleteMember,
-                        this::handleException
+                        this::handleException,
+                        passwordProperties
                 ))
                 .orElse(null)
         );

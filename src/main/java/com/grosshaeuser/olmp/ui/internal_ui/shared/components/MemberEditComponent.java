@@ -4,6 +4,7 @@ import com.grosshaeuser.olmp.members.dto.MemberAccountEditDTO;
 import com.grosshaeuser.olmp.members.dto.MemberContactInformationEditDTO;
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -17,6 +18,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
@@ -67,7 +69,8 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             Set<String> membershipStatuses,
             UpdateCallback<MemberEditDTO> updateCallback,
             DeleteCallback<MemberEditDTO> deleteCallback,
-            ErrorCallback errorCallback
+            ErrorCallback errorCallback,
+            PasswordProperties passwordProperties
     ) {
         this.updateCallback = updateCallback;
         this.deleteCallback = deleteCallback;
@@ -79,7 +82,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         configureBinder();
         configureActions();
 
-        memberAccountEditForm = new MemberAccountEditForm(memberEditDTO.getAccount());
+        memberAccountEditForm = new MemberAccountEditForm(memberEditDTO.getAccount(), passwordProperties);
         memberContactInformationEditForm = new MemberContactInformationEditForm(memberEditDTO.getContact(), memberEditDTO::setWithContactInformation);
         membershipDetailsEditForm = new MembershipDetailsEditForm(memberEditDTO.getMembership(), membershipTypes, membershipStatuses, memberEditDTO::setWithMembershipDetails);
 
@@ -223,11 +226,9 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
     @Setter
     private static class MemberAccountEditForm extends Tab {
 
-        private static final int PASSWORD_MIN_LENGTH = 8;
-
         private TextField accountIdField = new TextField("Account ID");
         private TextField emailField = new TextField("Email");
-        private TextField newPasswordField = new TextField("New Password");
+        private PasswordField newPasswordField = new PasswordField("New Password");
         private Checkbox verifiedField = new Checkbox("Verified");
         private Checkbox enabledField = new Checkbox("Enabled");
         private Checkbox lockedField = new Checkbox("Locked");
@@ -238,12 +239,14 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         private TextField accountLastAccessedAtField = new TextField("Account Last Accessed At");
 
         private final BeanValidationBinder<MemberAccountEditDTO> binder = new BeanValidationBinder<>(MemberAccountEditDTO.class);
+        private final PasswordProperties passwordProperties;
         private MemberAccountEditDTO snapshot;
 
-        private MemberAccountEditForm(MemberAccountEditDTO dto) {
+        private MemberAccountEditForm(MemberAccountEditDTO dto, PasswordProperties passwordProperties) {
             binder.setBean(dto);
+            this.passwordProperties = passwordProperties;
             this.snapshot = createComparableSnapshot(binder.getBean());
-
+            configureFields();
             configureBinder();
             add(createFormLayout());
         }
@@ -266,13 +269,20 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             return layout;
         }
 
+        private void configureFields() {
+            newPasswordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
+            newPasswordField.setRevealButtonVisible(true);
+            newPasswordField.setWidthFull();
+            newPasswordField.setRequiredIndicatorVisible(true);
+        }
+
         private void configureBinder() {
             binder.forField(accountIdField).bindReadOnly(MemberAccountEditDTO::idAsString);
             binder.forField(emailField).bind(MemberAccountEditDTO::getEmail, MemberAccountEditDTO::setEmail);
             binder.forField(newPasswordField)
                     .withValidator(
-                            value -> value == null || value.isBlank() || value.length() >= PASSWORD_MIN_LENGTH,
-                            "Password must be at least " + PASSWORD_MIN_LENGTH + " characters long"
+                            value -> value == null || value.isBlank() || value.matches(passwordProperties.getRegExPattern()),
+                            passwordProperties.getPasswordRequirementDescription()
                     )
                     .bind(MemberAccountEditDTO::getNewPassword, MemberAccountEditDTO::setNewPassword);
             binder.forField(verifiedField).bind(MemberAccountEditDTO::isVerified, MemberAccountEditDTO::setVerified);

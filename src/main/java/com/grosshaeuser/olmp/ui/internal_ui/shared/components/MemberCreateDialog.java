@@ -2,6 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
 
 import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -28,10 +29,9 @@ import java.util.stream.Collectors;
 
 public class MemberCreateDialog extends Dialog implements Structurable, Delegatable {
 
-    private static final int PASSWORD_MIN_LENGTH = 8;
-
     private final CreateCallback<MemberRegistrationDTO> createCallback;
     private final ErrorCallback errorCallback;
+    private final PasswordProperties passwordProperties;
 
     private final BeanValidationBinder<MemberRegistrationDTO> binder = new BeanValidationBinder<>(MemberRegistrationDTO.class);
 
@@ -53,10 +53,12 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
     public MemberCreateDialog(
             CreateCallback<MemberRegistrationDTO> createCallback,
             ErrorCallback errorCallback,
-            HashMap<String, Integer> membershipPeriodsInMonths
+            HashMap<String, Integer> membershipPeriodsInMonths,
+            PasswordProperties passwordProperties
     ){
         this.createCallback = createCallback;
         this.errorCallback = errorCallback;
+        this.passwordProperties = passwordProperties;
 
         this.contactDetailsForm = new MemberContactDetailsForm(binder);
         this.membershipDetailsForm = new MembershipDetailsForm(binder, membershipPeriodsInMonths);
@@ -115,7 +117,7 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
     }
 
     private void configureFields() {
-        passwordField.setHelperText("Use at least " + PASSWORD_MIN_LENGTH + " characters.");
+        passwordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
         passwordField.setRevealButtonVisible(true);
         passwordField.setWidthFull();
         passwordField.setRequiredIndicatorVisible(true);
@@ -155,6 +157,8 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
                 .bind(MemberRegistrationDTO::getEmail, MemberRegistrationDTO::setEmail);
         binder.forField(passwordField)
                 .asRequired("Password is required")
+                .withValidator(value -> value.matches(passwordProperties.getRegExPattern()),
+                        passwordProperties.getPasswordRequirementDescription())
                 .bind(MemberRegistrationDTO::getPassword, MemberRegistrationDTO::setPassword);
         binder.forField(birthdateField)
                 .bind(MemberRegistrationDTO::getDateOfBirth, MemberRegistrationDTO::setDateOfBirth);
