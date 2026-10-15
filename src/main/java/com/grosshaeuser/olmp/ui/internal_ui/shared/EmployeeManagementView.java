@@ -9,21 +9,18 @@ import com.grosshaeuser.olmp.employees.service.RoleService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeCreateDialog;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeEditComponent;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.handler.UiExceptionHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.handler.UiNotificationHandler;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.util.HashSet;
 
@@ -33,14 +30,26 @@ public class EmployeeManagementView extends VerticalLayout {
     private final RoleService roleService;
     private final PasswordProperties passwordProperties;
 
+    private final UiExceptionHandler uiExceptionHandler;
+    private final UiNotificationHandler uiNotificationHandler;
+
     private final Grid<EmployeeDTO> employeeGrid;
     private final TextField searchField;
 
 
-    public EmployeeManagementView(EmployeeService employeeService, RoleService roleService, PasswordProperties passwordProperties) {
+    public EmployeeManagementView(
+            EmployeeService employeeService,
+            RoleService roleService,
+            PasswordProperties passwordProperties,
+            UiExceptionHandler uiExceptionHandler,
+            UiNotificationHandler uiNotificationHandler
+    ) {
         this.employeeService = employeeService;
         this.roleService = roleService;
         this.passwordProperties = passwordProperties;
+
+        this.uiExceptionHandler = uiExceptionHandler;
+        this.uiNotificationHandler = uiNotificationHandler;
 
         this.employeeGrid = getPreconfiguredGrid();
 
@@ -76,7 +85,7 @@ public class EmployeeManagementView extends VerticalLayout {
         button.addClickListener(
                 _ -> {
                     HashSet<String> roles = EmployeeMapper.mapRolesToRoleNames(roleService.getAssignableRoles());
-                    new EmployeeCreateDialog(roles, this::saveNewEmployee, this::handleException, passwordProperties).open();
+                    new EmployeeCreateDialog(roles, this::saveNewEmployee, uiExceptionHandler::handleException, passwordProperties).open();
                 }
         );
         return button;
@@ -135,7 +144,7 @@ public class EmployeeManagementView extends VerticalLayout {
                         EmployeeMapper.mapRolesToRoleNames(roleService.getAssignableRoles()),
                         this::updateEmployee,
                         this::deleteEmployee,
-                        this::handleException,
+                        uiExceptionHandler::handleException,
                         passwordProperties)
                 )
                 .orElse(null)
@@ -144,6 +153,7 @@ public class EmployeeManagementView extends VerticalLayout {
 
     private EmployeeEditDTO updateEmployee(EmployeeEditDTO dto) {
         return employeeService.updateEmployee(dto).map(result -> {
+            uiNotificationHandler.showSuccessNotification("Employee updated successfully");
             employeeGrid.getDataProvider().refreshAll();
             return result;
         }).orElse(null);
@@ -156,6 +166,7 @@ public class EmployeeManagementView extends VerticalLayout {
 
     private void saveNewEmployee(EmployeeRegistrationDTO employeeRegistrationDTO) {
         employeeService.createEmployee(employeeRegistrationDTO).ifPresent(employee -> {
+            uiNotificationHandler.showSuccessNotification("Employee created successfully");
             searchField.clear();
             employeeGrid.getDataProvider().refreshAll();
             employeeGrid.sort(GridSortOrder.desc(employeeGrid.getColumnByKey("createdAt")).build());
@@ -164,25 +175,4 @@ public class EmployeeManagementView extends VerticalLayout {
         });
     }
 
-
-    private void handleException(RuntimeException e) {
-        switch (e) {
-            case OptimisticLockingFailureException _ -> {
-                var notification = new Notification("Someone has edited the same Employee. Please refresh and try again.");
-                notification.setPosition(Notification.Position.MIDDLE);
-                notification.addThemeVariants(NotificationVariant.WARNING);
-                notification.setDuration(3000);
-                notification.open();
-            }
-            case AccessDeniedException _, IllegalArgumentException _, DataIntegrityViolationException _ -> {
-                var notification = new Notification(e.getMessage());
-                notification.setPosition(Notification.Position.MIDDLE);
-                notification.addThemeVariants(NotificationVariant.ERROR);
-                notification.setDuration(4000);
-                notification.open();
-            }
-            case null -> {}
-            default -> throw e;
-        }
-    }
 }

@@ -18,6 +18,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -76,15 +77,19 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         configureBinder();
         configureActions();
 
-        this.snapshot = createComparableSnapshot(employeeEditDTO);
-        binder.setBean(employeeEditDTO);
-        registerDirtyStateListeners();
+        loadEmployee(employeeEditDTO);
 
         getContent().add(
                 createComponentHeader("Employee details", "Review profile information, account state and assigned roles."),
                 createFormElementBase(),
                 createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{deleteButton})
         );
+    }
+
+    private void loadEmployee(EmployeeEditDTO employeeEditDTO) {
+        snapshot = createComparableSnapshot(employeeEditDTO);
+        binder.readBean(employeeEditDTO);
+        handleDataChange();
     }
 
     private void configureRootLayout() {
@@ -141,7 +146,6 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         newPasswordField.setPlaceholder("Leave empty to keep current password");
         newPasswordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
         newPasswordField.setRevealButtonVisible(false);
-        newPasswordField.setWidthFull();
 
         rolesCheckBoxGroup.setLabel("Roles");
         rolesCheckBoxGroup.setItems(assignableRoles);
@@ -183,25 +187,15 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         binder.forField(accountCreatedAtField).bind(EmployeeEditDTO::getCreatedAt, null);
         binder.forField(accountUpdatedAtField).bind(EmployeeEditDTO::getUpdatedAt, null);
         binder.forField(accountLastAccessedField).bind(EmployeeEditDTO::getAccountLastAccessed, null);
-
         binder.forField(rolesCheckBoxGroup).bind(EmployeeEditDTO::getRoles, EmployeeEditDTO::setRoles);
-    }
 
-    private void registerDirtyStateListeners() {
-        firstNameField.addValueChangeListener(_ -> handleDataChange());
-        lastNameField.addValueChangeListener(_ -> handleDataChange());
-        usernameField.addValueChangeListener(_ -> handleDataChange());
-        emailField.addValueChangeListener(_ -> handleDataChange());
-        newPasswordField.addValueChangeListener(_ -> handleDataChange());
-
-        enabledCheckBox.addValueChangeListener(_ -> handleDataChange());
-        lockedCheckBox.addValueChangeListener(_ -> handleDataChange());
-        rolesCheckBoxGroup.addValueChangeListener(_ -> handleDataChange());
+        binder.addValueChangeListener(_ -> handleDataChange());
     }
 
     private void handleDataChange() {
-        saveButton.setEnabled(binder.getBean() != null && !createComparableSnapshot(binder.getBean()).equals(snapshot));
-    }
+        saveButton.setEnabled(getFormDataObject()
+                .map(formData -> hasChanges(createComparableSnapshot(formData)))
+                .orElse(false));    }
 
     private void configureActions() {
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -236,16 +230,11 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
     }
 
     public Optional<EmployeeEditDTO> getFormDataObject() {
-        if (binder.getBean() == null) {
-            throw new IllegalStateException("No user data object set");
-        }
-        if (!binder.validate().isOk()) {
-            return Optional.empty();
-        }
+        EmployeeEditDTO formData = snapshot.toBuilder().build();
 
         try {
-            binder.writeBean(binder.getBean());
-            return Optional.of(binder.getBean());
+            binder.writeBean(formData);
+            return Optional.of(createComparableSnapshot(formData));
         } catch (ValidationException e) {
             return Optional.empty();
         }
@@ -255,10 +244,8 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         getFormDataObject().ifPresent(user -> {
             try {
                 setActionsEnabled(false);
-                EmployeeEditDTO savedUser = updateCallback.update(user);
-                binder.setBean(savedUser);
-                this.snapshot = savedUser;
-                handleDataChange();
+                EmployeeEditDTO savedEmployee = updateCallback.update(user);
+                loadEmployee(savedEmployee);
             } catch (RuntimeException e) {
                 errorCallback.handleException(e);
             } finally {
@@ -290,5 +277,20 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         } catch (RuntimeException e) {
             errorCallback.handleException(e);
         }
+    }
+
+    private boolean hasChanges(EmployeeEditDTO employee) {
+        return !Objects.equals(employee.getUsername(), snapshot.getUsername())
+                || !Objects.equals(employee.getFirstName(), snapshot.getFirstName())
+                || !Objects.equals(employee.getLastName(), snapshot.getLastName())
+                || !Objects.equals(employee.getEmail(), snapshot.getEmail())
+                || !Objects.equals(employee.isLocked(), snapshot.isLocked())
+                || !Objects.equals(employee.isEnabled(), snapshot.isEnabled())
+                || !Objects.equals(employee.getRoles(), snapshot.getRoles())
+                || !Objects.equals(normalizePassword(employee.getNewPassword()), normalizePassword(snapshot.getNewPassword()));
+    }
+
+    private String normalizePassword(String password) {
+        return password == null || password.trim().isEmpty() ? null : password.trim();
     }
 }
