@@ -6,6 +6,7 @@ import com.grosshaeuser.olmp.members.entity.MemberAccount;
 import com.grosshaeuser.olmp.members.repository.MemberAccountRepository;
 import com.grosshaeuser.olmp.members.service.MemberAccountService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.vaadin.flow.spring.security.AuthenticationContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -23,6 +24,7 @@ import java.util.Optional;
 public class MemberAccountServiceImpl implements MemberAccountService {
 
     private final MemberAccountRepository memberAccountRepository;
+    private final PasswordProperties passwordProperties;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationContext authenticationContext;
 
@@ -30,6 +32,8 @@ public class MemberAccountServiceImpl implements MemberAccountService {
     @Transactional
     public Optional<MemberAccount> createMemberAccount(MemberAccountCreateDTO dto) {
         checkPermission(SecurityConstants.Privileges.CREATE_MEMBER_ACCOUNT, "You have no permission to create a member account.");
+        validateEmailIsAvailable(dto.getEmail());
+        validatePassword(dto.getPassword());
         MemberAccount account = MemberAccount.builder()
                 .member(dto.getMember())
                 .email(dto.getEmail())
@@ -85,9 +89,21 @@ public class MemberAccountServiceImpl implements MemberAccountService {
         }
     }
 
+    private void validateEmailIsAvailable(String requestedEmail) {
+        if (memberAccountRepository.existsByEmail((requestedEmail))) {
+            throw new DataIntegrityViolationException("Email already exists: " + requestedEmail);
+        }
+    }
+
     private void validateEmailIsAvailableForUpdate(MemberAccount existingAccount, String requestedEmail) {
         if (!existingAccount.getEmail().equals(requestedEmail) && memberAccountRepository.existsByEmail((requestedEmail))) {
             throw new DataIntegrityViolationException("Email already exists: " + requestedEmail);
+        }
+    }
+
+    private void validatePassword(String password) {
+        if (!password.matches(passwordProperties.getRegExPattern())) {
+            throw new IllegalArgumentException(passwordProperties.getPasswordRequirementDescription());
         }
     }
 }

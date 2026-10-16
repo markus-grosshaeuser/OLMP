@@ -36,14 +36,15 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Page<MemberDTO> getMembers(String searchTerm, Pageable pageable) {
-        checkPermission(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT, "You have no permission to read memberships.");
+        checkPermission(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT, "You have no permission to read members.");
+        searchTerm = searchTerm == null ? "" : searchTerm.trim();
         return memberRepository.search(searchTerm, pageable).map(MemberMapper::mapMemberToMemberDTO);
     }
 
     @Override
     @Transactional
     public Optional<MemberDTO> createMember(MemberRegistrationDTO dto) {
-        checkPermission(SecurityConstants.Privileges.CREATE_MEMBER_ACCOUNT, "You have no permission to create a member account.");
+        checkPermission(SecurityConstants.Privileges.CREATE_MEMBER_ACCOUNT, "You have no permission to create a member.");
         Member persistedMember = memberRepository.save(MemberMapper.createMemberFromMemberRegistrationData(dto));
         memberAccountService.createMemberAccount(MemberMapper.createAccountDtoFromMemberRegistrationData(dto, persistedMember));
         if (dto.isWithContactDetails()) {
@@ -57,7 +58,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Optional<MemberEditDTO> getDetailedMember(Long memberId) {
-        checkPermission(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT, "You have no permission to read memberships.");
+        checkPermission(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT, "You have no permission to read members.");
         return memberRepository.findById(memberId).flatMap(member -> {
             MemberAccount account = memberAccountService.findByMemberId(member.getId()).orElse(new MemberAccount());
             MemberContactInformation contact = memberContactInformationService.findByMemberId(member.getId()).orElse(new MemberContactInformation());
@@ -70,7 +71,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public Optional<MemberEditDTO> updateMember(MemberEditDTO dto) {
-        checkPermission(SecurityConstants.Privileges.UPDATE_MEMBER_ACCOUNT, "You have no permission to update memberships.");
+        checkPermission(SecurityConstants.Privileges.UPDATE_MEMBER_ACCOUNT, "You have no permission to update members.");
         return memberRepository.findById(dto.getId())
                 .map(member -> {
                     member.setFirstName(dto.getFirstName());
@@ -99,7 +100,7 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public void deleteMember(Long memberId) {
-        checkPermission(SecurityConstants.Privileges.DELETE_MEMBER_ACCOUNT, "You have no permission to delete memberships.");
+        checkPermission(SecurityConstants.Privileges.DELETE_MEMBER_ACCOUNT, "You have no permission to delete members.");
         memberRepository.deleteById(memberId);
     }
 
