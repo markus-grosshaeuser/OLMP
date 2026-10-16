@@ -62,7 +62,7 @@ public class EmployeeMapper {
         );
     }
 
-    public static EmployeeAccountEditDTO createAccountEditDtoFromEmployeeUpdateData(EmployeeEditDTO dto, Set<Role> roles) {
+    public static EmployeeAccountEditDTO createAccountEditDtoFromEmployeeUpdateData(EmployeeEditDTO dto) {
         return new EmployeeAccountEditDTO(
                 dto.getAccountId(),
                 dto.getUsername(),
@@ -70,8 +70,7 @@ public class EmployeeMapper {
                 dto.isEnabled(),
                 dto.getFailedLoginAttempts(),
                 dto.getLockoutUntil(),
-                dto.isLocked(),
-                roles
+                dto.isLocked()
         );
     }
 

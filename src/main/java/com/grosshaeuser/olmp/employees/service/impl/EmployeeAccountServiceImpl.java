@@ -5,6 +5,7 @@ import com.grosshaeuser.olmp.employees.dto.EmployeeAccountEditDTO;
 import com.grosshaeuser.olmp.employees.entity.EmployeeAccount;
 import com.grosshaeuser.olmp.employees.repository.EmployeeAccountRepository;
 import com.grosshaeuser.olmp.employees.service.EmployeeAccountService;
+import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +19,8 @@ public class EmployeeAccountServiceImpl implements EmployeeAccountService {
 
     private final EmployeeAccountRepository employeeAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordProperties passwordProperties;
+
 
     @Override
     public Optional<EmployeeAccount> findById(Long employeeId) {
@@ -26,11 +29,13 @@ public class EmployeeAccountServiceImpl implements EmployeeAccountService {
 
     @Override
     public Optional<EmployeeAccount> createEmployeeAccount(EmployeeAccountCreateDTO dto) {
+        validatePassword(dto.getPassword());
         validateUsernameIsAvailable(dto.getUsername());
         employeeAccountRepository.save(EmployeeAccount.builder()
                 .employee(dto.getEmployee())
                 .username(dto.getUsername())
                 .passwordHash(passwordEncoder.encode(dto.getPassword()))
+                .enabled(dto.isEnabled())
                 .build());
         return Optional.empty();
     }
@@ -43,6 +48,7 @@ public class EmployeeAccountServiceImpl implements EmployeeAccountService {
 
         existingAccount.setUsername(dto.getUsername());
         if (dto.getNewPassword() != null && !dto.getNewPassword().isBlank()) {
+            validatePassword(dto.getNewPassword());
             existingAccount.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
         }
         existingAccount.setEnabled(dto.isEnabled());
@@ -65,6 +71,12 @@ public class EmployeeAccountServiceImpl implements EmployeeAccountService {
     private void validateUsernameIsAvailableForUpdate(EmployeeAccount existingAccount, String requestedUsername) {
         if (!existingAccount.getUsername().equals(requestedUsername) && employeeAccountRepository.existsByUsername(requestedUsername)) {
             throw new DataIntegrityViolationException("Username already exists: " + requestedUsername);
+        }
+    }
+
+    private void validatePassword(String password) {
+        if (!password.matches(passwordProperties.getRegExPattern())) {
+            throw new IllegalArgumentException(passwordProperties.getPasswordRequirementDescription());
         }
     }
 }

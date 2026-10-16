@@ -90,7 +90,7 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         Employee updatedEmployee = employeeRepository.save(existingEmployee);
 
-        EmployeeAccount updatedAccount = employeeAccountService.updateEmployeeAccount(EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(dto, roles))
+        EmployeeAccount updatedAccount = employeeAccountService.updateEmployeeAccount(EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(dto))
                 .orElseThrow(() -> new RuntimeException("Account Update failed."));
 
         return Optional.of(EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(updatedEmployee, updatedAccount));
@@ -156,10 +156,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
 
         EmployeeAccount updatedAccount = employeeAccountService.updateEmployeeAccount(
-                EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(
-                        sanitizedDto,
-                        currentEmployee.getRoles()
-                )
+                EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(sanitizedDto)
         ).orElseThrow(() -> new RuntimeException("Account update failed."));
 
         return Optional.of(EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(
