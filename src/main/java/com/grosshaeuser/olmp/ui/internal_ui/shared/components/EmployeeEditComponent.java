@@ -256,19 +256,16 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
     }
 
     private void confirmDelete() {
-        EmployeeEditDTO user = binder.getBean();
-        if (user == null) {
-            throw new IllegalStateException("No user data object set");
-        }
-
-        ConfirmDialog dialog = new ConfirmDialog();
-        dialog.setHeader("Delete user account?");
-        dialog.setText("Are you sure you want to delete the account \"" + user.getUsername() + "\"? This action cannot be undone.");
-        dialog.setCancelable(true);
-        dialog.setConfirmText("Delete");
-        dialog.setConfirmButtonTheme("error primary");
-        dialog.addConfirmListener(_ -> delete(user));
-        dialog.open();
+        getFormDataObject().ifPresent(user -> {
+            ConfirmDialog dialog = new ConfirmDialog();
+            dialog.setHeader("Delete user account?");
+            dialog.setText("Are you sure you want to delete the account \"" + user.getUsername() + "\"? This action cannot be undone.");
+            dialog.setCancelable(true);
+            dialog.setConfirmText("Delete");
+            dialog.setConfirmButtonTheme("error primary");
+            dialog.addConfirmListener(_ -> delete(user));
+            dialog.open();
+        });
     }
 
     private void delete(EmployeeEditDTO user) {
