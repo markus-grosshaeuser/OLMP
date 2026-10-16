@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -36,28 +37,26 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Page<EmployeeDTO> getEmployees(String searchTerm, Pageable pageable) {
         Set<String> accessibleRoles = getReadableRoles();
-        return employeeRepository.searchWithRolesIn(searchTerm, accessibleRoles, pageable).map(EmployeeMapper::mapEmplyeeToEmployeeDto);
+        return employeeRepository.searchWithRolesIn(searchTerm, accessibleRoles, pageable).map(EmployeeMapper::mapEmployeeToEmployeeDto);
     }
 
     @Override
     @Transactional
     public Optional<EmployeeDTO> createEmployee(EmployeeRegistrationDTO dto) {
+        validateCreatePermission(dto.getRoles());
         validateAssignableRoles(dto.getRoles());
         validateEmailIsAvailable(dto.getEmail());
 
         Set<Role> roles = new HashSet<>(roleRepository.findAllByNameIn(dto.getRoles()));
 
         if (roles.size() != dto.getRoles().size()) {
-            Set<String> foundRoleNames = roles.stream().map(Role::getName).collect(Collectors.toSet());
-            Set<String> missingRoles = new HashSet<>(dto.getRoles());
-            missingRoles.removeAll(foundRoleNames);
-            throw new IllegalArgumentException("The following roles were not found: " + String.join(", ", missingRoles));
+            throw new IllegalArgumentException("Attempted to create an employee with non-existent roles");
         }
 
         Employee persistedEmployee = employeeRepository.save(EmployeeMapper.createEmployeeFromEmployeeRegistrationData(dto, roles));
         employeeAccountService.createEmployeeAccount(EmployeeMapper.createEmployeeAccountDTOFromEmployeeRegistrationData(dto, persistedEmployee));
 
-        return Optional.of(EmployeeMapper.mapEmplyeeToEmployeeDto(persistedEmployee));
+        return Optional.of(EmployeeMapper.mapEmployeeToEmployeeDto(persistedEmployee));
     }
 
     @Override
@@ -75,14 +74,19 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Transactional
     @Override
     public Optional<EmployeeEditDTO> updateEmployee(EmployeeEditDTO dto) {
-        Set<String> editableRoles = getEditableRoles();
+        validateAssignableRoles(dto.getRoles());
+
         Set<Role> roles = new HashSet<>(roleRepository.findAllByNameIn(dto.getRoles()));
-        validateRolePermission(editableRoles, roles);
+        if (roles.size() != dto.getRoles().size()) {
+            throw new IllegalArgumentException("Attempted to create an employee with non-existent roles");
+        }
 
         Employee existingEmployee = employeeRepository.findById(dto.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + dto.getId()));
 
+        validateUpdatePermission(existingEmployee.getRoles().stream().map(Role::getName).collect(Collectors.toSet()));
         validateEmailIsAvailableForUpdate(existingEmployee, dto.getEmail());
+
         existingEmployee.setFirstName(dto.getFirstName());
         existingEmployee.setLastName(dto.getLastName());
         existingEmployee.setEmail(dto.getEmail());
@@ -98,19 +102,14 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public void deleteEmployee(Long id) {
-        employeeRepository.deleteById(id);
-    }
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found: " + id));
 
-    private Set<String> getReadableRoles() {
-        Set<String> readableRoles = new HashSet<>();
+        validateDeletePermission(employee.getRoles().stream()
+                .map(Role::getName)
+                .collect(Collectors.toSet()));
 
-        if (authenticationContext.hasAuthority(SecurityConstants.Privileges.READ_ADMIN_ACCOUNT)) {
-            readableRoles.add(SecurityConstants.Roles.ADMIN);
-        }
-        if (authenticationContext.hasAuthority(SecurityConstants.Privileges.READ_STAFF_ACCOUNT)) {
-            readableRoles.add(SecurityConstants.Roles.STAFF);
-        }
-        return readableRoles;
+        employeeRepository.delete(employee);
     }
 
     @Override
@@ -170,31 +169,64 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .flatMap(userDetails -> employeeAccountService.findByUsername(userDetails.getUsername()));
     }
 
-    private Set<String> getEditableRoles() {
-        Set<String> editableRoles = new HashSet<>();
-
-        if (authenticationContext.hasAuthority(SecurityConstants.Privileges.UPDATE_ADMIN_ACCOUNT)) {
-            editableRoles.add(SecurityConstants.Roles.ADMIN);
-        }
-        if (authenticationContext.hasAuthority(SecurityConstants.Privileges.UPDATE_STAFF_ACCOUNT)) {
-            editableRoles.add(SecurityConstants.Roles.STAFF);
-        }
-        return editableRoles;
-    }
-
     private void validateRolePermission(Set<String> readableRoles, Set<Role> roles) {
         if (!readableRoles.containsAll(roles.stream().map(Role::getName).collect(Collectors.toSet()))) {
             throw new AccessDeniedException("You have no permission to manage this account");
         }
     }
 
+    private Set<String> getReadableRoles() {
+        Set<String> readableRoles = new HashSet<>();
+
+        if (authenticationContext.hasAuthority(SecurityConstants.Privileges.READ_ADMIN_ACCOUNT)) {
+            readableRoles.add(SecurityConstants.Roles.ADMIN);
+        }
+        if (authenticationContext.hasAuthority(SecurityConstants.Privileges.READ_STAFF_ACCOUNT)) {
+            readableRoles.add(SecurityConstants.Roles.STAFF);
+        }
+        if (readableRoles.isEmpty()) {
+            throw new AccessDeniedException("You have no permission to read employee accounts");
+        }
+        return readableRoles;
+    }
+
     private void validateAssignableRoles(Set<String> requestedRoles) {
+        if (requestedRoles.contains(SecurityConstants.Roles.ADMIN) && !authenticationContext.hasAuthority(SecurityConstants.Privileges.ASSIGN_ADMIN_ROLE)) {
+            throw new AccessDeniedException("You have no permission to manage an administrative account");
+        }
+
+        if (requestedRoles.contains(SecurityConstants.Roles.STAFF) && !authenticationContext.hasAuthority(SecurityConstants.Privileges.ASSIGN_STAFF_ROLE)) {
+            throw new AccessDeniedException("You have no permission to manage a staff account");
+        }
+    }
+
+    private void validateCreatePermission(Set<String> requestedRoles) {
         if (requestedRoles.contains(SecurityConstants.Roles.ADMIN) && !authenticationContext.hasAuthority(SecurityConstants.Privileges.CREATE_ADMIN_ACCOUNT)) {
-            throw new AccessDeniedException("You have no permission to create an account with this role");
+            throw new AccessDeniedException("You have no permission to create an administrative account");
         }
 
         if (requestedRoles.contains(SecurityConstants.Roles.STAFF) && !authenticationContext.hasAuthority(SecurityConstants.Privileges.CREATE_STAFF_ACCOUNT)) {
-            throw new AccessDeniedException("You have no permission to create an account with this role");
+            throw new AccessDeniedException("You have no permission to create a staff account");
+        }
+    }
+
+    private void validateUpdatePermission(Set<String> requestedRoles) {
+        if (requestedRoles.contains(SecurityConstants.Roles.ADMIN) && !authenticationContext.hasAuthority(SecurityConstants.Privileges.UPDATE_ADMIN_ACCOUNT)) {
+            throw new AccessDeniedException("You have no permission to update an administrative account");
+        }
+
+        if (requestedRoles.contains(SecurityConstants.Roles.STAFF) && !authenticationContext.hasAuthority(SecurityConstants.Privileges.UPDATE_STAFF_ACCOUNT)) {
+            throw new AccessDeniedException("You have no permission to update a staff account");
+        }
+    }
+
+    private void validateDeletePermission(Set<String> requestedRoles) {
+        if (requestedRoles.contains(SecurityConstants.Roles.ADMIN) && !authenticationContext.hasAuthority(SecurityConstants.Privileges.DELETE_ADMIN_ACCOUNT)) {
+            throw new AccessDeniedException("You have no permission to delete an administrative account");
+        }
+
+        if (requestedRoles.contains(SecurityConstants.Roles.STAFF) && !authenticationContext.hasAuthority(SecurityConstants.Privileges.DELETE_STAFF_ACCOUNT)) {
+            throw new AccessDeniedException("You have no permission to delete a staff account");
         }
     }
 
@@ -205,7 +237,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     private void validateEmailIsAvailableForUpdate(Employee existingUser, String requestedEmail) {
-        if (existingUser.getEmail() != null && !existingUser.getEmail().equals(requestedEmail) && employeeRepository.existsByEmail(requestedEmail)) {
+        if (!Objects.equals(existingUser.getEmail(), requestedEmail) && employeeRepository.existsByEmail(requestedEmail)) {
             throw new DataIntegrityViolationException("Email already exists: " + requestedEmail);
         }
     }

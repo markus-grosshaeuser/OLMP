@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class EmployeeMapper {
-    public static EmployeeDTO mapEmplyeeToEmployeeDto(Employee employee) {
+    public static EmployeeDTO mapEmployeeToEmployeeDto(Employee employee) {
         return new EmployeeDTO(
                 employee.getId(),
                 employee.getEmail(),
