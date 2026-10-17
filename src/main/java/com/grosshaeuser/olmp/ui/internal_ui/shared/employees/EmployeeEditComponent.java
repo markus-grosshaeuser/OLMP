@@ -1,7 +1,9 @@
-package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
+package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;

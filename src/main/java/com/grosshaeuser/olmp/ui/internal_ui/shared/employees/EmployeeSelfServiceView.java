@@ -1,11 +1,10 @@
-package com.grosshaeuser.olmp.ui.internal_ui.shared;
+package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.components.EmployeeSelfServiceEditComponent;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.handler.UiExceptionHandler;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.handler.UiNotificationHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 

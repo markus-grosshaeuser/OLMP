@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.ui.internal_ui.shared.handler;
+package com.grosshaeuser.olmp.ui.internal_ui.shared;
 
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;

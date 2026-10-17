@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.ui.internal_ui.shared.components;
+package com.grosshaeuser.olmp.ui.internal_ui.shared;
 
 public interface Delegatable {
 

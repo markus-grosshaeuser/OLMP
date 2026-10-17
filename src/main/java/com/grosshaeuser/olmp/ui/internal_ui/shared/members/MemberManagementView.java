@@ -1,4 +1,4 @@
-package com.grosshaeuser.olmp.ui.internal_ui.shared;
+package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
 import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
@@ -7,10 +7,8 @@ import com.grosshaeuser.olmp.members.service.MemberService;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.components.MemberCreateDialog;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.components.MemberEditComponent;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.handler.UiExceptionHandler;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.handler.UiNotificationHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
