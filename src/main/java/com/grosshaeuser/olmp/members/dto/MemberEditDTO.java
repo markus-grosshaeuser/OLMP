@@ -5,6 +5,7 @@ import jakarta.annotation.Nullable;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -17,8 +18,8 @@ public class MemberEditDTO {
     private String firstName;
     private String lastName;
     private LocalDate birthDate;
-    private String createdAt;
-    private String updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     private MemberAccountEditDTO account;
 
@@ -30,7 +31,4 @@ public class MemberEditDTO {
     @Nullable
     private MembershipEditDTO membership;
 
-    public String idAsString() {
-        return id.toString();
-    }
 }

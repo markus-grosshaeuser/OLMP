@@ -3,6 +3,7 @@ package com.grosshaeuser.olmp.shared;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 public abstract class AbstractMapper {
@@ -43,4 +44,10 @@ public abstract class AbstractMapper {
         return offsetDateTime.toLocalDateTime();
     }
 
+    public static OffsetDateTime saveLocalDateTimeToOffsetDateTime(LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return null;
+        }
+        return OffsetDateTime.of(localDateTime, ZoneOffset.UTC);
+    }
 }

@@ -4,18 +4,17 @@ import com.grosshaeuser.olmp.members.dto.*;
 import com.grosshaeuser.olmp.members.entity.Member;
 import com.grosshaeuser.olmp.members.entity.MemberAccount;
 import com.grosshaeuser.olmp.members.entity.MemberContactInformation;
+import com.grosshaeuser.olmp.shared.AbstractMapper;
 
-import java.time.format.DateTimeFormatter;
-
-public class MemberMapper {
+public class MemberMapper extends AbstractMapper {
     public static MemberDTO mapMemberToMemberDTO(Member member) {
         return new MemberDTO(
                 member.getId(),
                 member.getLastName(),
                 member.getFirstName(),
-                member.getDateOfBirth() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd").format(member.getDateOfBirth()) : "",
-                member.getCreatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getCreatedAt()) : "",
-                member.getUpdatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getUpdatedAt()) : ""
+                member.getDateOfBirth(),
+                saveOffsetDateTimeToLocalDateTime(member.getCreatedAt()),
+                saveOffsetDateTimeToLocalDateTime(member.getUpdatedAt())
         );
     }
 
@@ -55,8 +54,8 @@ public class MemberMapper {
                 .firstName(member.getFirstName())
                 .lastName(member.getLastName())
                 .birthDate(member.getDateOfBirth())
-                .createdAt(member.getCreatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getCreatedAt()) : "")
-                .updatedAt(member.getUpdatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(member.getUpdatedAt()) : "")
+                .createdAt(saveOffsetDateTimeToLocalDateTime(member.getCreatedAt()))
+                .updatedAt(saveOffsetDateTimeToLocalDateTime(member.getUpdatedAt()))
 
                 .account(mapMemberAccountToEditDto(account))
                 .contact(mapMemberContactInformationToEditDto(contactInformation))
@@ -71,11 +70,11 @@ public class MemberMapper {
                     .verified(account.isVerified())
                     .enabled(account.isEnabled())
                     .failedLoginAttempts(account.getFailedLoginAttempts())
-                    .lockoutUntil(account.getLockoutUntil() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getLockoutUntil()) : "")
+                    .lockoutUntil(saveOffsetDateTimeToLocalDateTime(account.getLockoutUntil()))
                     .locked(account.isLocked())
-                    .accountCreatedAt(account.getCreatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getCreatedAt()) : "")
-                    .accountUpdatedAt(account.getUpdatedAt() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getUpdatedAt()) : "")
-                    .accountLastAccessedAt(account.getLastAccess() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getLastAccess()) : "")
+                    .accountCreatedAt(saveOffsetDateTimeToLocalDateTime(account.getCreatedAt()))
+                    .accountUpdatedAt(saveOffsetDateTimeToLocalDateTime(account.getUpdatedAt()))
+                    .accountLastAccessedAt(saveOffsetDateTimeToLocalDateTime(account.getLastAccess()))
                     .build();
         }
         return new MemberAccountEditDTO();

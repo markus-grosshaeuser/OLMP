@@ -3,6 +3,7 @@ package com.grosshaeuser.olmp.members.service.impl;
 import com.grosshaeuser.olmp.members.dto.MemberAccountCreateDTO;
 import com.grosshaeuser.olmp.members.dto.MemberAccountEditDTO;
 import com.grosshaeuser.olmp.members.entity.MemberAccount;
+import com.grosshaeuser.olmp.members.mapper.MemberMapper;
 import com.grosshaeuser.olmp.members.repository.MemberAccountRepository;
 import com.grosshaeuser.olmp.members.service.MemberAccountService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
@@ -15,8 +16,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
 @Service
@@ -67,20 +66,9 @@ public class MemberAccountServiceImpl implements MemberAccountService {
                     account.setEnabled(memberAccountEditDTO.isEnabled());
                     account.setLocked(memberAccountEditDTO.isLocked());
                     account.setFailedLoginAttempts(memberAccountEditDTO.getFailedLoginAttempts());
-                    account.setLockoutUntil(parseDateTimeString(memberAccountEditDTO.getLockoutUntil()));
+                    account.setLockoutUntil(MemberMapper.saveLocalDateTimeToOffsetDateTime(memberAccountEditDTO.getLockoutUntil()));
                     return memberAccountRepository.save(account);
                 });
-    }
-
-    private OffsetDateTime parseDateTimeString(String dateTimeString) {
-        if (dateTimeString == null || dateTimeString.isBlank()) {
-            return null;
-        }
-        try {
-            return OffsetDateTime.parse(dateTimeString);
-        } catch (DateTimeParseException e) {
-            return null;
-        }
     }
 
     private void checkPermission(String privilege, String errorMessage) {

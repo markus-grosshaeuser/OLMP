@@ -2,6 +2,8 @@ package com.grosshaeuser.olmp.members.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -17,17 +19,10 @@ public class MemberAccountEditDTO {
     private boolean verified;
     private boolean enabled;
     private int failedLoginAttempts;
-    private String lockoutUntil;
+    private LocalDateTime lockoutUntil;
     private boolean locked;
-    private String accountCreatedAt;
-    private String accountUpdatedAt;
-    private String accountLastAccessedAt;
+    private LocalDateTime accountCreatedAt;
+    private LocalDateTime accountUpdatedAt;
+    private LocalDateTime accountLastAccessedAt;
 
-    public String idAsString() {
-        return id.toString();
-    }
-
-    public String failedLoginAttemptsAsString() {
-        return Integer.toString(failedLoginAttempts);
-    }
 }

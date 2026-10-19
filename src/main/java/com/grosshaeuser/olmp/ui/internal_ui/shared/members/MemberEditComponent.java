@@ -12,6 +12,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -19,6 +20,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.TabSheet;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
@@ -66,8 +68,8 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
     private final TextField firstNameField = new TextField("First Name");
     private final TextField lastNameField = new TextField("Last Name");
     private final DatePicker birthDateField = new DatePicker("Birth Date");
-    private final TextField createdAtField = new TextField("Created At");
-    private final TextField updatedAtField = new TextField("Updated At");
+    private final DateTimePicker createdAtField = new DateTimePicker("Created At");
+    private final DateTimePicker updatedAtField = new DateTimePicker("Updated At");
 
     private MemberEditDTO snapshot;
 
@@ -188,7 +190,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
     }
 
     private void configureBinder() {
-        primaryBinder.forField(userIdField).bindReadOnly(MemberEditDTO::idAsString);
+        primaryBinder.forField(userIdField).bindReadOnly(dto -> String.valueOf(dto.getId()));
         primaryBinder.forField(firstNameField).bind(MemberEditDTO::getFirstName, MemberEditDTO::setFirstName);
         primaryBinder.forField(lastNameField).bind(MemberEditDTO::getLastName, MemberEditDTO::setLastName);
         primaryBinder.forField(birthDateField).bind(MemberEditDTO::getBirthDate, MemberEditDTO::setBirthDate);
@@ -265,11 +267,11 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         private Checkbox verifiedField = new Checkbox("Verified");
         private Checkbox enabledField = new Checkbox("Enabled");
         private Checkbox lockedField = new Checkbox("Locked");
-        private TextField failedLoginAttemptsField = new TextField("Failed Login Attempts");
-        private TextField lockoutUntilField = new TextField("Lockout Until");
-        private TextField accountCreatedAtField = new TextField("Account Created At");
-        private TextField accountUpdatedAtField = new TextField("Account Updated At");
-        private TextField accountLastAccessedAtField = new TextField("Account Last Accessed At");
+        private IntegerField failedLoginAttemptsField = new IntegerField("Failed Login Attempts");
+        private DateTimePicker lockoutUntilField = new DateTimePicker("Lockout Until");
+        private DateTimePicker accountCreatedAtField = new DateTimePicker("Account Created At");
+        private DateTimePicker accountUpdatedAtField = new DateTimePicker("Account Updated At");
+        private DateTimePicker accountLastAccessedAtField = new DateTimePicker("Account Last Accessed At");
 
         private final BeanValidationBinder<MemberAccountEditDTO> binder = new BeanValidationBinder<>(MemberAccountEditDTO.class);
         private final PasswordProperties passwordProperties;
@@ -299,7 +301,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         }
 
         private void configureBinder() {
-            binder.forField(accountIdField).bindReadOnly(MemberAccountEditDTO::idAsString);
+            binder.forField(accountIdField).bindReadOnly(dto -> String.valueOf(dto.getId()));
             binder.forField(emailField).bind(MemberAccountEditDTO::getEmail, MemberAccountEditDTO::setEmail);
             binder.forField(newPasswordField)
                     .withValidator(
@@ -310,7 +312,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             binder.forField(verifiedField).bind(MemberAccountEditDTO::isVerified, MemberAccountEditDTO::setVerified);
             binder.forField(enabledField).bind(MemberAccountEditDTO::isEnabled, MemberAccountEditDTO::setEnabled);
             binder.forField(lockedField).bind(MemberAccountEditDTO::isLocked, MemberAccountEditDTO::setLocked);
-            binder.forField(failedLoginAttemptsField).bindReadOnly(MemberAccountEditDTO::failedLoginAttemptsAsString);
+            binder.forField(failedLoginAttemptsField).bindReadOnly(MemberAccountEditDTO::getFailedLoginAttempts);
             binder.forField(lockoutUntilField).bindReadOnly(MemberAccountEditDTO::getLockoutUntil);
             binder.forField(accountCreatedAtField).bindReadOnly(MemberAccountEditDTO::getAccountCreatedAt);
             binder.forField(accountUpdatedAtField).bindReadOnly(MemberAccountEditDTO::getAccountUpdatedAt);
