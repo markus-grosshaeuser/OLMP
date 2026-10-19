@@ -168,6 +168,7 @@ public class MemberManagementView extends VerticalLayout {
                             Arrays.stream(Membership.MembershipStatus.values()).map(Membership.MembershipStatus::name).collect(Collectors.toSet()),
                             this::updateMember,
                             uiExceptionHandler::handleException,
+                            () -> memberGrid.setDetailsVisible(member, false),
                             passwordProperties)
                     )
                     .orElseGet(() -> unavailableDetails("This member does not exist."));

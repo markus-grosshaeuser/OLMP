@@ -29,12 +29,14 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
 
     private final UpdateCallback<EmployeeEditDTO> updateCallback;
     private final ErrorCallback errorCallback;
+    private final Runnable closeCallback;
 
     private final PasswordProperties passwordProperties;
 
     private final BeanValidationBinder<EmployeeEditDTO> binder = new BeanValidationBinder<>(EmployeeEditDTO.class);
 
     private final Button saveButton = new Button("Save");
+    private final Button closeButton = new Button("Close");
 
     private final TextField userIdField = new TextField("ID");
     private final TextField firstNameField = new TextField("First Name");
@@ -62,11 +64,13 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
             Set<String> assignableRoles,
             UpdateCallback<EmployeeEditDTO> updateCallback,
             ErrorCallback errorCallback,
+            Runnable closeCallback,
             PasswordProperties passwordProperties
     ) {
         this.assignableRoles = assignableRoles;
         this.updateCallback = updateCallback;
         this.errorCallback = errorCallback;
+        this.closeCallback = closeCallback;
         this.passwordProperties = passwordProperties;
 
         configureRootLayout();
@@ -79,7 +83,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         getContent().add(
                 createComponentHeader("Employee details", "Review profile information, account state and assigned roles."),
                 createFormElementBase(),
-                createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{})
+                createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{closeButton})
         );
     }
 
@@ -198,6 +202,8 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveButton.setEnabled(false);
         saveButton.addClickListener(_ -> save());
+
+        closeButton.addClickListener(_ -> closeCallback.run());
     }
 
     private EmployeeEditDTO createComparableSnapshot(EmployeeEditDTO employee) {

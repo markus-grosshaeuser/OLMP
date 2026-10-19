@@ -49,6 +49,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
 
     private final UpdateCallback<MemberEditDTO> updateCallback;
     private final ErrorCallback errorCallback;
+    private final Runnable closeCallback;
 
     private final BeanValidationBinder<MemberEditDTO> primaryBinder = new BeanValidationBinder<>(MemberEditDTO.class);
 
@@ -57,6 +58,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
     private final MembershipDetailsEditForm membershipDetailsEditForm;
 
     private final Button saveButton = new Button("Save");
+    private final Button closeButton = new Button("Close");
 
     private final TextField userIdField = new TextField("ID");
     private final TextField firstNameField = new TextField("First Name");
@@ -78,11 +80,12 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             Set<String> membershipStatuses,
             UpdateCallback<MemberEditDTO> updateCallback,
             ErrorCallback errorCallback,
+            Runnable closeCallback,
             PasswordProperties passwordProperties
     ) {
         this.updateCallback = updateCallback;
         this.errorCallback = errorCallback;
-
+        this.closeCallback = closeCallback;
 
         configureBinder();
         configureActions();
@@ -119,7 +122,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         getContent().add(
                 createComponentHeader("Member details", "Review profile information, account state, contact information, and membership details."),
                 createFormElementBase(),
-                createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{})
+                createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{closeButton})
         );
 
         accountDataChanged = false;
@@ -174,6 +177,8 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveButton.setEnabled(false);
         saveButton.addClickListener(_ -> save());
+
+        closeButton.addClickListener(_ -> closeCallback.run());
     }
 
     private void configureBinder() {

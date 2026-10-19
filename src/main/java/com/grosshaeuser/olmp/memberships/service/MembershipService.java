@@ -12,7 +12,7 @@ public interface MembershipService {
 
     HashMap<String, Integer> getMembershipPeriodsInMonths();
 
-    Optional<Membership> findByMemberId(Long memberId);
+    Optional<Membership> findActiveByMemberId(Long memberId);
 
     Optional<Membership> updateMembership(MembershipEditDTO dto);
 }

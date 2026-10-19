@@ -177,6 +177,7 @@ public class EmployeeManagementView extends VerticalLayout {
                             assignableRoles,
                             this::updateEmployee,
                             uiExceptionHandler::handleException,
+                            () -> employeeGrid.setDetailsVisible(employee, false),
                             passwordProperties)
                     )
                     .orElseGet(() -> unavailableDetails("This employee does not exist."));

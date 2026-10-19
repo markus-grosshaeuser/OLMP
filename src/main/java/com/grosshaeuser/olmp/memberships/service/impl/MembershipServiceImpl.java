@@ -30,6 +30,10 @@ public class MembershipServiceImpl implements MembershipService {
     @Transactional
     public Optional<Membership> createMembership(MembershipCreateDTO dto) {
         checkPermission(SecurityConstants.Privileges.CREATE_MEMBERSHIP, "You have no permission to create a membership.");
+        if (dto.getMembershipExpirationDate() == null) {
+            int period = getMembershipPeriodsInMonths().get(dto.getMembershipType());
+            dto.setMembershipExpirationDate(dto.getMembershipStartDate().plusMonths(period));
+        }
         return Optional.of(membershipRepository.save(MembershipMapper.createMembershipFromMembershipCreateDto(dto, membershipNumberGenerator.generate())));
     }
 
@@ -44,9 +48,9 @@ public class MembershipServiceImpl implements MembershipService {
     }
 
     @Override
-    public Optional<Membership> findByMemberId(Long memberId) {
+    public Optional<Membership> findActiveByMemberId(Long memberId) {
         checkPermission(SecurityConstants.Privileges.READ_MEMBERSHIP, "You have no permission to read memberships.");
-        return membershipRepository.findByMemberId(memberId);
+        return membershipRepository.findActiveByMemberId(memberId);
     }
 
     @Override
