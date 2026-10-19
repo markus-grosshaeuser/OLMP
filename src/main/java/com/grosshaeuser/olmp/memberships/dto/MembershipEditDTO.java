@@ -2,6 +2,8 @@ package com.grosshaeuser.olmp.memberships.dto;
 
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,8 +16,8 @@ public class MembershipEditDTO {
     private String membershipNumber;
     private String membershipType;
     private String membershipStatus;
-    private String startDate;
-    private String expirationDate;
-    private String renewalDate;
-    private String cancellationDate;
+    private LocalDate startDate;
+    private LocalDate expirationDate;
+    private LocalDate renewalDate;
+    private LocalDate cancellationDate;
 }

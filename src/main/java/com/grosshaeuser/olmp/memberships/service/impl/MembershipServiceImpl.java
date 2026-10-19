@@ -14,7 +14,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -64,9 +63,9 @@ public class MembershipServiceImpl implements MembershipService {
                 .map(membership -> {
                     membership.setType(Membership.MembershipType.valueOf(dto.getMembershipType()));
                     membership.setStatus(Membership.MembershipStatus.valueOf(dto.getMembershipStatus()));
-                    membership.setExpirationDate(LocalDate.parse(dto.getExpirationDate()));
-                    membership.setRenewalDate(!dto.getRenewalDate().isBlank() ? LocalDate.parse(dto.getRenewalDate()) : null);
-                    membership.setCancellationDate(!dto.getCancellationDate().isBlank() ? LocalDate.parse(dto.getCancellationDate()) : null);
+                    membership.setExpirationDate(dto.getExpirationDate());
+                    membership.setRenewalDate(dto.getRenewalDate());
+                    membership.setCancellationDate(dto.getCancellationDate());
                     return membershipRepository.save(membership);
                 });
     }

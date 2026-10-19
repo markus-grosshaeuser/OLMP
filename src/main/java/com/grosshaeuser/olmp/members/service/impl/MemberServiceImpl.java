@@ -9,8 +9,6 @@ import com.grosshaeuser.olmp.members.repository.MemberRepository;
 import com.grosshaeuser.olmp.members.service.MemberAccountService;
 import com.grosshaeuser.olmp.members.service.MemberContactInformationService;
 import com.grosshaeuser.olmp.members.service.MemberService;
-import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
-import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
 import com.grosshaeuser.olmp.memberships.mapper.MembershipMapper;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
@@ -23,7 +21,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.Optional;
 
 @Service
@@ -85,50 +82,41 @@ public class MemberServiceImpl implements MemberService {
                             ? memberAccountService.update(dto.getAccount()).orElse(new MemberAccount())
                             : memberAccountService.findByMemberId(updatedMember.getId()).orElse(null);
 
-                    MemberContactInformation updatedContactInfo;
-                    if (dto.isWithContactInformation() && dto.getContact() != null) {
-                        if (dto.getContact().getId() != null) {
-                            updatedContactInfo = memberContactInformationService.updateContactInformation(dto.getContact()).orElse(new MemberContactInformation());
-                        } else {
-                            MemberContactInformationEditDTO contactDTO = dto.getContact();
-                            updatedContactInfo = memberContactInformationService.create(new MemberContactInformationCreateDTO(
-                                    updatedMember,
-                                    contactDTO.getPhoneNumber(),
-                                    contactDTO.getStreet(),
-                                    contactDTO.getHouseNumber(),
-                                    contactDTO.getPostalCode(),
-                                    contactDTO.getCity(),
-                                    contactDTO.getCountry()
-                            )).orElse(null);
-                        }
-                    } else {
-                        updatedContactInfo = memberContactInformationService.findByMemberId(updatedMember.getId()).orElse(null);
-                    }
-
-                    Membership updatedMembership;
-                    if (dto.isWithMembershipDetails() && dto.getMembership() != null) {
-                        if (dto.getMembership().getId() != null) {
-                            updatedMembership = membershipService.updateMembership(dto.getMembership()).orElse(new Membership());
-                        } else {
-                            MembershipEditDTO membershipDTO = dto.getMembership();
-                            updatedMembership = membershipService.createMembership(new MembershipCreateDTO(
-                                    updatedMember,
-                                    membershipDTO.getMembershipType(),
-                                    membershipDTO.getMembershipStatus(),
-                                    hasValue(membershipDTO.getStartDate()) ? LocalDate.parse(membershipDTO.getStartDate()) : LocalDate.now(),
-                                    hasValue(membershipDTO.getExpirationDate()) ? LocalDate.parse(membershipDTO.getExpirationDate()) : null,
-                                    hasValue(membershipDTO.getRenewalDate()) ? LocalDate.parse(membershipDTO.getRenewalDate()) : null,
-                                    hasValue(membershipDTO.getCancellationDate()) ? LocalDate.parse(membershipDTO.getCancellationDate()) : null
-                            )).orElse(null);
-                        }
-                    } else {
-                        updatedMembership = membershipService.findActiveByMemberId(updatedMember.getId()).orElse(null);
-                    }
+                    MemberContactInformation updatedContactInfo = handleContactInformationUpdate(dto, updatedMember);
+                    Membership updatedMembership = handleMembershipUpdate(dto, updatedMember);
 
                     MemberEditDTO result = MemberMapper.mergeMemberInformationToEditDto(updatedMember, updatedAccount, updatedContactInfo);
                     result.setMembership(MembershipMapper.mapMembershipToEditDto(updatedMembership));
                     return result;
                 });
+    }
+
+    private MemberContactInformation handleContactInformationUpdate(MemberEditDTO dto, Member member) {
+        if (dto.isWithContactInformation() && dto.getContact() != null) {
+            if (dto.getContact().getId() != null) {
+                return memberContactInformationService.updateContactInformation(dto.getContact()).orElse(new MemberContactInformation());
+            } else {
+                return memberContactInformationService.create(
+                        MemberMapper.createDtoForNewContactInformationInUpdateProcess(member, dto.getContact())
+                ).orElse(null);
+            }
+        } else {
+            return memberContactInformationService.findByMemberId(member.getId()).orElse(null);
+        }
+    }
+
+    private Membership handleMembershipUpdate(MemberEditDTO dto, Member member) {
+        if (dto.isWithMembershipDetails() && dto.getMembership() != null) {
+            if (dto.getMembership().getId() != null) {
+                return membershipService.updateMembership(dto.getMembership()).orElse(new Membership());
+            } else {
+                return membershipService.createMembership(
+                        MembershipMapper.createDtoForNewMembershipInUpdateProcess(member, dto.getMembership())
+                ).orElse(null);
+            }
+        } else {
+            return membershipService.findActiveByMemberId(member.getId()).orElse(null);
+        }
     }
 
     @Override
@@ -148,9 +136,4 @@ public class MemberServiceImpl implements MemberService {
         }
     }
 
-    private boolean hasValue(String string) {
-        if (string == null)
-            return false;
-        return !string.isBlank();
-    }
 }

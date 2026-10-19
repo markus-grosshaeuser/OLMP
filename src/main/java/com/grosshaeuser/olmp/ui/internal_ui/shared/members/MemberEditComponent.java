@@ -26,6 +26,8 @@ import com.vaadin.flow.data.binder.ValidationException;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -81,6 +83,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             UpdateCallback<MemberEditDTO> updateCallback,
             ErrorCallback errorCallback,
             Runnable closeCallback,
+            HashMap<String, Integer> membershipPeriodsInMonths,
             PasswordProperties passwordProperties
     ) {
         this.updateCallback = updateCallback;
@@ -103,6 +106,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         memberContactInformationEditForm = new MemberContactInformationEditForm(
                 memberEditDTO.getContact(), value -> {
                     memberEditDTO.setWithContactInformation(value);
+                    snapshot = createComparableSnapshot(memberEditDTO);
                     contactInformationDataChanged = value;
                     handleDataChange();
                 });
@@ -110,8 +114,10 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
                 memberEditDTO.getMembership(),
                 membershipTypes,
                 membershipStatuses,
+                membershipPeriodsInMonths,
                 value -> {
                     memberEditDTO.setWithMembershipDetails(value);
+                    snapshot = createComparableSnapshot(memberEditDTO);
                     membershipDataChanged = value;
                     handleDataChange();
                 }
@@ -468,21 +474,31 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         private TextField membershipNumberField = new TextField("Membership Number");
         private Select<String> membershipTypeSelectField = new Select<>("Membership Type");
         private Select<String> membershipStatusSelectField = new Select<>("Membership Status");
-        private TextField startDateField = new TextField("Start Date");
-        private TextField expirationDateField = new TextField("Expiration Date");
-        private TextField renewalDateField = new TextField("Renewal Date");
-        private TextField cancellationDateField = new TextField("Cancellation Date");
+        private DatePicker startDateField = new DatePicker("Start Date");
+        private DatePicker expirationDateField = new DatePicker("Expiration Date");
+        private DatePicker renewalDateField = new DatePicker("Renewal Date");
+        private DatePicker cancellationDateField = new DatePicker("Cancellation Date");
+
+        private final HashMap<String, Integer> membershipPeriodsInMonths;
 
         private final BeanValidationBinder<MembershipEditDTO> binder = new BeanValidationBinder<>(MembershipEditDTO.class);
 
         private MembershipEditDTO snapshot;
         private final WithMembershipDetailsCallback callback;
 
-        private MembershipDetailsEditForm(MembershipEditDTO dto, Set<String> membershipTypes, Set<String> membershipStatuses, WithMembershipDetailsCallback callback) {
+        private MembershipDetailsEditForm(
+                MembershipEditDTO dto,
+                Set<String> membershipTypes,
+                Set<String> membershipStatuses,
+                HashMap<String, Integer> membershipPeriodsInMonths,
+                WithMembershipDetailsCallback callback
+        ) {
             this.callback = callback;
+            this.membershipPeriodsInMonths = membershipPeriodsInMonths;
 
             this.membershipTypeSelectField.setItems(membershipTypes);
             this.membershipTypeSelectField.setEmptySelectionAllowed(false);
+            this.membershipTypeSelectField.addValueChangeListener(_ -> updateExpirationDate());
 
             this.membershipStatusSelectField.setItems(membershipStatuses);
             this.membershipStatusSelectField.setEmptySelectionAllowed(false);
@@ -490,6 +506,18 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             configureBinder();
             loadMembershipDetails(dto);
             add(createFormLayout());
+        }
+
+        private void updateExpirationDate() {
+            LocalDate startDate = this.startDateField.getValue();
+            if (startDate == null)
+                return;
+            String membershipType = this.membershipTypeSelectField.getValue();
+            if (membershipType == null)
+                return;
+            if (membershipPeriodsInMonths.containsKey(membershipType)) {
+                this.expirationDateField.setValue(startDate.plusMonths(membershipPeriodsInMonths.get(membershipType)));
+            }
         }
 
         private void loadMembershipDetails(MembershipEditDTO dto) {

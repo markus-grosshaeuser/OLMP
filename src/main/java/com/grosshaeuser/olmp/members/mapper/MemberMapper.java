@@ -96,4 +96,18 @@ public class MemberMapper {
         }
         return new MemberContactInformationEditDTO();
     }
+
+    public static MemberContactInformationCreateDTO createDtoForNewContactInformationInUpdateProcess(Member member, MemberContactInformationEditDTO dto) {
+        return new MemberContactInformationCreateDTO(
+                member,
+                dto.getPhoneNumber(),
+                dto.getStreet(),
+                dto.getHouseNumber(),
+                dto.getPostalCode(),
+                dto.getCity(),
+                dto.getCountry()
+        );
+    }
+
+
 }

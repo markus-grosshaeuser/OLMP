@@ -5,10 +5,11 @@ import com.grosshaeuser.olmp.members.entity.Member;
 import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
+import com.grosshaeuser.olmp.shared.AbstractMapper;
 
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDate;
 
-public class MembershipMapper {
+public class MembershipMapper extends AbstractMapper {
     public static MembershipCreateDTO createMembershipCreateDtoFromMembershipRegistrationData(MemberRegistrationDTO dto, Member member) {
         return new MembershipCreateDTO(
                 member,
@@ -42,12 +43,25 @@ public class MembershipMapper {
                     membership.getMembershipNumber(),
                     membership.getType().name(),
                     membership.getStatus().name(),
-                    membership.getStartDate() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd").format(membership.getStartDate()) : null,
-                    membership.getExpirationDate() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd").format(membership.getExpirationDate()) : null,
-                    membership.getRenewalDate() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd").format(membership.getRenewalDate()) : null,
-                    membership.getCancellationDate() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd").format(membership.getCancellationDate()) : null
+                    membership.getStartDate(),
+                    membership.getExpirationDate(),
+                    membership.getRenewalDate(),
+                    membership.getCancellationDate()
             );
         }
         return new MembershipEditDTO();
     }
+
+    public static MembershipCreateDTO createDtoForNewMembershipInUpdateProcess(Member member, MembershipEditDTO dto) {
+        return new MembershipCreateDTO(
+                member,
+                dto.getMembershipType(),
+                dto.getMembershipStatus(),
+                dto.getStartDate() != null ? dto.getStartDate() : LocalDate.now(),
+                dto.getExpirationDate(),
+                dto.getRenewalDate(),
+                dto.getCancellationDate()
+        );
+    }
+
 }

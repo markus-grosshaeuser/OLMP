@@ -169,6 +169,7 @@ public class MemberManagementView extends VerticalLayout {
                             this::updateMember,
                             uiExceptionHandler::handleException,
                             () -> memberGrid.setDetailsVisible(member, false),
+                            membershipService.getMembershipPeriodsInMonths(),
                             passwordProperties)
                     )
                     .orElseGet(() -> unavailableDetails("This member does not exist."));
