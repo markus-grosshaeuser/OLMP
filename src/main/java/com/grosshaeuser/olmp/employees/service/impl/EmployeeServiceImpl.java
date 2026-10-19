@@ -164,6 +164,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         ));
     }
 
+    @Override
+    public long countEmployees(String query) {
+        return employeeRepository.countSearch(query, getReadableRoles());
+    }
+
     private Optional<EmployeeAccount> getCurrentEmployeeAccount() {
         return authenticationContext.getAuthenticatedUser(UserDetails.class)
                 .flatMap(userDetails -> employeeAccountService.findByUsername(userDetails.getUsername()));

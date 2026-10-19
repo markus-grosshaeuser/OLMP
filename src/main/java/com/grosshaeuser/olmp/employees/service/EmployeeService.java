@@ -17,4 +17,6 @@ public interface EmployeeService {
 
     Optional<EmployeeEditDTO> getCurrentEmployee();
     Optional<EmployeeEditDTO> updateCurrentEmployee(EmployeeEditDTO dto);
+
+    long countEmployees(String query);
 }

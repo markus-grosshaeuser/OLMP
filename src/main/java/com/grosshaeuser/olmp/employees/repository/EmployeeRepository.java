@@ -25,7 +25,14 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
             "WHERE r.name IN :roles AND " +
             "(lower(e.lastName) LIKE lower(concat('%',:searchTerm,'%')) OR " +
             "lower(e.firstName) LIKE lower(concat('%',:searchTerm,'%')) OR " +
-            "lower(e.email) LIKE lower(concat('%',:searchTerm,'%'))) " +
-            "ORDER BY e.lastName ASC")
+            "lower(e.email) LIKE lower(concat('%',:searchTerm,'%')))")
     Page<Employee> searchWithRolesIn(@Param("searchTerm") String searchTerm, @Param("roles") Set<String> roles, Pageable pageable);
+
+    @Query("SELECT DISTINCT COUNT(e) FROM Employee e " +
+            "JOIN e.roles r " +
+            "WHERE r.name IN :roles AND " +
+            "(lower(e.lastName) LIKE lower(concat('%',:searchTerm,'%')) OR " +
+            "lower(e.firstName) LIKE lower(concat('%',:searchTerm,'%')) OR " +
+            "lower(e.email) LIKE lower(concat('%',:searchTerm,'%'))) ")
+    long countSearch(@Param("searchTerm") String searchTerm, @Param("roles") Set<String> roles);
 }

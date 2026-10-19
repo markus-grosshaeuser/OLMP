@@ -10,7 +10,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.checkbox.CheckboxGroupVariant;
-import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -29,7 +28,6 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
     private final Set<String> assignableRoles;
 
     private final UpdateCallback<EmployeeEditDTO> updateCallback;
-    private final DeleteCallback<EmployeeEditDTO> deleteCallback;
     private final ErrorCallback errorCallback;
 
     private final PasswordProperties passwordProperties;
@@ -37,7 +35,6 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
     private final BeanValidationBinder<EmployeeEditDTO> binder = new BeanValidationBinder<>(EmployeeEditDTO.class);
 
     private final Button saveButton = new Button("Save");
-    private final Button deleteButton = new Button("Delete");
 
     private final TextField userIdField = new TextField("ID");
     private final TextField firstNameField = new TextField("First Name");
@@ -64,13 +61,11 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
             EmployeeEditDTO employeeEditDTO,
             Set<String> assignableRoles,
             UpdateCallback<EmployeeEditDTO> updateCallback,
-            DeleteCallback<EmployeeEditDTO> deleteCallback,
             ErrorCallback errorCallback,
             PasswordProperties passwordProperties
     ) {
         this.assignableRoles = assignableRoles;
         this.updateCallback = updateCallback;
-        this.deleteCallback = deleteCallback;
         this.errorCallback = errorCallback;
         this.passwordProperties = passwordProperties;
 
@@ -84,7 +79,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         getContent().add(
                 createComponentHeader("Employee details", "Review profile information, account state and assigned roles."),
                 createFormElementBase(),
-                createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{deleteButton})
+                createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{})
         );
     }
 
@@ -203,9 +198,6 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveButton.setEnabled(false);
         saveButton.addClickListener(_ -> save());
-
-        deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
-        deleteButton.addClickListener(_ -> confirmDelete());
     }
 
     private EmployeeEditDTO createComparableSnapshot(EmployeeEditDTO employee) {
@@ -218,7 +210,6 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
 
     private void setActionsEnabled(boolean enabled) {
         saveButton.setEnabled(enabled);
-        deleteButton.setEnabled(enabled);
 
         firstNameField.setEnabled(enabled);
         lastNameField.setEnabled(enabled);
@@ -255,27 +246,6 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
                 handleDataChange();
             }
         });
-    }
-
-    private void confirmDelete() {
-        getFormDataObject().ifPresent(user -> {
-            ConfirmDialog dialog = new ConfirmDialog();
-            dialog.setHeader("Delete user account?");
-            dialog.setText("Are you sure you want to delete the account \"" + user.getUsername() + "\"? This action cannot be undone.");
-            dialog.setCancelable(true);
-            dialog.setConfirmText("Delete");
-            dialog.setConfirmButtonTheme("error primary");
-            dialog.addConfirmListener(_ -> delete(user));
-            dialog.open();
-        });
-    }
-
-    private void delete(EmployeeEditDTO user) {
-        try {
-            deleteCallback.delete(user);
-        } catch (RuntimeException e) {
-            errorCallback.handleException(e);
-        }
     }
 
     private boolean hasChanges(EmployeeEditDTO employee) {

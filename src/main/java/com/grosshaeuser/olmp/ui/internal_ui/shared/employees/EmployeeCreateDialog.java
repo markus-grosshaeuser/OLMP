@@ -40,7 +40,6 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
     private final CheckboxGroup<String> roleCheckBoxGroup = new CheckboxGroup<>("Roles");
 
     private final Button saveButton = new Button("Save");
-    private final Button cancelButton = new Button("Cancel");
 
     public EmployeeCreateDialog(
             HashSet<String> roles,
@@ -61,6 +60,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
 
         getHeader().add(createDialogHeader("Create Employee Account", "Create a new account by providing profile information, account state and assigned roles.", this::close));
         add(createFormElementBase());
+        Button cancelButton = new Button("Cancel", _ -> close());
         getFooter().add(createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{cancelButton}));
 
         setKeepInViewport(true);
@@ -123,9 +123,6 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
             }
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        cancelButton.addClickListener(_ -> close());
-        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
     }
 
     private void configureFields() {
