@@ -2,6 +2,8 @@ package com.grosshaeuser.olmp.employees.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,6 +16,6 @@ public class EmployeeAccountEditDTO {
     private String newPassword = "";
     private boolean enabled;
     private int failedLoginAttempts;
-    private String lockoutUntil;
+    private LocalDateTime lockoutUntil;
     private boolean locked;
 }

@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.employees.dto;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 public record EmployeeDTO(
@@ -8,7 +9,7 @@ public record EmployeeDTO(
         String lastName,
         String firstName,
         Set<String> roles,
-        String creationTimestamp,
-        String lastModifiedTimestamp
+        LocalDateTime creationTimestamp,
+        LocalDateTime lastModifiedTimestamp
         ) {
 }

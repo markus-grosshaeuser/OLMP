@@ -7,6 +7,7 @@ import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -33,9 +34,9 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
     private final TextField usernameField = new TextField("Username");
     private final PasswordField newPasswordField = new PasswordField("New Password");
 
-    private final TextField createdAtField = new TextField("Created At");
-    private final TextField updatedAtField = new TextField("Updated At");
-    private final TextField lastAccessedField = new TextField("Last Accessed");
+    private final DateTimePicker createdAtField = new DateTimePicker("Created At");
+    private final DateTimePicker updatedAtField = new DateTimePicker("Updated At");
+    private final DateTimePicker lastAccessedField = new DateTimePicker("Last Accessed");
 
     private final Button saveButton = new Button("Save");
 
@@ -106,7 +107,7 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
 
     private void configureBinder() {
         binder.forField(userIdField)
-                .bindReadOnly(EmployeeEditDTO::idAsString);
+                .bindReadOnly(dto -> String.valueOf(dto.getId()));
 
         binder.forField(firstNameField)
                 .asRequired("First name is required")

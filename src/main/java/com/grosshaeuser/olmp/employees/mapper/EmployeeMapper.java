@@ -4,12 +4,12 @@ import com.grosshaeuser.olmp.employees.dto.*;
 import com.grosshaeuser.olmp.employees.entity.Employee;
 import com.grosshaeuser.olmp.employees.entity.EmployeeAccount;
 import com.grosshaeuser.olmp.employees.entity.Role;
+import com.grosshaeuser.olmp.shared.AbstractMapper;
 
-import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Set;
 
-public class EmployeeMapper {
+public class EmployeeMapper extends AbstractMapper {
     public static EmployeeDTO mapEmployeeToEmployeeDto(Employee employee) {
         return new EmployeeDTO(
                 employee.getId(),
@@ -17,8 +17,8 @@ public class EmployeeMapper {
                 employee.getLastName(),
                 employee.getFirstName(),
                 mapRolesToRoleNames(employee.getRoles()),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(employee.getCreatedAt()),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(employee.getUpdatedAt())
+                saveOffsetDateTimeToLocalDateTime(employee.getCreatedAt()),
+                saveOffsetDateTimeToLocalDateTime(employee.getUpdatedAt())
         );
     }
 
@@ -28,18 +28,18 @@ public class EmployeeMapper {
                 employee.getEmail(),
                 employee.getLastName(),
                 employee.getFirstName(),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(employee.getCreatedAt()),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(employee.getUpdatedAt()),
+                saveOffsetDateTimeToLocalDateTime(employee.getCreatedAt()),
+                saveOffsetDateTimeToLocalDateTime(employee.getUpdatedAt()),
                 account.getId(),
                 account.getUsername(),
                 "",
                 account.isEnabled(),
                 account.getFailedLoginAttempts(),
-                account.getLockoutUntil() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getLockoutUntil()) : null,
+                saveOffsetDateTimeToLocalDateTime(account.getLockoutUntil()),
                 account.isLocked(),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getCreatedAt()),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getUpdatedAt()),
-                account.getLastAccess() != null ? DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(account.getLastAccess()) : null,
+                saveOffsetDateTimeToLocalDateTime(account.getCreatedAt()),
+                saveOffsetDateTimeToLocalDateTime(account.getUpdatedAt()),
+                saveOffsetDateTimeToLocalDateTime(account.getLastAccess()),
                 mapRolesToRoleNames(employee.getRoles())
         );
     }

@@ -10,10 +10,12 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.checkbox.CheckboxGroup;
 import com.vaadin.flow.component.checkbox.CheckboxGroupVariant;
+import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
@@ -42,19 +44,19 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
     private final TextField firstNameField = new TextField("First Name");
     private final TextField lastNameField = new TextField("Last Name");
     private final TextField emailField = new TextField("Email");
-    private final TextField createdAtField = new TextField("Created At");
-    private final TextField updatedAtField = new TextField("Updated At");
+    private final DateTimePicker createdAtField = new DateTimePicker("Created At");
+    private final DateTimePicker updatedAtField = new DateTimePicker("Updated At");
 
     private final TextField accountIdField = new TextField("Account ID");
     private final TextField usernameField = new TextField("Username");
     private final PasswordField newPasswordField = new PasswordField("New Password");
     private final Checkbox enabledCheckBox = new Checkbox("Enabled");
     private final Checkbox lockedCheckBox = new Checkbox("Locked");
-    private final TextField failedLoginAttemptsField = new TextField("Failed Login Attempts");
-    private final TextField lockoutUntilField = new TextField("Lockout Until");
-    private final TextField accountCreatedAtField = new TextField("Account Created At");
-    private final TextField accountUpdatedAtField = new TextField("Account Updated At");
-    private final TextField accountLastAccessedField = new TextField("Account Last Accessed");
+    private final IntegerField failedLoginAttemptsField = new IntegerField("Failed Login Attempts");
+    private final DateTimePicker lockoutUntilField = new DateTimePicker("Lockout Until");
+    private final DateTimePicker accountCreatedAtField = new DateTimePicker("Account Created At");
+    private final DateTimePicker accountUpdatedAtField = new DateTimePicker("Account Updated At");
+    private final DateTimePicker accountLastAccessedField = new DateTimePicker("Account Last Accessed");
     private final CheckboxGroup<String> rolesCheckBoxGroup = new CheckboxGroup<>("Roles");
 
     private EmployeeEditDTO snapshot;
@@ -155,7 +157,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
 
     private void configureBinder() {
         binder.forField(userIdField)
-                .bindReadOnly(EmployeeEditDTO::idAsString);
+                .bindReadOnly(dto -> String.valueOf(dto.getId()));
         binder.forField(emailField)
                 .asRequired("Email is required")
                 .bind(EmployeeEditDTO::getEmail, EmployeeEditDTO::setEmail);
@@ -171,7 +173,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
                 .bindReadOnly(EmployeeEditDTO::getUpdatedAt);
 
         binder.forField(accountIdField)
-                .bindReadOnly(EmployeeEditDTO::accountIdAsString);
+                .bindReadOnly(dto -> String.valueOf(dto.getAccountId()));
         binder.forField(usernameField)
                 .asRequired("Username is required")
                 .bind(EmployeeEditDTO::getUsername, EmployeeEditDTO::setUsername);
@@ -182,7 +184,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
                 )
                 .bind(EmployeeEditDTO::getNewPassword, EmployeeEditDTO::setNewPassword);
         binder.forField(enabledCheckBox).bind(EmployeeEditDTO::isEnabled, EmployeeEditDTO::setEnabled);
-        binder.forField(failedLoginAttemptsField).bindReadOnly(EmployeeEditDTO::failedLoginAttemptsAsString);
+        binder.forField(failedLoginAttemptsField).bindReadOnly(EmployeeEditDTO::getFailedLoginAttempts);
         binder.forField(lockoutUntilField).bindReadOnly(EmployeeEditDTO::getLockoutUntil);
         binder.forField(lockedCheckBox).bind(EmployeeEditDTO::isLocked, EmployeeEditDTO::setLocked);
         binder.forField(accountCreatedAtField).bind(EmployeeEditDTO::getCreatedAt, null);

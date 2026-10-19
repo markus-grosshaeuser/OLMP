@@ -2,6 +2,7 @@ package com.grosshaeuser.olmp.employees.dto;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
@@ -14,8 +15,8 @@ public class EmployeeEditDTO {
     private String email;
     private String lastName;
     private String firstName;
-    private String createdAt;
-    private String updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     private Long accountId;
     private String username;
@@ -23,24 +24,12 @@ public class EmployeeEditDTO {
     private String newPassword = "";
     private boolean enabled;
     private int failedLoginAttempts;
-    private String lockoutUntil;
+    private LocalDateTime lockoutUntil;
     private boolean locked;
-    private String accountCreatedAt;
-    private String accountUpdatedAt;
-    private String accountLastAccessed;
+    private LocalDateTime accountCreatedAt;
+    private LocalDateTime accountUpdatedAt;
+    private LocalDateTime accountLastAccessed;
 
     @Builder.Default
     private Set<String> roles = Set.of();
-
-    public String idAsString() {
-        return id.toString();
-    }
-
-    public String accountIdAsString() {
-        return accountId.toString();
-    }
-
-    public String failedLoginAttemptsAsString() {
-        return Integer.toString(failedLoginAttempts);
-    }
 }

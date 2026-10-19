@@ -1,6 +1,8 @@
 package com.grosshaeuser.olmp.shared;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
 public abstract class AbstractMapper {
@@ -34,5 +36,11 @@ public abstract class AbstractMapper {
         }
     }
 
+    public static LocalDateTime saveOffsetDateTimeToLocalDateTime(OffsetDateTime offsetDateTime) {
+        if (offsetDateTime == null) {
+            return null;
+        }
+        return offsetDateTime.toLocalDateTime();
+    }
 
 }

@@ -150,7 +150,7 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .roles(EmployeeMapper.mapRolesToRoleNames(currentEmployee.getRoles()))
                 .enabled(currentAccount.isEnabled())
                 .failedLoginAttempts(currentAccount.getFailedLoginAttempts())
-                .lockoutUntil(currentAccount.getLockoutUntil() != null ? currentAccount.getLockoutUntil().toString() : null)
+                .lockoutUntil(currentAccount.getLockoutUntil() != null ? currentAccount.getLockoutUntil().toLocalDateTime() : null)
                 .locked(currentAccount.isLocked())
                 .build();
 
