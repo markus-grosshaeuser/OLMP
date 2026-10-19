@@ -14,6 +14,7 @@ import com.grosshaeuser.olmp.members.mapper.MemberMapper;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,9 +35,9 @@ class MemberMapperTest {
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.lastName()).isEqualTo("Doe");
         assertThat(result.firstName()).isEqualTo("John");
-        assertThat(result.dateOfBirth()).isEqualTo("1990-01-01");
-        assertThat(result.creationTimestamp()).isEqualTo("2026-10-12 10:00:00");
-        assertThat(result.lastModifiedTimestamp()).isEqualTo("2026-10-12 11:00:00");
+        assertThat(result.dateOfBirth()).isEqualTo(LocalDate.of(1990, 1, 1));
+        assertThat(result.creationTimestamp()).isEqualTo(LocalDateTime.of(2026, 10, 12, 10, 0));
+        assertThat(result.lastModifiedTimestamp()).isEqualTo(LocalDateTime.of(2026, 10, 12, 11, 0));
     }
 
     @Test
@@ -55,9 +56,9 @@ class MemberMapperTest {
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.lastName()).isEqualTo("Doe");
         assertThat(result.firstName()).isEqualTo("John");
-        assertThat(result.dateOfBirth()).isEmpty();
-        assertThat(result.creationTimestamp()).isEmpty();
-        assertThat(result.lastModifiedTimestamp()).isEmpty();
+        assertThat(result.dateOfBirth()).isNull();
+        assertThat(result.creationTimestamp()).isNull();
+        assertThat(result.lastModifiedTimestamp()).isNull();
     }
 
     @Test
@@ -143,8 +144,8 @@ class MemberMapperTest {
         assertThat(result.getFirstName()).isEqualTo("John");
         assertThat(result.getLastName()).isEqualTo("Doe");
         assertThat(result.getBirthDate()).isEqualTo(LocalDate.of(1990, 1, 1));
-        assertThat(result.getCreatedAt()).isEqualTo("2026-10-12 10:00:00");
-        assertThat(result.getUpdatedAt()).isEqualTo("2026-10-12 11:00:00");
+        assertThat(result.getCreatedAt()).isEqualTo(LocalDateTime.of(2026, 10, 12, 10, 0));
+        assertThat(result.getUpdatedAt()).isEqualTo(LocalDateTime.of(2026, 10, 12, 11, 0));
 
         assertThat(result.getAccount()).isNotNull();
         assertThat(result.getAccount().getId()).isEqualTo(20L);
@@ -152,11 +153,11 @@ class MemberMapperTest {
         assertThat(result.getAccount().isVerified()).isTrue();
         assertThat(result.getAccount().isEnabled()).isFalse();
         assertThat(result.getAccount().getFailedLoginAttempts()).isEqualTo(2);
-        assertThat(result.getAccount().getLockoutUntil()).isEqualTo("2026-10-13 12:00:00");
+        assertThat(result.getAccount().getLockoutUntil()).isEqualTo(LocalDateTime.of(2026, 10, 13, 12, 0));
         assertThat(result.getAccount().isLocked()).isTrue();
-        assertThat(result.getAccount().getAccountCreatedAt()).isEqualTo("2026-10-12 10:15:00");
-        assertThat(result.getAccount().getAccountUpdatedAt()).isEqualTo("2026-10-12 11:15:00");
-        assertThat(result.getAccount().getAccountLastAccessedAt()).isEqualTo("2026-10-12 12:15:00");
+        assertThat(result.getAccount().getAccountCreatedAt()).isEqualTo(LocalDateTime.of(2026, 10, 12, 10, 15));
+        assertThat(result.getAccount().getAccountUpdatedAt()).isEqualTo(LocalDateTime.of(2026, 10, 12, 11, 15));
+        assertThat(result.getAccount().getAccountLastAccessedAt()).isEqualTo(LocalDateTime.of(2026, 10, 12, 12, 15));
 
         assertThat(result.getContact()).isNotNull();
         assertThat(result.getContact().getId()).isEqualTo(30L);
@@ -187,8 +188,8 @@ class MemberMapperTest {
         );
 
         assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getCreatedAt()).isEmpty();
-        assertThat(result.getUpdatedAt()).isEmpty();
+        assertThat(result.getCreatedAt()).isNull();
+        assertThat(result.getUpdatedAt()).isNull();
 
         assertThat(result.getAccount()).isNotNull();
         assertThat(result.getAccount().getId()).isNull();
@@ -222,11 +223,11 @@ class MemberMapperTest {
         assertThat(result.isVerified()).isTrue();
         assertThat(result.isEnabled()).isFalse();
         assertThat(result.getFailedLoginAttempts()).isEqualTo(2);
-        assertThat(result.getLockoutUntil()).isEqualTo("2026-10-13 12:00:00");
+        assertThat(result.getLockoutUntil()).isEqualTo(LocalDateTime.of(2026, 10, 13, 12, 0));
         assertThat(result.isLocked()).isTrue();
-        assertThat(result.getAccountCreatedAt()).isEqualTo("2026-10-12 10:15:00");
-        assertThat(result.getAccountUpdatedAt()).isEqualTo("2026-10-12 11:15:00");
-        assertThat(result.getAccountLastAccessedAt()).isEqualTo("2026-10-12 12:15:00");
+        assertThat(result.getAccountCreatedAt()).isEqualTo(LocalDateTime.of(2026, 10,12, 10, 15));
+        assertThat(result.getAccountUpdatedAt()).isEqualTo(LocalDateTime.of(2026, 10, 12, 11, 15));
+        assertThat(result.getAccountLastAccessedAt()).isEqualTo(LocalDateTime.of(2026, 10, 12, 12, 15));
     }
 
     @Test
@@ -266,10 +267,10 @@ class MemberMapperTest {
         MemberAccountEditDTO result = MemberMapper.mapMemberAccountToEditDto(account);
 
         assertThat(result.getId()).isEqualTo(20L);
-        assertThat(result.getLockoutUntil()).isEmpty();
-        assertThat(result.getAccountCreatedAt()).isEmpty();
-        assertThat(result.getAccountUpdatedAt()).isEmpty();
-        assertThat(result.getAccountLastAccessedAt()).isEmpty();
+        assertThat(result.getLockoutUntil()).isNull();
+        assertThat(result.getAccountCreatedAt()).isNull();
+        assertThat(result.getAccountUpdatedAt()).isNull();
+        assertThat(result.getAccountLastAccessedAt()).isNull();
     }
 
     @Test

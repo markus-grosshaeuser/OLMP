@@ -213,7 +213,7 @@ class MemberServiceIntegrationTest {
         Optional<MemberContactInformation> contactInfoResult = memberContactInformationRepository.findByMemberId(member.id());
         assertEquals(Optional.empty(), contactInfoResult);
 
-        Optional<Membership> membershipResult = membershipRepository.findByMemberId(member.id());
+        Optional<Membership> membershipResult = membershipRepository.findActiveByMemberId(member.id());
         assertEquals(Optional.empty(), membershipResult);
     }
 
@@ -249,7 +249,7 @@ class MemberServiceIntegrationTest {
         assertThat(contactInfo.getCity()).isEqualTo("Berlin");
         assertThat(contactInfo.getCountry()).isEqualTo("Germany");
 
-        Optional<Membership> membershipResult = membershipRepository.findByMemberId(member.id());
+        Optional<Membership> membershipResult = membershipRepository.findActiveByMemberId(member.id());
         assertEquals(Optional.empty(), membershipResult);
     }
 
@@ -276,7 +276,7 @@ class MemberServiceIntegrationTest {
         assertThat(account.isVerified()).isTrue();
         assertThat(account.isEnabled()).isTrue();
 
-        Optional<Membership> membershipResult = membershipRepository.findByMemberId(member.id());
+        Optional<Membership> membershipResult = membershipRepository.findActiveByMemberId(member.id());
         assertThat(membershipResult).isPresent();
         Membership membership = membershipResult.get();
         assertThat(membership.getType()).isEqualTo(Membership.MembershipType.valueOf("STANDARD"));
@@ -322,7 +322,7 @@ class MemberServiceIntegrationTest {
         assertThat(contactInfo.getCity()).isEqualTo("Berlin");
         assertThat(contactInfo.getCountry()).isEqualTo("Germany");
 
-        Optional<Membership> membershipResult = membershipRepository.findByMemberId(member.id());
+        Optional<Membership> membershipResult = membershipRepository.findActiveByMemberId(member.id());
         assertThat(membershipResult).isPresent();
         Membership membership = membershipResult.get();
         assertThat(membership.getType()).isEqualTo(Membership.MembershipType.valueOf("STANDARD"));
@@ -497,11 +497,13 @@ class MemberServiceIntegrationTest {
         contactUpdate.setPhoneNumber("987654321");
         contactUpdate.setStreet("New St");
         updateDto.setContact(contactUpdate);
+        updateDto.setWithContactInformation(true);
 
         MembershipEditDTO membershipUpdate = updateDto.getMembership();
         assertNotNull(membershipUpdate);
         membershipUpdate.setMembershipType("STUDENT");
         updateDto.setMembership(membershipUpdate);
+        updateDto.setWithMembershipDetails(true);
 
         Optional<MemberEditDTO> updatedMember = serviceUnderTest.updateMember(updateDto);
 
@@ -541,11 +543,13 @@ class MemberServiceIntegrationTest {
         assertNotNull(contactUpdate);
         contactUpdate.setPhoneNumber("987654321");
         updateDto.setContact(contactUpdate);
+        updateDto.setWithContactInformation(true);
 
         MembershipEditDTO membershipUpdate = updateDto.getMembership();
         assertNotNull(membershipUpdate);
         membershipUpdate.setMembershipType("STUDENT");
         updateDto.setMembership(membershipUpdate);
+        updateDto.setWithMembershipDetails(true);
 
         Optional<MemberEditDTO> updatedMemberDtoOpt = serviceUnderTest.updateMember(updateDto);
 
@@ -590,6 +594,7 @@ class MemberServiceIntegrationTest {
         assertNotNull(membershipUpdate);
         membershipUpdate.setMembershipType("STUDENT");
         updateDto.setMembership(membershipUpdate);
+        updateDto.setWithMembershipDetails(true);
 
         Optional<MemberEditDTO> updatedMemberDtoOpt = serviceUnderTest.updateMember(updateDto);
 
@@ -635,6 +640,7 @@ class MemberServiceIntegrationTest {
         assertNotNull(contactUpdate);
         contactUpdate.setPhoneNumber("987654321");
         updateDto.setContact(contactUpdate);
+        updateDto.setWithContactInformation(true);
 
         Optional<MemberEditDTO> updatedMemberDtoOpt = serviceUnderTest.updateMember(updateDto);
 
@@ -671,14 +677,14 @@ class MemberServiceIntegrationTest {
         assertThat(memberRepository.findById(memberId)).isPresent();
         assertThat(memberAccountRepository.findByMemberId(memberId)).isPresent();
         assertThat(memberContactInformationRepository.findByMemberId(memberId)).isPresent();
-        assertThat(membershipRepository.findByMemberId(memberId)).isPresent();
+        assertThat(membershipRepository.findActiveByMemberId(memberId)).isPresent();
 
         serviceUnderTest.deleteMember(memberId);
 
         assertThat(memberRepository.findById(memberId)).isEmpty();
         assertThat(memberAccountRepository.findByMemberId(memberId)).isEmpty();
         assertThat(memberContactInformationRepository.findByMemberId(memberId)).isEmpty();
-        assertThat(membershipRepository.findByMemberId(memberId)).isEmpty();
+        assertThat(membershipRepository.findActiveByMemberId(memberId)).isEmpty();
     }
 
 
