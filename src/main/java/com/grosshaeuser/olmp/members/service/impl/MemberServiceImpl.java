@@ -104,6 +104,11 @@ public class MemberServiceImpl implements MemberService {
         memberRepository.deleteById(memberId);
     }
 
+    @Override
+    public long countMembers(String searchTerm) {
+        return memberRepository.countWithSearchTerm(searchTerm);
+    }
+
     private void checkPermission(String privilege, String errorMessage) {
         if (!authenticationContext.hasAuthority(privilege)) {
             throw new AccessDeniedException(errorMessage);

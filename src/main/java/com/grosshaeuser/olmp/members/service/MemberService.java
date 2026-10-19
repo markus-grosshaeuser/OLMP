@@ -18,4 +18,6 @@ public interface MemberService {
     Optional<MemberEditDTO> updateMember(MemberEditDTO memberEditDTO);
 
     void deleteMember(Long memberId);
+
+    long countMembers(String searchTerm);
 }

@@ -14,4 +14,10 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
             "WHERE LOWER(m.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
             "LOWER(m.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     Page<Member> search(String searchTerm, Pageable pageable);
+
+
+    @Query("SELECT COUNT(m) FROM Member m " +
+            "WHERE LOWER(m.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(m.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    long countWithSearchTerm(String searchTerm);
 }

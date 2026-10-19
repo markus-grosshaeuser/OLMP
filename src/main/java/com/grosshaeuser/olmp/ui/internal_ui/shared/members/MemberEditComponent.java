@@ -11,7 +11,6 @@ import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Div;
@@ -49,7 +48,6 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
     }
 
     private final UpdateCallback<MemberEditDTO> updateCallback;
-    private final DeleteCallback<MemberEditDTO> deleteCallback;
     private final ErrorCallback errorCallback;
 
     private final BeanValidationBinder<MemberEditDTO> primaryBinder = new BeanValidationBinder<>(MemberEditDTO.class);
@@ -59,7 +57,6 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
     private final MembershipDetailsEditForm membershipDetailsEditForm;
 
     private final Button saveButton = new Button("Save");
-    private final Button deleteButton = new Button("Delete");
 
     private final TextField userIdField = new TextField("ID");
     private final TextField firstNameField = new TextField("First Name");
@@ -80,12 +77,10 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             Set<String> membershipTypes,
             Set<String> membershipStatuses,
             UpdateCallback<MemberEditDTO> updateCallback,
-            DeleteCallback<MemberEditDTO> deleteCallback,
             ErrorCallback errorCallback,
             PasswordProperties passwordProperties
     ) {
         this.updateCallback = updateCallback;
-        this.deleteCallback = deleteCallback;
         this.errorCallback = errorCallback;
 
 
@@ -124,7 +119,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         getContent().add(
                 createComponentHeader("Member details", "Review profile information, account state, contact information, and membership details."),
                 createFormElementBase(),
-                createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{deleteButton})
+                createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{})
         );
 
         accountDataChanged = false;
@@ -179,9 +174,6 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         saveButton.setEnabled(false);
         saveButton.addClickListener(_ -> save());
-
-        deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_TERTIARY);
-        deleteButton.addClickListener(_ -> confirmDelete());
     }
 
     private void configureBinder() {
@@ -238,30 +230,6 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
                 handleDataChange();
             }
         });
-    }
-
-    private void confirmDelete() {
-        MemberEditDTO user = primaryBinder.getBean();
-        if (user == null) {
-            throw new IllegalStateException("No user data object set");
-        }
-
-        ConfirmDialog dialog = new ConfirmDialog();
-        dialog.setHeader("Delete user account?");
-        dialog.setText("Are you sure you want to delete the account of \"" + user.getFirstName() + " " + user.getLastName() + "\"? This action cannot be undone.");
-        dialog.setCancelable(true);
-        dialog.setConfirmText("Delete");
-        dialog.setConfirmButtonTheme("error primary");
-        dialog.addConfirmListener(_ -> delete(user));
-        dialog.open();
-    }
-
-    private void delete(MemberEditDTO user) {
-        try {
-            deleteCallback.delete(user);
-        } catch (RuntimeException e) {
-            errorCallback.handleException(e);
-        }
     }
 
     private boolean hasChanges(MemberEditDTO dto) {

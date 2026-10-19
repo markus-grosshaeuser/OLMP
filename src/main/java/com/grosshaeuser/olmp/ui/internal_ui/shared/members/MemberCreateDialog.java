@@ -46,7 +46,6 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
     private final Checkbox enabledField = new Checkbox("Enabled");
 
     private final Button saveButton = new Button("Save");
-    private final Button cancelButton = new Button("Cancel");
 
     private final MemberContactDetailsForm contactDetailsForm;
     private final MembershipDetailsForm membershipDetailsForm;
@@ -72,7 +71,8 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
 
         getHeader().add(createDialogHeader("Create Member Account", "Create a new account by providing profile, membership and contact information.", this::close));
         add(createFormLayout());
-        getFooter().add(createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{cancelButton}));
+        Button cancel = new Button("Cancel", _ -> close());
+        getFooter().add(createActionBar(new Button[]{saveButton}, new Button[]{}, new Button[]{cancel}));
 
         setKeepInViewport(true);
         setCloseOnEsc(true);
@@ -140,9 +140,6 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
             }
         });
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-
-        cancelButton.addClickListener(_ -> close());
-        cancelButton.addThemeVariants(ButtonVariant.LUMO_ERROR);
     }
 
     private void configureBinder() {
