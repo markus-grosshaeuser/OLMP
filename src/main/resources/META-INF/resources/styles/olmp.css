@@ -7,7 +7,7 @@
     padding: var(--lumo-space-s);
 }
 
-.employee-edit-component, .member-edit-component {
+.employee-edit-component, .member-edit-component, .media-edit-component {
     background: linear-gradient(
             180deg,
             var(--lumo-base-color),
@@ -33,4 +33,16 @@
 .employee-edit-component-account-form {
     padding: var(--lumo-space-m);
     background: var(--lumo-base-color);
+}
+
+.grid-action-elements {
+    display: flex;
+    gap: var(--lumo-space-s);
+}
+
+.confirm-delete-dialog {
+    em {
+        font-style: normal;
+        font-weight: bold;
+    }
 }
