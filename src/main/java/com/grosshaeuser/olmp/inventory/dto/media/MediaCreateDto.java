@@ -52,4 +52,7 @@ public class MediaCreateDto {
 
     @NotNull
     private List<@NotNull @Valid MediaIdentifierWriteDto> identifiers = new ArrayList<>();
+
+    @NotNull
+    private List<@NotNull @Valid MediaInventoryItemDto> inventoryItems = new ArrayList<>();
 }

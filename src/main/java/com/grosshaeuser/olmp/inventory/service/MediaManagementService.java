@@ -21,4 +21,10 @@ public interface MediaManagementService {
     MediaEditDto updateMedia(MediaEditDto media);
 
     void deleteMedium(Long id);
+
+    Optional<MediaEditDto> findMediaWithInventoryForEdit(long id);
+
+    MediaSummaryDto createMediaWithInventory(MediaCreateDto media);
+
+    MediaEditDto updateMediaWithInventory(MediaEditDto media);
 }

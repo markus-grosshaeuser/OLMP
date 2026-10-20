@@ -4,15 +4,22 @@ import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaAuthorWriteDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaIdentifierWriteDto;
+import com.grosshaeuser.olmp.inventory.dto.media.MediaInventoryItemDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaTypeSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
+import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
+import com.grosshaeuser.olmp.inventory.service.BarcodeService;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -23,16 +30,19 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 
-class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> implements Structurable {
+class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> implements Structurable, Printing {
 
     private final BeanValidationBinder<T> binder;
     private final MediaFormOptions options;
+    private final BarcodeService barcodeService;
+    private final BarcodePrintService barcodePrintService;
     private final ComboBox<MediaTypeSummaryDto> mediaType = new ComboBox<>("Media type");
     private final ComboBox<PublisherSummaryDto> publisher = new ComboBox<>("Publisher");
     private final TextField title = new TextField("Title");
@@ -44,13 +54,19 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
     private final TextArea description = new TextArea("Description");
     private final VerticalLayout authorRows = new VerticalLayout();
     private final VerticalLayout identifierRows = new VerticalLayout();
+    private final VerticalLayout inventoryRows = new VerticalLayout();
+    private final List<InventoryRow> inventoryItems = new ArrayList<>();
+    private final IntegerField copyCount = new IntegerField("Number of copies");
+    private final Span inventoryCount = new Span();
     private final List<AuthorRow> authors = new ArrayList<>();
     private final List<IdentifierRow> identifiers = new ArrayList<>();
     private final Span validationMessage = new Span();
 
-    MediaForm(Class<T> dtoType, MediaFormOptions options) {
+    MediaForm(Class<T> dtoType, MediaFormOptions options, BarcodeService barcodeService, BarcodePrintService barcodePrintService) {
         this.options = Objects.requireNonNull(options, "options");
+        this.barcodeService = Objects.requireNonNull(barcodeService, "barcodeService");
         binder = new BeanValidationBinder<>(dtoType);
+        this.barcodePrintService = barcodePrintService;
         configureFields();
         configureBindings();
 
@@ -61,8 +77,21 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         catalogue.setColspan(description, 2);
         authorRows.setPadding(false);
         identifierRows.setPadding(false);
+        inventoryRows.setPadding(false);
         Button addAuthor = new Button("Add author", _ -> addAuthor(new MediaAuthorWriteDto()));
         Button addIdentifier = new Button("Add identifier", _ -> addIdentifier(new MediaIdentifierWriteDto()));
+        Button addCopy = new Button("Add copy", _ -> addInventoryItem(MediaInventoryItemDto.newCopy()));
+        copyCount.setMin(1);
+        copyCount.setMax(1000);
+        copyCount.setValue(1);
+        copyCount.setStepButtonsVisible(true);
+        copyCount.setHelperText("Add between 1 and 1,000 copies per batch.");
+        Button addCopies = new Button("Add copies", _ -> addInventoryBatch());
+        HorizontalLayout inventoryActions = new HorizontalLayout(addCopy, copyCount, addCopies);
+        inventoryActions.setAlignItems(FlexComponent.Alignment.BASELINE);
+        inventoryActions.setWrap(true);
+        inventoryCount.getElement().setAttribute("aria-live", "polite");
+        updateInventoryCount();
         validationMessage.getElement().setAttribute("role", "alert");
         validationMessage.getStyle().set("color", "var(--vaadin-text-color-error, #b71c1c)");
         validationMessage.setVisible(false);
@@ -75,6 +104,9 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         sheet.add("Catalogue", createSection("Catalogue", "Title, publication information and description.", catalogue));
         sheet.add("Authors and contributors", createSection("Authors and contributors", "Assign authors, roles and display order.", authorRows, addAuthor));
         sheet.add("Identifiers", createSection("Identifiers", "Add identifiers such as ISBN, ISSN or DOI.", identifierRows, addIdentifier));
+        sheet.add("Inventory items", createSection("Inventory items",
+                "Manage physical copies. Inventory numbers and barcodes are generated when you add copies. Changes take effect when you save the medium.",
+                inventoryActions, inventoryCount, inventoryRows));
 
         getContent().add(sheet, validationMessage);
     }
@@ -88,6 +120,12 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         identifiers.clear();
         identifierRows.removeAll();
         source.getIdentifiers().forEach(this::addIdentifier);
+        inventoryItems.clear();
+        inventoryRows.removeAll();
+        source.getInventoryItems().forEach(this::addInventoryItem);
+        updateInventoryCount();
+        copyCount.setValue(1);
+        copyCount.setInvalid(false);
         validationMessage.setVisible(false);
     }
 
@@ -121,6 +159,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         }
         target.setAuthors(authorDtos);
         target.setIdentifiers(identifierDtos);
+        target.setInventoryItems(new ArrayList<>(inventoryItems.stream().map(row -> row.dto).toList()));
         return true;
     }
 
@@ -177,6 +216,30 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         identifierRows.add(row.layout);
     }
 
+    private void addInventoryItem(MediaInventoryItemDto dto) {
+        InventoryRow row = new InventoryRow(dto);
+        inventoryItems.add(row);
+        inventoryRows.add(row.layout);
+        updateInventoryCount();
+    }
+
+    private void addInventoryBatch() {
+        Integer count = copyCount.getValue();
+        if (count == null || count < 1 || count > 1000) {
+            copyCount.setErrorMessage("Enter a number of copies between 1 and 1,000.");
+            copyCount.setInvalid(true);
+            return;
+        }
+        copyCount.setInvalid(false);
+        for (int i = 0; i < count; i++) {
+            addInventoryItem(MediaInventoryItemDto.newCopy());
+        }
+    }
+
+    private void updateInventoryCount() {
+        inventoryCount.setText("Copies: " + inventoryItems.size());
+    }
+
     private void showValidationMessage(String message) {
         validationMessage.setText(message);
         validationMessage.setVisible(true);
@@ -217,6 +280,52 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
                 : author.firstName() + " " + author.lastName();
     }
 
+    private class InventoryRow {
+        private final MediaInventoryItemDto dto;
+        private final HorizontalLayout layout = new HorizontalLayout();
+
+        InventoryRow(MediaInventoryItemDto dto) {
+            this.dto = dto;
+            TextField number = new TextField("Inventory number");
+            number.setValue(Objects.requireNonNullElse(dto.inventoryNumber(), ""));
+            number.setReadOnly(true);
+            number.setWidthFull();
+            VerticalLayout barcode = new VerticalLayout();
+            barcode.setPadding(false);
+            barcode.setSpacing(false);
+            if (dto.barcode() == null || dto.barcode().isBlank()) {
+                barcode.add(new Span("No barcode"));
+            } else {
+                String source = "data:image/png;base64," + Base64.getEncoder()
+                        .encodeToString(barcodeService.generateBarcodePng(dto.barcode()));
+                Image image = new Image(source, "Barcode " + dto.barcode());
+                image.getStyle().set("max-width", "100%").set("height", "auto");
+                barcode.add(image);
+            }
+            Button print = new Button(VaadinIcon.PRINT.create());
+            print.setEnabled(false);
+            if (barcodePrintService != null) {
+                print.setEnabled(true);
+                print.addClickListener(_ -> {
+                    String document = barcodePrintService.createPrintDocument("", List.of(dto));
+                    UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
+                });
+            }
+            Button remove = new Button(VaadinIcon.TRASH.create(), _ -> {
+                inventoryItems.remove(this);
+                inventoryRows.remove(layout);
+                updateInventoryCount();
+            });
+            remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            remove.setAriaLabel("Remove copy");
+            layout.setWidthFull();
+            layout.setWrap(false);
+            layout.setAlignItems(FlexComponent.Alignment.BASELINE);
+            layout.add(number, barcode, print, remove);
+            layout.setFlexGrow(1, number, barcode);
+        }
+    }
+
     private class AuthorRow {
         private final BeanValidationBinder<MediaAuthorWriteDto> binder = new BeanValidationBinder<>(MediaAuthorWriteDto.class);
         private final HorizontalLayout layout = new HorizontalLayout();
@@ -232,10 +341,12 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             order.setMin(0);
             order.setMax(Short.MAX_VALUE);
             order.setStepButtonsVisible(true);
-            Button remove = new Button("Remove author", _ -> {
+            Button remove = new Button(VaadinIcon.TRASH.create(), _ -> {
                 authors.remove(this);
                 authorRows.remove(layout);
             });
+            remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            remove.setAriaLabel("Remove author");
             binder.forField(author).asRequired("Choose an author")
                     .withConverter(value -> value == null ? null : value.id(),
                             id -> lookup(options.authors(), AuthorSummaryDto::id, id, "Author"))
@@ -270,11 +381,12 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             TextField value = new TextField("Identifier value");
             value.setMaxLength(100);
 
-            Button remove = new Button("Remove identifier", _ -> {
+            Button remove = new Button(VaadinIcon.TRASH.create(), _ -> {
                 identifiers.remove(this);
                 identifierRows.remove(layout);
             });
-
+            remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
+            remove.setAriaLabel("Remove identifier");
             binder.forField(type).asRequired("Identifier type is required")
                     .withConverter(text -> text.strip().toUpperCase(Locale.ROOT), text -> text == null ? "" : text)
                     .bind("identifierType");

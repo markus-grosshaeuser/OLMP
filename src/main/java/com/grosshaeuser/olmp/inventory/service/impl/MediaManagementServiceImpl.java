@@ -3,6 +3,7 @@ package com.grosshaeuser.olmp.inventory.service.impl;
 import com.grosshaeuser.olmp.inventory.dto.media.*;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.entity.Author;
+import com.grosshaeuser.olmp.inventory.entity.InventoryItem;
 import com.grosshaeuser.olmp.inventory.entity.Media;
 import com.grosshaeuser.olmp.inventory.entity.MediaAuthor;
 import com.grosshaeuser.olmp.inventory.entity.MediaIdentifier;
@@ -56,6 +57,83 @@ public class MediaManagementServiceImpl implements MediaManagementService {
     private final MediaAuthorMapper mediaAuthorMapper;
     private final MediaIdentifierMapper identifierMapper;
     private final Validator validator;
+
+    @Override
+    public Optional<MediaEditDto> findMediaWithInventoryForEdit(long id) {
+        return findMediaForEdit(id).map(this::includeInventory);
+    }
+
+    @Override
+    @Transactional
+    public MediaSummaryDto createMediaWithInventory(MediaCreateDto dto) {
+        validateSubmission(dto, true);
+        validateInventorySelection(dto.getInventoryItems(), List.of());
+        MediaSummaryDto created = createMedia(dto);
+        Media media = mediaRepository.getReferenceById(created.id());
+        saveNewInventoryItems(dto.getInventoryItems(), media);
+        inventoryItemRepository.flush();
+        return created;
+    }
+
+    @Override
+    @Transactional
+    public MediaEditDto updateMediaWithInventory(MediaEditDto dto) {
+        validateSubmission(dto, false);
+        Media media = mediaRepository.findForUpdate(dto.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Media no longer exists: " + dto.getId()));
+        List<InventoryItem> existing = inventoryItemRepository.findAllByMediaIdOrderByIdAsc(media.getId());
+        Set<Long> retained = validateInventorySelection(dto.getInventoryItems(), existing);
+        MediaEditDto updated = updateMedia(dto);
+        inventoryItemRepository.deleteAll(existing.stream().filter(item -> !retained.contains(item.getId())).toList());
+        saveNewInventoryItems(dto.getInventoryItems(), media);
+        inventoryItemRepository.flush();
+        return includeInventory(updated);
+    }
+
+    private MediaEditDto includeInventory(MediaEditDto dto) {
+        dto.setInventoryItems(inventoryItemRepository.findAllByMediaIdOrderByIdAsc(dto.getId()).stream()
+                .map(item -> new MediaInventoryItemDto(item.getId(), item.getInventoryNumber(), item.getBarcode()))
+                .toList());
+        return dto;
+    }
+
+    private Set<Long> validateInventorySelection(List<MediaInventoryItemDto> submitted, List<InventoryItem> existing) {
+        Set<Long> available = existing.stream().map(InventoryItem::getId).collect(Collectors.toSet());
+        Set<Long> retained = new HashSet<>();
+        Set<String> newInventoryNumbers = new HashSet<>();
+        for (var item : submitted) {
+            if (item.id() != null) {
+                if (!available.contains(item.id())) {
+                    throw new IllegalArgumentException("A copy no longer exists or belongs to another media record");
+                }
+                if (!retained.add(item.id())) {
+                    throw new IllegalArgumentException("A copy cannot be submitted more than once");
+                }
+            } else {
+                if (item.inventoryNumber() == null || !item.inventoryNumber().equals(item.barcode())) {
+                    throw new IllegalArgumentException("New copies require matching UUID inventory numbers and barcodes");
+                }
+                try {
+                    if (!UUID.fromString(item.inventoryNumber()).toString().equals(item.inventoryNumber())) {
+                        throw new IllegalArgumentException("Inventory number must be a UUID");
+                    }
+                } catch (IllegalArgumentException exception) {
+                    throw new IllegalArgumentException("Inventory number must be a UUID", exception);
+                }
+                if (!newInventoryNumbers.add(item.inventoryNumber())) {
+                    throw new IllegalArgumentException("Each new copy must have a unique inventory number");
+                }
+            }
+        }
+        return retained;
+    }
+
+    private void saveNewInventoryItems(List<MediaInventoryItemDto> submitted, Media media) {
+        inventoryItemRepository.saveAll(submitted.stream().filter(item -> item.id() == null)
+                .map(item -> InventoryItem.builder().media(media)
+                        .inventoryNumber(item.inventoryNumber()).barcode(item.barcode()).build())
+                .toList());
+    }
 
     @Override
     public List<MediaSummaryDto> findMedia(String query, Pageable pageable) {

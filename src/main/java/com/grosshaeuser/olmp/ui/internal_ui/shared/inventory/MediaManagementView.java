@@ -2,6 +2,9 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
 import com.grosshaeuser.olmp.inventory.service.MediaLookupService;
 import com.grosshaeuser.olmp.inventory.service.MediaManagementService;
+import com.grosshaeuser.olmp.inventory.service.BarcodeService;
+import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
+import com.grosshaeuser.olmp.inventory.dto.media.MediaInventoryItemDto;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
@@ -33,6 +36,8 @@ import java.util.stream.Collectors;
 public class MediaManagementView extends VerticalLayout {
     private final MediaManagementService mediaService;
     private final MediaLookupService lookupService;
+    private final BarcodeService barcodeService;
+    private final BarcodePrintService barcodePrintService;
     private final UiExceptionHandler uiExceptionHandler;
     private final UiNotificationHandler uiNotificationHandler;
     private final TextField searchField = new TextField("Search media");
@@ -41,11 +46,15 @@ public class MediaManagementView extends VerticalLayout {
     public MediaManagementView(
             MediaManagementService mediaService,
             MediaLookupService lookupService,
+            BarcodeService barcodeService,
+            BarcodePrintService barcodePrintService,
             UiExceptionHandler uiExceptionHandler,
             UiNotificationHandler uiNotificationHandler
     ) {
         this.mediaService = Objects.requireNonNull(mediaService, "mediaService");
         this.lookupService = Objects.requireNonNull(lookupService, "lookupService");
+        this.barcodeService = Objects.requireNonNull(barcodeService, "barcodeService");
+        this.barcodePrintService = Objects.requireNonNull(barcodePrintService, "barcodeLabelService");
         this.uiExceptionHandler = Objects.requireNonNull(uiExceptionHandler, "uiExceptionHandler");
         this.uiNotificationHandler = Objects.requireNonNull(uiNotificationHandler, "uiNotificationHandler");
         configureSearch();
@@ -144,10 +153,12 @@ public class MediaManagementView extends VerticalLayout {
 
     private Component createEditor(MediaSummaryDto media) {
         try {
-            return mediaService.findMediaForEdit(media.id())
+            return mediaService.findMediaWithInventoryForEdit(media.id())
                     .<Component>map(dto -> new MediaEditComponent(
                             dto,
                             lookupService.getFormOptions(),
+                            barcodeService,
+                            barcodePrintService,
                             changed -> updateMedia(changed, media),
                             () -> mediaGrid.setDetailsVisible(media, false),
                             uiExceptionHandler::handleException)
@@ -167,6 +178,7 @@ public class MediaManagementView extends VerticalLayout {
         try {
             new MediaCreateDialog(
                     lookupService.getFormOptions(),
+                    barcodeService,
                     this::createMedia,
                     uiExceptionHandler::handleException
             ).open();
@@ -176,21 +188,35 @@ public class MediaManagementView extends VerticalLayout {
     }
 
     private void createMedia(MediaCreateDto dto) {
-        Objects.requireNonNull(mediaService.createMedia(dto), "Media creation failed");
+        List<MediaInventoryItemDto> newCopies = newlyAddedCopies(dto);
+        Objects.requireNonNull(mediaService.createMediaWithInventory(dto), "Media creation failed");
         uiNotificationHandler.showSuccessNotification("Media created successfully.");
         if (searchField.isEmpty()) {
             refreshGrid();
         } else {
             searchField.clear();
         }
+        offerBarcodePrinting(dto.getTitle(), newCopies);
     }
 
     private MediaEditDto updateMedia(MediaEditDto dto, MediaSummaryDto summary) {
-        MediaEditDto updated = Objects.requireNonNull(mediaService.updateMedia(dto), "Updated media");
+        List<MediaInventoryItemDto> newCopies = newlyAddedCopies(dto);
+        MediaEditDto updated = Objects.requireNonNull(mediaService.updateMediaWithInventory(dto), "Updated media");
         mediaGrid.setDetailsVisible(summary, false);
         mediaGrid.getDataProvider().refreshAll();
         uiNotificationHandler.showSuccessNotification("Media updated successfully.");
+        offerBarcodePrinting(updated.getTitle(), newCopies);
         return updated;
+    }
+
+    private static List<MediaInventoryItemDto> newlyAddedCopies(MediaCreateDto dto) {
+        return dto.getInventoryItems().stream().filter(copy -> copy.id() == null).toList();
+    }
+
+    private void offerBarcodePrinting(String title, List<MediaInventoryItemDto> copies) {
+        if (!copies.isEmpty()) {
+            new BarcodePrintDialog(barcodePrintService, title, copies).open();
+        }
     }
 
     private void confirmDelete(MediaSummaryDto medium) {
