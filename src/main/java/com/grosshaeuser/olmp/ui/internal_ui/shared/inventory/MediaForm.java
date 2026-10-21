@@ -119,6 +119,8 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         copyCount.setValue(1);
         copyCount.setStepButtonsVisible(true);
         copyCount.setHelperText("Add between 1 and 1,000 copies per batch.");
+        copyCount.setAriaLabel("Number of copies to add");
+        copyCount.setLabel("Number of copies to add");
         Button addCopies = new Button("Add copies", _ -> addInventoryBatch());
         HorizontalLayout inventoryActions = new HorizontalLayout(copyCount, addCopies);
         inventoryActions.setAlignItems(FlexComponent.Alignment.BASELINE);
