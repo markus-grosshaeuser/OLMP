@@ -1,8 +1,10 @@
 package com.grosshaeuser.olmp.inventory.service.impl;
 
 import com.grosshaeuser.olmp.inventory.dto.author.AuthorCreateDto;
+import com.grosshaeuser.olmp.inventory.dto.author.AuthorEditDto;
 import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherCreateDto;
+import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherEditDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.mappers.AuthorMapper;
 import com.grosshaeuser.olmp.inventory.mappers.PublisherMapper;
@@ -54,6 +56,38 @@ public class MediaReferenceServiceImpl implements MediaReferenceService {
         normalized.setWebsite(optionalText(publisher.getWebsite()));
         validate(normalized);
         return publisherMapper.toSummary(publisherRepository.saveAndFlush(publisherMapper.toEntity(normalized)));
+    }
+
+    @Override
+    public AuthorSummaryDto updateAuthor(AuthorEditDto author) {
+        if (author == null) {
+            throw new IllegalArgumentException("Author data is required");
+        }
+        AuthorEditDto normalized = new AuthorEditDto();
+        normalized.setId(author.getId());
+        normalized.setFirstName(optionalText(author.getFirstName()));
+        normalized.setLastName(optionalText(author.getLastName()));
+        validate(normalized);
+        var existing = authorRepository.findById(normalized.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Author is no longer available. Reopen the form."));
+        authorMapper.update(normalized, existing);
+        return authorMapper.toSummary(authorRepository.saveAndFlush(existing));
+    }
+
+    @Override
+    public PublisherSummaryDto updatePublisher(PublisherEditDto publisher) {
+        if (publisher == null) {
+            throw new IllegalArgumentException("Publisher data is required");
+        }
+        PublisherEditDto normalized = new PublisherEditDto();
+        normalized.setId(publisher.getId());
+        normalized.setName(optionalText(publisher.getName()));
+        normalized.setWebsite(optionalText(publisher.getWebsite()));
+        validate(normalized);
+        var existing = publisherRepository.findById(normalized.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Publisher is no longer available. Reopen the form."));
+        publisherMapper.update(normalized, existing);
+        return publisherMapper.toSummary(publisherRepository.saveAndFlush(existing));
     }
 
     private void validate(Object dto) {
