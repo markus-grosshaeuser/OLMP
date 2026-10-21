@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
 import com.grosshaeuser.olmp.inventory.service.MediaLookupService;
+import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.grosshaeuser.olmp.inventory.service.MediaManagementService;
 import com.grosshaeuser.olmp.inventory.service.BarcodeService;
 import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 public class MediaManagementView extends VerticalLayout {
     private final MediaManagementService mediaService;
     private final MediaLookupService lookupService;
+    private final MediaReferenceService referenceService;
     private final BarcodeService barcodeService;
     private final BarcodePrintService barcodePrintService;
     private final UiExceptionHandler uiExceptionHandler;
@@ -48,11 +50,13 @@ public class MediaManagementView extends VerticalLayout {
             MediaLookupService lookupService,
             BarcodeService barcodeService,
             BarcodePrintService barcodePrintService,
+            MediaReferenceService referenceService,
             UiExceptionHandler uiExceptionHandler,
             UiNotificationHandler uiNotificationHandler
     ) {
         this.mediaService = Objects.requireNonNull(mediaService, "mediaService");
         this.lookupService = Objects.requireNonNull(lookupService, "lookupService");
+        this.referenceService = Objects.requireNonNull(referenceService, "referenceService");
         this.barcodeService = Objects.requireNonNull(barcodeService, "barcodeService");
         this.barcodePrintService = Objects.requireNonNull(barcodePrintService, "barcodeLabelService");
         this.uiExceptionHandler = Objects.requireNonNull(uiExceptionHandler, "uiExceptionHandler");
@@ -159,6 +163,7 @@ public class MediaManagementView extends VerticalLayout {
                             lookupService.getFormOptions(),
                             barcodeService,
                             barcodePrintService,
+                            referenceService,
                             changed -> updateMedia(changed, media),
                             () -> mediaGrid.setDetailsVisible(media, false),
                             uiExceptionHandler::handleException)
@@ -179,6 +184,7 @@ public class MediaManagementView extends VerticalLayout {
             new MediaCreateDialog(
                     lookupService.getFormOptions(),
                     barcodeService,
+                    referenceService,
                     this::createMedia,
                     uiExceptionHandler::handleException
             ).open();

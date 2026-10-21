@@ -5,6 +5,7 @@ import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaEditDto;
 import com.grosshaeuser.olmp.inventory.service.BarcodeService;
+import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -24,6 +25,7 @@ public class MediaEditComponent extends Composite<VerticalLayout> implements Str
             MediaFormOptions options,
             BarcodeService barcodeService,
             BarcodePrintService barcodePrintService,
+            MediaReferenceService referenceService,
             UpdateCallback<MediaEditDto> updateCallback,
             Runnable closeCallback,
             ErrorCallback errorCallback
@@ -33,7 +35,7 @@ public class MediaEditComponent extends Composite<VerticalLayout> implements Str
         this.updateCallback = Objects.requireNonNull(updateCallback, "updateCallback");
         this.errorCallback = Objects.requireNonNull(errorCallback, "errorCallback");
         Objects.requireNonNull(closeCallback, "closeCallback");
-        form = new MediaForm<>(MediaEditDto.class, options, barcodeService, barcodePrintService);
+        form = new MediaForm<>(MediaEditDto.class, options, barcodeService, barcodePrintService, referenceService);
         form.read(media);
         Button save = new Button("Save changes", _ -> save());
         save.addThemeVariants(ButtonVariant.PRIMARY);

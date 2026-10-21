@@ -1,15 +1,19 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
 import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
+import com.grosshaeuser.olmp.inventory.dto.author.AuthorCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaAuthorWriteDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaIdentifierWriteDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaInventoryItemDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaTypeSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
+import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherCreateDto;
+import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
 import com.grosshaeuser.olmp.inventory.service.BarcodeService;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.HasSize;
 import com.vaadin.flow.component.UI;
@@ -28,6 +32,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
+import com.vaadin.flow.data.provider.ListDataProvider;
 
 import java.util.ArrayList;
 import java.util.Base64;
@@ -35,7 +40,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> implements Structurable, Printing {
 
@@ -43,6 +50,12 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
     private final MediaFormOptions options;
     private final BarcodeService barcodeService;
     private final BarcodePrintService barcodePrintService;
+    private final MediaReferenceService referenceService;
+    private final List<PublisherSummaryDto> publisherOptions;
+    private final List<AuthorSummaryDto> authorOptions;
+    private final ListDataProvider<PublisherSummaryDto> publisherProvider;
+    private final ListDataProvider<AuthorSummaryDto> authorProvider;
+    private final InlineCreateForm<PublisherCreateDto> publisherCreation;
     private final ComboBox<MediaTypeSummaryDto> mediaType = new ComboBox<>("Media type");
     private final ComboBox<PublisherSummaryDto> publisher = new ComboBox<>("Publisher");
     private final TextField title = new TextField("Title");
@@ -62,16 +75,27 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
     private final List<IdentifierRow> identifiers = new ArrayList<>();
     private final Span validationMessage = new Span();
 
-    MediaForm(Class<T> dtoType, MediaFormOptions options, BarcodeService barcodeService, BarcodePrintService barcodePrintService) {
+    MediaForm(Class<T> dtoType, MediaFormOptions options, BarcodeService barcodeService, BarcodePrintService barcodePrintService,
+              MediaReferenceService referenceService) {
         this.options = Objects.requireNonNull(options, "options");
+        this.referenceService = Objects.requireNonNull(referenceService, "referenceService");
+        publisherOptions = new ArrayList<>(options.publishers());
+        authorOptions = new ArrayList<>(options.authors());
+        publisherProvider = new ListDataProvider<>(publisherOptions);
+        authorProvider = new ListDataProvider<>(authorOptions);
         this.barcodeService = Objects.requireNonNull(barcodeService, "barcodeService");
         binder = new BeanValidationBinder<>(dtoType);
         this.barcodePrintService = barcodePrintService;
         configureFields();
         configureBindings();
+        publisherCreation = createPublisherForm();
 
         FormLayout catalogue = responsiveForm();
-        catalogue.add(title, subtitle, mediaType, publisher, edition, publicationYear, languageCode, coverImageFileName, description);
+        Button createPublisher = new Button(VaadinIcon.PLUS.create(), _ -> publisherCreation.open());
+        createPublisher.setTooltipText("Create new publisher");
+        createPublisher.setAriaLabel("Create new publisher");
+        catalogue.add(title, subtitle, mediaType, referenceSection(publisher, createPublisher, publisherCreation),
+                edition, publicationYear, languageCode, coverImageFileName, description);
         catalogue.setColspan(title, 2);
         catalogue.setColspan(subtitle, 2);
         catalogue.setColspan(description, 2);
@@ -80,14 +104,13 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         inventoryRows.setPadding(false);
         Button addAuthor = new Button("Add author", _ -> addAuthor(new MediaAuthorWriteDto()));
         Button addIdentifier = new Button("Add identifier", _ -> addIdentifier(new MediaIdentifierWriteDto()));
-        Button addCopy = new Button("Add copy", _ -> addInventoryItem(MediaInventoryItemDto.newCopy()));
         copyCount.setMin(1);
         copyCount.setMax(1000);
         copyCount.setValue(1);
         copyCount.setStepButtonsVisible(true);
         copyCount.setHelperText("Add between 1 and 1,000 copies per batch.");
         Button addCopies = new Button("Add copies", _ -> addInventoryBatch());
-        HorizontalLayout inventoryActions = new HorizontalLayout(addCopy, copyCount, addCopies);
+        HorizontalLayout inventoryActions = new HorizontalLayout(copyCount, addCopies);
         inventoryActions.setAlignItems(FlexComponent.Alignment.BASELINE);
         inventoryActions.setWrap(true);
         inventoryCount.getElement().setAttribute("aria-live", "polite");
@@ -114,6 +137,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
     void read(T source) {
         Objects.requireNonNull(source, "source");
         binder.readBean(source);
+        publisherCreation.reset();
         authors.clear();
         authorRows.removeAll();
         source.getAuthors().forEach(this::addAuthor);
@@ -166,7 +190,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
     private void configureFields() {
         mediaType.setItems(options.mediaTypes());
         mediaType.setItemLabelGenerator(type -> type.name() + " (" + type.code() + ")");
-        publisher.setItems(options.publishers());
+        publisher.setItems(publisherProvider);
         publisher.setItemLabelGenerator(PublisherSummaryDto::name);
         publisher.setClearButtonVisible(true);
         title.setMaxLength(500);
@@ -194,7 +218,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
                 .bind("mediaTypeId");
         binder.forField(publisher)
                 .withConverter(value -> value == null ? null : value.id(),
-                        id -> lookup(options.publishers(), PublisherSummaryDto::id, id, "Publisher"))
+                        id -> lookup(publisherOptions, PublisherSummaryDto::id, id, "Publisher"))
                 .bind("publisherId");
         binder.forField(publicationYear)
                 .withValidator(value -> value == null || value >= 1 && value <= 9999,
@@ -208,6 +232,109 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         AuthorRow row = new AuthorRow(dto);
         authors.add(row);
         authorRows.add(row.layout);
+    }
+
+    private InlineCreateForm<PublisherCreateDto> createPublisherForm() {
+        TextField name = new TextField("Publisher name");
+        name.setMaxLength(255);
+        TextField website = new TextField("Publisher URL");
+        website.setMaxLength(500);
+        website.setPlaceholder("https://example.org");
+        var form = new InlineCreateForm<>(PublisherCreateDto.class, PublisherCreateDto::new, dto -> {
+            PublisherSummaryDto created = Objects.requireNonNull(referenceService.createPublisher(dto), "Created publisher");
+            publisherOptions.add(created);
+            publisherProvider.refreshAll();
+            publisher.setValue(created);
+        }, "publisher", name, website);
+        form.binder.forField(name).withConverter(String::strip, text -> text == null ? "" : text)
+                .asRequired("Publisher name is required").bind("name");
+        form.binder.forField(website).withConverter(String::strip, text -> text == null ? "" : text).bind("website");
+        form.reset();
+        return form;
+    }
+
+    private InlineCreateForm<AuthorCreateDto> createAuthorForm(ComboBox<AuthorSummaryDto> author) {
+        TextField firstName = new TextField("First name");
+        firstName.setMaxLength(255);
+        TextField lastName = new TextField("Last name");
+        lastName.setMaxLength(255);
+        var form = new InlineCreateForm<>(AuthorCreateDto.class, AuthorCreateDto::new, dto -> {
+            AuthorSummaryDto created = Objects.requireNonNull(referenceService.createAuthor(dto), "Created author");
+            authorOptions.add(created);
+            authorProvider.refreshAll();
+            author.setValue(created);
+        }, "author", firstName, lastName);
+        form.binder.forField(firstName).withConverter(String::strip, text -> text == null ? "" : text).bind("firstName");
+        form.binder.forField(lastName).withConverter(String::strip, text -> text == null ? "" : text)
+                .asRequired("Last name is required").bind("lastName");
+        form.reset();
+        return form;
+    }
+
+    private static VerticalLayout referenceSection(Component selection, Button create, Component creation) {
+        HorizontalLayout selector = new HorizontalLayout(selection, create);
+        selector.setAlignItems(FlexComponent.Alignment.BASELINE);
+        selector.setWidthFull();
+        selector.setFlexGrow(1, selection);
+        VerticalLayout section = new VerticalLayout(selector, creation);
+        section.setPadding(false);
+        section.setSpacing(false);
+        section.setWidthFull();
+        return section;
+    }
+
+    private class InlineCreateForm<D> extends VerticalLayout {
+        private final BeanValidationBinder<D> binder;
+        private final Supplier<D> factory;
+        private final Span error = new Span();
+        private final TextField firstField;
+
+        InlineCreateForm(Class<D> type, Supplier<D> factory, Consumer<D> create, String label, TextField... fields) {
+            this.binder = new BeanValidationBinder<>(type);
+            this.factory = factory;
+            firstField = fields[0];
+            setPadding(true);
+            setWidthFull();
+            addClassName("inline-create-form");
+            FormLayout inputs = responsiveForm();
+            for (TextField field : fields) {
+                field.setWidthFull();
+                inputs.add(field);
+            }
+            error.getElement().setAttribute("role", "alert");
+            error.getStyle().set("color", "var(--vaadin-text-color-error, #b71c1c)");
+            Button save = new Button("Save " + label, _ -> {
+                error.setVisible(false);
+                D dto = factory.get();
+                if (!binder.writeBeanIfValid(dto)) {
+                    return;
+                }
+                try {
+                    create.accept(dto);
+                    reset();
+                } catch (RuntimeException exception) {
+                    error.setText("Could not create " + label + ". " + Objects.requireNonNullElse(exception.getMessage(), "Please try again."));
+                    error.setVisible(true);
+                }
+            });
+            save.addThemeVariants(ButtonVariant.PRIMARY);
+            HorizontalLayout actions = new HorizontalLayout();
+            actions.setWidthFull();
+            actions.addToStart(save);
+            actions.addToEnd(new Button("Cancel", _ -> reset()));
+            add(inputs, actions, error);
+        }
+
+        void open() {
+            setVisible(true);
+            firstField.focus();
+        }
+
+        void reset() {
+            binder.readBean(factory.get());
+            error.setVisible(false);
+            setVisible(false);
+        }
     }
 
     private void addIdentifier(MediaIdentifierWriteDto dto) {
@@ -303,9 +430,9 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
                 barcode.add(image);
             }
             Button print = new Button(VaadinIcon.PRINT.create());
-            print.setEnabled(false);
+            print.setVisible(false);
             if (barcodePrintService != null) {
-                print.setEnabled(true);
+                print.setVisible(true);
                 print.addClickListener(_ -> {
                     String document = barcodePrintService.createPrintDocument("", List.of(dto));
                     UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
@@ -320,7 +447,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             remove.setAriaLabel("Remove copy");
             layout.setWidthFull();
             layout.setWrap(false);
-            layout.setAlignItems(FlexComponent.Alignment.BASELINE);
+            layout.setAlignItems(FlexComponent.Alignment.END);
             layout.add(number, barcode, print, remove);
             layout.setFlexGrow(1, number, barcode);
         }
@@ -332,8 +459,13 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
 
         AuthorRow(MediaAuthorWriteDto dto) {
             ComboBox<AuthorSummaryDto> author = new ComboBox<>("Author");
-            author.setItems(options.authors());
+            author.setItems(authorProvider);
             author.setItemLabelGenerator(MediaForm::authorName);
+            var creation = createAuthorForm(author);
+            Button createAuthor = new Button(VaadinIcon.PLUS.create(), _ -> creation.open());
+            createAuthor.setTooltipText("Create new author");
+            createAuthor.setAriaLabel("Create new author");
+            VerticalLayout authorSection = referenceSection(author, createAuthor, creation);
             TextField role = new TextField("Role");
             role.setMaxLength(50);
             role.setHelperText("For example: AUTHOR, EDITOR or TRANSLATOR");
@@ -349,7 +481,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             remove.setAriaLabel("Remove author");
             binder.forField(author).asRequired("Choose an author")
                     .withConverter(value -> value == null ? null : value.id(),
-                            id -> lookup(options.authors(), AuthorSummaryDto::id, id, "Author"))
+                            id -> lookup(authorOptions, AuthorSummaryDto::id, id, "Author"))
                     .bind("authorId");
             binder.forField(role).asRequired("Role is required")
                     .withConverter(String::strip, value -> value == null ? "" : value).bind("role");
@@ -360,8 +492,8 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             List.<HasSize>of(author, role).forEach(HasSize::setWidthFull);
             layout.setSizeFull();
             layout.setAlignItems(FlexComponent.Alignment.BASELINE);
-            layout.add(author, role, order, remove);
-            layout.setFlexGrow(1, author);
+            layout.add(authorSection, role, order, remove);
+            layout.setFlexGrow(1, authorSection);
             layout.setFlexGrow(1, role);
             binder.readBean(dto);
         }

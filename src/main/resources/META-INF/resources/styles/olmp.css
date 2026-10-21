@@ -46,3 +46,7 @@
         font-weight: bold;
     }
 }
+
+.inline-create-form {
+    background: var(--lumo-contrast-5pct);
+}
