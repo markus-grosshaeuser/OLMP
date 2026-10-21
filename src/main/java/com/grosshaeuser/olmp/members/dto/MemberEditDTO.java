@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -28,7 +29,7 @@ public class MemberEditDTO {
     private MemberContactInformationEditDTO contact;
 
     private boolean withMembershipDetails;
-    @Nullable
-    private MembershipEditDTO membership;
+    @Builder.Default
+    private List<MembershipEditDTO> memberships = List.of();
 
 }

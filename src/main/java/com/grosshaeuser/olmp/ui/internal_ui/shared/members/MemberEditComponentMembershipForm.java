@@ -1,132 +1,181 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
+import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.Unit;
+import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
-import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
-import com.vaadin.flow.data.binder.ValidationException;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-class MemberEditComponentMembershipForm extends Tab {
-    private final TextField membershipNumberField = new TextField("Membership Number");
-    private final Select<String> membershipTypeSelectField = new Select<>("Membership Type");
-    private final Select<String> membershipStatusSelectField = new Select<>("Membership Status");
-    private final DatePicker startDateField = new DatePicker("Start Date");
-    private final DatePicker expirationDateField = new DatePicker("Expiration Date");
-    private final DatePicker renewalDateField = new DatePicker("Renewal Date");
-    private final DatePicker cancellationDateField = new DatePicker("Cancellation Date");
-
+class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
+    private final VerticalLayout membershipRows = new VerticalLayout();
+    private final List<MembershipRow> memberships = new ArrayList<>();
+    private final Set<String> membershipTypes;
+    private final Set<String> membershipStatuses;
     private final HashMap<String, Integer> membershipPeriodsInMonths;
-
-    private final BeanValidationBinder<MembershipEditDTO> binder = new BeanValidationBinder<>(MembershipEditDTO.class);
-
-    private MembershipEditDTO snapshot;
     private final MemberEditComponent.WithMembershipDetailsCallback callback;
+    private List<MembershipEditDTO> snapshot = List.of();
 
     MemberEditComponentMembershipForm(
-            MembershipEditDTO dto,
+            List<MembershipEditDTO> dtos,
             Set<String> membershipTypes,
             Set<String> membershipStatuses,
             HashMap<String, Integer> membershipPeriodsInMonths,
             MemberEditComponent.WithMembershipDetailsCallback callback
     ) {
-        this.callback = callback;
+        this.membershipTypes = membershipTypes;
+        this.membershipStatuses = membershipStatuses;
         this.membershipPeriodsInMonths = membershipPeriodsInMonths;
+        this.callback = callback;
 
-        this.membershipTypeSelectField.setItems(membershipTypes);
-        this.membershipTypeSelectField.setEmptySelectionAllowed(false);
-        this.membershipTypeSelectField.addValueChangeListener(_ -> updateExpirationDate());
+        Button addMembership = new Button("Add membership", VaadinIcon.PLUS.create(), _ -> {
+            addNewMembership(MembershipEditDTO.builder()
+                    .membershipType("STANDARD")
+                    .membershipStatus("ACTIVE")
+                    .startDate(LocalDate.now())
+                    .expirationDate(LocalDate.now().plusMonths(membershipPeriodsInMonths.getOrDefault("STANDARD", 12)))
+                    .build());
+            handleDataChange();
+        });
 
-        this.membershipStatusSelectField.setItems(membershipStatuses);
-        this.membershipStatusSelectField.setEmptySelectionAllowed(false);
+        Scroller scroller = new Scroller();
+        scroller.addThemeName("overflow-indicators");
+        scroller.setMaxHeight(400, Unit.PIXELS);
+        scroller.setContent(membershipRows);
 
-        configureBinder();
-        loadMembershipDetails(dto);
-        add(createFormLayout());
+        getContent().add(addMembership, scroller);
+        loadMembershipDetails(dtos);
     }
 
-    private void updateExpirationDate() {
-        LocalDate startDate = this.startDateField.getValue();
-        if (startDate == null)
-            return;
-        String membershipType = this.membershipTypeSelectField.getValue();
-        if (membershipType == null)
-            return;
-        if (membershipPeriodsInMonths.containsKey(membershipType)) {
-            this.expirationDateField.setValue(startDate.plusMonths(membershipPeriodsInMonths.get(membershipType)));
-        }
-    }
-
-    void loadMembershipDetails(MembershipEditDTO dto) {
-        binder.readBean(dto);
-        snapshot = createComparableSnapshot(dto);
+    void loadMembershipDetails(List<MembershipEditDTO> dtos) {
+        memberships.clear();
+        membershipRows.removeAll();
+        snapshot = dtos.stream().map(dto -> dto.toBuilder().build()).toList();
+        snapshot.forEach(this::addMembership);
         handleDataChange();
     }
 
-    private void configureBinder() {
-        binder.forField(membershipNumberField).bindReadOnly(MembershipEditDTO::getMembershipNumber);
-        binder.forField(membershipTypeSelectField).bind(MembershipEditDTO::getMembershipType, MembershipEditDTO::setMembershipType);
-        binder.forField(membershipStatusSelectField).bind(MembershipEditDTO::getMembershipStatus, MembershipEditDTO::setMembershipStatus);
-        binder.forField(startDateField).bindReadOnly(MembershipEditDTO::getStartDate);
-        binder.forField(expirationDateField).bind(MembershipEditDTO::getExpirationDate, MembershipEditDTO::setExpirationDate);
-        binder.forField(renewalDateField).bind(MembershipEditDTO::getRenewalDate, MembershipEditDTO::setRenewalDate);
-        binder.forField(cancellationDateField).bind(MembershipEditDTO::getCancellationDate, MembershipEditDTO::setCancellationDate);
+    private void addMembership(MembershipEditDTO dto) {
+        MembershipRow row = new MembershipRow(dto);
+        memberships.add(row);
+        membershipRows.add(row.layout);
+    }
 
-        binder.addValueChangeListener(_ -> handleDataChange());
+    private void addNewMembership(MembershipEditDTO dto) {
+        MembershipRow row = new MembershipRow(dto);
+        memberships.addFirst(row);
+        membershipRows.addComponentAsFirst(row.layout);
     }
 
     private void handleDataChange() {
         callback.withMembership(getFormDataObject()
-                .map(formData -> hasChanges(createComparableSnapshot(formData)))
-                .orElse(false)
-        );
+                .map(data -> !snapshot.equals(data))
+                .orElse(true));
     }
 
-    private FormLayout createFormLayout() {
-        FormLayout layout = new FormLayout();
-        layout.setAutoResponsive(true);
-        layout.setExpandColumns(true);
-        layout.setExpandFields(true);
-
-        layout.addFormRow(membershipNumberField);
-        layout.addFormRow(membershipTypeSelectField, membershipStatusSelectField);
-        layout.addFormRow(startDateField, expirationDateField);
-        layout.addFormRow(renewalDateField, cancellationDateField);
-        layout.setColspan(membershipNumberField, 2);
-
-        layout.setSizeFull();
-
-        return layout;
-    }
-
-    private MembershipEditDTO createComparableSnapshot(MembershipEditDTO membership) {
-        return membership.toBuilder().build();
-    }
-
-
-    Optional<MembershipEditDTO> getFormDataObject() {
-        MembershipEditDTO formData = snapshot.toBuilder().build();
-        try {
-            binder.writeBean(formData);
-            return Optional.of(createComparableSnapshot(formData));
-        } catch (ValidationException e) {
-            return Optional.empty();
+    Optional<List<MembershipEditDTO>> getFormDataObject() {
+        List<MembershipEditDTO> data = new ArrayList<>();
+        boolean valid = true;
+        for (MembershipRow row : memberships) {
+            MembershipEditDTO dto = row.original.toBuilder().build();
+            if (row.binder.writeBeanIfValid(dto)) {
+                data.add(dto);
+            } else {
+                valid = false;
+            }
         }
+        return valid ? Optional.of(data) : Optional.empty();
     }
 
-    private boolean hasChanges(MembershipEditDTO membership) {
-        return !Objects.equals(membership.getMembershipType(), snapshot.getMembershipType())
-                || !Objects.equals(membership.getMembershipStatus(), snapshot.getMembershipStatus())
-                || !Objects.equals(membership.getExpirationDate(), snapshot.getExpirationDate())
-                || !Objects.equals(membership.getRenewalDate(), snapshot.getRenewalDate())
-                || !Objects.equals(membership.getCancellationDate(), snapshot.getCancellationDate());
+    private class MembershipRow {
+        private final MembershipEditDTO original;
+        private final BeanValidationBinder<MembershipEditDTO> binder = new BeanValidationBinder<>(MembershipEditDTO.class);
+        private final VerticalLayout layout = new VerticalLayout();
+        private final Select<String> membershipType = new Select<>();
+        private final DatePicker startDate = new DatePicker("Start date");
+        private final DatePicker expirationDate = new DatePicker("Expiration date");
+
+        MembershipRow(MembershipEditDTO dto) {
+            original = dto.toBuilder().build();
+            TextField number = new TextField("Membership number");
+            number.setPlaceholder("Generated on save");
+            Select<String> status = new Select<>();
+            membershipType.setLabel("Type");
+            membershipType.setItems(membershipTypes);
+            membershipType.setEmptySelectionAllowed(false);
+            status.setLabel("Status");
+            status.setItems(membershipStatuses);
+            status.setEmptySelectionAllowed(false);
+            DatePicker renewalDate = new DatePicker("Renewal date");
+            DatePicker cancellationDate = new DatePicker("Cancellation date");
+
+            binder.forField(number)
+                    .withNullRepresentation("")
+                    .bindReadOnly(MembershipEditDTO::getMembershipNumber);
+            binder.forField(membershipType).asRequired("Choose a membership type")
+                    .bind(MembershipEditDTO::getMembershipType, MembershipEditDTO::setMembershipType);
+            binder.forField(status).asRequired("Choose a membership status")
+                    .bind(MembershipEditDTO::getMembershipStatus, MembershipEditDTO::setMembershipStatus);
+            if (dto.getId() == null) {
+                binder.forField(startDate).asRequired("Choose a start date")
+                        .bind(MembershipEditDTO::getStartDate, MembershipEditDTO::setStartDate);
+            } else {
+                binder.forField(startDate).bindReadOnly(MembershipEditDTO::getStartDate);
+            }
+            binder.forField(expirationDate).bind(MembershipEditDTO::getExpirationDate, MembershipEditDTO::setExpirationDate);
+            binder.forField(renewalDate).bind(MembershipEditDTO::getRenewalDate, MembershipEditDTO::setRenewalDate);
+            binder.forField(cancellationDate).bind(MembershipEditDTO::getCancellationDate, MembershipEditDTO::setCancellationDate);
+            binder.readBean(dto);
+
+            membershipType.addValueChangeListener(_ -> updateExpirationDate());
+            startDate.addValueChangeListener(_ -> updateExpirationDate());
+            binder.addValueChangeListener(_ -> handleDataChange());
+
+            layout.setWidthFull();
+            layout.addClassName("membership-row");
+            layout.setWrap(true);
+            layout.setAlignItems(FlexComponent.Alignment.END);
+            HorizontalLayout baseData = new HorizontalLayout();
+            baseData.setWidthFull();
+            baseData.add(number, membershipType, status);
+            HorizontalLayout dates = new HorizontalLayout();
+            dates.setWidthFull();
+            dates.add(startDate, expirationDate, renewalDate, cancellationDate);
+            layout.add(baseData, dates);
+            baseData.setFlexGrow(1, number);
+            if (dto.getId() == null) {
+                Button remove = new Button(VaadinIcon.TRASH.create(), _ -> {
+                    memberships.remove(this);
+                    membershipRows.remove(layout);
+                    handleDataChange();
+                });
+                remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
+                remove.setAriaLabel("Remove new membership");
+                remove.setTooltipText("Remove new membership");
+                layout.add(remove);
+            }
+        }
+
+        private void updateExpirationDate() {
+            Integer months = membershipPeriodsInMonths.get(membershipType.getValue());
+            if (startDate.getValue() != null && months != null) {
+                expirationDate.setValue(startDate.getValue().plusMonths(months));
+            }
+        }
     }
 }

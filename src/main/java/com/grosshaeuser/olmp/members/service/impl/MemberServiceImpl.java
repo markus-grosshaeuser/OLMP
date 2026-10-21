@@ -9,7 +9,7 @@ import com.grosshaeuser.olmp.members.repository.MemberRepository;
 import com.grosshaeuser.olmp.members.service.MemberAccountService;
 import com.grosshaeuser.olmp.members.service.MemberContactInformationService;
 import com.grosshaeuser.olmp.members.service.MemberService;
-import com.grosshaeuser.olmp.memberships.entity.Membership;
+import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.mapper.MembershipMapper;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
@@ -21,7 +21,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -55,19 +60,20 @@ public class MemberServiceImpl implements MemberService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<MemberEditDTO> getDetailedMember(Long memberId) {
         checkPermission(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT, "You have no permission to read members.");
         return memberRepository.findById(memberId).flatMap(member -> {
             MemberAccount account = memberAccountService.findByMemberId(member.getId()).orElse(new MemberAccount());
             MemberContactInformation contact = memberContactInformationService.findByMemberId(member.getId()).orElse(new MemberContactInformation());
-            Membership membership = membershipService.findActiveByMemberId(member.getId()).orElse(new Membership());
             MemberEditDTO dto = MemberMapper.mergeMemberInformationToEditDto(member, account, contact);
-            dto.setMembership(MembershipMapper.mapMembershipToEditDto(membership));
+            dto.setMemberships(loadMemberships(member.getId()));
             return Optional.of(dto);
         });
     }
 
     @Override
+    @Transactional
     public Optional<MemberEditDTO> updateMember(MemberEditDTO dto) {
         checkPermission(SecurityConstants.Privileges.UPDATE_MEMBER_ACCOUNT, "You have no permission to update members.");
         return memberRepository.findById(dto.getId())
@@ -83,10 +89,10 @@ public class MemberServiceImpl implements MemberService {
                             : memberAccountService.findByMemberId(updatedMember.getId()).orElse(null);
 
                     MemberContactInformation updatedContactInfo = handleContactInformationUpdate(dto, updatedMember);
-                    Membership updatedMembership = handleMembershipUpdate(dto, updatedMember);
+                    handleMembershipUpdate(dto, updatedMember);
 
                     MemberEditDTO result = MemberMapper.mergeMemberInformationToEditDto(updatedMember, updatedAccount, updatedContactInfo);
-                    result.setMembership(MembershipMapper.mapMembershipToEditDto(updatedMembership));
+                    result.setMemberships(loadMemberships(updatedMember.getId()));
                     return result;
                 });
     }
@@ -105,17 +111,34 @@ public class MemberServiceImpl implements MemberService {
         }
     }
 
-    private Membership handleMembershipUpdate(MemberEditDTO dto, Member member) {
-        if (dto.isWithMembershipDetails() && dto.getMembership() != null) {
-            if (dto.getMembership().getId() != null) {
-                return membershipService.updateMembership(dto.getMembership()).orElse(new Membership());
-            } else {
-                return membershipService.createMembership(
-                        MembershipMapper.createDtoForNewMembershipInUpdateProcess(member, dto.getMembership())
-                ).orElse(null);
+    private List<MembershipEditDTO> loadMemberships(Long memberId) {
+        return membershipService.findAllByMemberId(memberId).stream()
+                .map(MembershipMapper::mapMembershipToEditDto)
+                .toList();
+    }
+
+    private void handleMembershipUpdate(MemberEditDTO dto, Member member) {
+        if (!dto.isWithMembershipDetails()) {
+            return;
+        }
+        Map<Long, MembershipEditDTO> existing = loadMemberships(member.getId()).stream()
+                .collect(Collectors.toMap(MembershipEditDTO::getId, Function.identity()));
+        var submittedIds = new HashSet<Long>();
+        for (MembershipEditDTO membership : dto.getMemberships()) {
+            if (membership.getId() != null
+                    && (!existing.containsKey(membership.getId()) || !submittedIds.add(membership.getId()))) {
+                throw new IllegalArgumentException("Membership does not belong to this member or was submitted twice.");
             }
-        } else {
-            return membershipService.findActiveByMemberId(member.getId()).orElse(null);
+        }
+        for (MembershipEditDTO membership : dto.getMemberships()) {
+            if (membership.getId() == null) {
+                membershipService.createMembership(
+                        MembershipMapper.createDtoForNewMembershipInUpdateProcess(member, membership)
+                ).orElseThrow(() -> new IllegalStateException("Could not create membership."));
+            } else if (!membership.equals(existing.get(membership.getId()))) {
+                membershipService.updateMembership(membership)
+                        .orElseThrow(() -> new IllegalStateException("Membership no longer exists. Reopen the form."));
+            }
         }
     }
 

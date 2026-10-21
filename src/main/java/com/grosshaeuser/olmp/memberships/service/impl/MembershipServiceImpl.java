@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -50,6 +51,12 @@ public class MembershipServiceImpl implements MembershipService {
     public Optional<Membership> findActiveByMemberId(Long memberId) {
         checkPermission(SecurityConstants.Privileges.READ_MEMBERSHIP, "You have no permission to read memberships.");
         return membershipRepository.findActiveByMemberId(memberId);
+    }
+
+    @Override
+    public List<Membership> findAllByMemberId(Long memberId) {
+        checkPermission(SecurityConstants.Privileges.READ_MEMBERSHIP, "You have no permission to read memberships.");
+        return membershipRepository.findAllByMemberIdOrderByStartDateDescIdDesc(memberId);
     }
 
     @Override

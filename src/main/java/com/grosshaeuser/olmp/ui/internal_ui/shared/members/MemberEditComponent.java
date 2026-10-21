@@ -93,14 +93,12 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
                     handleDataChange();
                 });
         membershipDetailsEditForm = new MemberEditComponentMembershipForm(
-                memberEditDTO.getMembership(),
+                memberEditDTO.getMemberships(),
                 membershipTypes,
                 membershipStatuses,
                 membershipPeriodsInMonths,
                 value -> {
                     membershipDataChanged = value;
-                    memberEditDTO.setWithMembershipDetails(value);
-                    memberProfileEditForm.loadMember(memberEditDTO);
                     handleDataChange();
                 }
         );
@@ -153,17 +151,23 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
     }
 
     public void save() {
+        var memberships = membershipDetailsEditForm.getFormDataObject();
+        if (memberships.isEmpty()) {
+            return;
+        }
         memberProfileEditForm.getFormDataObject().ifPresent(dto -> {
             try {
                 dto.setAccount(memberAccountEditForm.getFormDataObject().orElse(null));
-                dto.setMembership(membershipDetailsEditForm.getFormDataObject().orElse(null));
+                dto.setMemberships(memberships.get());
+                dto.setWithMembershipDetails(membershipDataChanged);
                 dto.setContact(memberContactInformationEditForm.getFormDataObject().orElse(null));
                 MemberEditDTO savedUser = updateCallback.update(dto);
                 memberProfileEditForm.loadMember(savedUser);
                 memberProfileEditForm.updateSnapshot();
                 memberAccountEditForm.loadMemberAccount(savedUser.getAccount());
-                membershipDetailsEditForm.loadMembershipDetails(savedUser.getMembership());
+                membershipDetailsEditForm.loadMembershipDetails(savedUser.getMemberships());
                 memberContactInformationEditForm.loadMembershipContactInformation(savedUser.getContact());
+                profileDataChanged = false;
                 handleDataChange();
             } catch (RuntimeException e) {
                 errorCallback.handleException(e);
