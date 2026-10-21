@@ -8,16 +8,20 @@ import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
 import com.grosshaeuser.olmp.memberships.repository.MembershipRepository;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
+import com.vaadin.flow.spring.security.AuthenticationContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDate;
 import java.util.Optional;
 
+import static com.grosshaeuser.olmp.security.SecurityConstants.Privileges.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -32,6 +36,9 @@ class MembershipServiceIntegrationTest {
     @Autowired
     private MemberRepository memberRepository;
 
+    @MockitoBean
+    private AuthenticationContext authenticationContext;
+
     @BeforeEach
     void setUp() {
         membershipRepository.deleteAll();
@@ -40,6 +47,8 @@ class MembershipServiceIntegrationTest {
 
     @Test
     void createMembershipPersistsMembershipWithGeneratedMembershipNumber() {
+        givenUserHasPermission(READ_MEMBERSHIP);
+        givenUserHasPermission(CREATE_MEMBERSHIP);
         Member member = memberRepository.save(member("Doe", "Jane"));
 
         MembershipCreateDTO dto = new MembershipCreateDTO();
@@ -76,6 +85,7 @@ class MembershipServiceIntegrationTest {
 
     @Test
     void findByMemberIdReturnsPersistedMembership() {
+        givenUserHasPermission(READ_MEMBERSHIP);
         Member member = memberRepository.save(member("Doe", "John"));
 
         Membership membership = membershipRepository.save(Membership.builder()
@@ -87,7 +97,7 @@ class MembershipServiceIntegrationTest {
                 .expirationDate(LocalDate.of(2027, 1, 1))
                 .build());
 
-        Optional<Membership> result = membershipService.findByMemberId(member.getId());
+        Optional<Membership> result = membershipService.findActiveByMemberId(member.getId());
 
         assertThat(result).isPresent();
         assertThat(result.get().getId()).isEqualTo(membership.getId());
@@ -99,15 +109,20 @@ class MembershipServiceIntegrationTest {
 
     @Test
     void findByMemberIdReturnsEmptyWhenMemberHasNoMembership() {
+        givenUserHasPermission(READ_MEMBERSHIP);
         Member member = memberRepository.save(member("Doe", "NoMembership"));
 
-        Optional<Membership> result = membershipService.findByMemberId(member.getId());
+        Optional<Membership> result = membershipService.findActiveByMemberId(member.getId());
 
         assertThat(result).isEmpty();
     }
 
     @Test
     void updateMembershipUpdatesAndPersistsMembership() {
+        givenUserHasPermission(UPDATE_MEMBERSHIP);
+        givenUserHasPermission(READ_MEMBERSHIP);
+        givenUserHasPermission(CREATE_MEMBERSHIP);
+
         Member member = memberRepository.save(member("Doe", "Update"));
 
         Membership membership = membershipRepository.save(Membership.builder()
@@ -125,9 +140,9 @@ class MembershipServiceIntegrationTest {
                 .id(membership.getId())
                 .membershipType("STUDENT")
                 .membershipStatus("SUSPENDED")
-                .expirationDate("2027-04-01")
-                .renewalDate("2027-03-01")
-                .cancellationDate("2027-02-01")
+                .expirationDate(LocalDate.of(2027, 4, 1))
+                .renewalDate(LocalDate.of(2027, 3, 1))
+                .cancellationDate(LocalDate.of(2027, 2, 1))
                 .build();
 
         Optional<Membership> result = membershipService.updateMembership(dto);
@@ -155,6 +170,10 @@ class MembershipServiceIntegrationTest {
 
     @Test
     void updateMembershipPersistsNullOptionalDatesWhenDtoContainsBlankDates() {
+        givenUserHasPermission(UPDATE_MEMBERSHIP);
+        givenUserHasPermission(READ_MEMBERSHIP);
+        givenUserHasPermission(CREATE_MEMBERSHIP);
+
         Member member = memberRepository.save(member("Doe", "BlankDates"));
 
         Membership membership = membershipRepository.save(Membership.builder()
@@ -172,9 +191,9 @@ class MembershipServiceIntegrationTest {
                 .id(membership.getId())
                 .membershipType("SENIOR")
                 .membershipStatus("ACTIVE")
-                .expirationDate("2027-06-01")
-                .renewalDate("")
-                .cancellationDate("")
+                .expirationDate(LocalDate.of(2027, 6 , 1))
+                .renewalDate(null)
+                .cancellationDate(null)
                 .build();
 
         Optional<Membership> result = membershipService.updateMembership(dto);
@@ -195,13 +214,14 @@ class MembershipServiceIntegrationTest {
 
     @Test
     void updateMembershipReturnsEmptyWhenMembershipDoesNotExist() {
+        givenUserHasPermission(UPDATE_MEMBERSHIP);
         MembershipEditDTO dto = MembershipEditDTO.builder()
                 .id(999_999L)
                 .membershipType("STANDARD")
                 .membershipStatus("ACTIVE")
-                .expirationDate("2027-01-01")
-                .renewalDate("")
-                .cancellationDate("")
+                .expirationDate(LocalDate.of(2027, 1, 1))
+                .renewalDate(null)
+                .cancellationDate(null)
                 .build();
 
         Optional<Membership> result = membershipService.updateMembership(dto);
@@ -215,5 +235,9 @@ class MembershipServiceIntegrationTest {
                 .firstName(firstName)
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
                 .build();
+    }
+
+    private void givenUserHasPermission(String permission) {
+        when(authenticationContext.hasAuthority(permission)).thenReturn(true);
     }
 }

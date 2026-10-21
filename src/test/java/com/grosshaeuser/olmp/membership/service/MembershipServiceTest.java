@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Optional;
 
+import static com.grosshaeuser.olmp.security.SecurityConstants.Privileges.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -47,6 +48,8 @@ class MembershipServiceTest {
 
     @Test
     void createMembershipGeneratesMembershipNumberPersistsMembershipAndReturnsSavedEntity() {
+        givenUserHasPermission(CREATE_MEMBERSHIP);
+
         Member member = mock(Member.class);
 
         MembershipCreateDTO dto = new MembershipCreateDTO();
@@ -110,6 +113,8 @@ class MembershipServiceTest {
 
     @Test
     void findByMemberIdDelegatesToRepositoryAndReturnsMembership() {
+        givenUserHasPermission(READ_MEMBERSHIP);
+
         Membership membership = Membership.builder()
                 .id(1L)
                 .membershipNumber("MBR-TEST-001")
@@ -118,30 +123,33 @@ class MembershipServiceTest {
                 .startDate(LocalDate.of(2026, 10, 1))
                 .build();
 
-        when(membershipRepository.findByMemberId(10L)).thenReturn(Optional.of(membership));
+        when(membershipRepository.findActiveByMemberId(10L)).thenReturn(Optional.of(membership));
 
-        Optional<Membership> result = membershipService.findByMemberId(10L);
+        Optional<Membership> result = membershipService.findActiveByMemberId(10L);
 
         assertThat(result).containsSame(membership);
 
-        verify(membershipRepository).findByMemberId(10L);
+        verify(membershipRepository).findActiveByMemberId(10L);
         verifyNoInteractions(membershipNumberGenerator);
     }
 
     @Test
     void findByMemberIdReturnsEmptyWhenRepositoryReturnsEmpty() {
-        when(membershipRepository.findByMemberId(99L)).thenReturn(Optional.empty());
+        givenUserHasPermission(READ_MEMBERSHIP);
 
-        Optional<Membership> result = membershipService.findByMemberId(99L);
+        when(membershipRepository.findActiveByMemberId(99L)).thenReturn(Optional.empty());
+
+        Optional<Membership> result = membershipService.findActiveByMemberId(99L);
 
         assertThat(result).isEmpty();
 
-        verify(membershipRepository).findByMemberId(99L);
+        verify(membershipRepository).findActiveByMemberId(99L);
         verifyNoInteractions(membershipNumberGenerator);
     }
 
     @Test
     void updateMembershipUpdatesExistingMembershipPersistsItAndReturnsSavedMembership() {
+        givenUserHasPermission(UPDATE_MEMBERSHIP);
         Membership existingMembership = Membership.builder()
                 .id(1L)
                 .membershipNumber("MBR-TEST-001")
@@ -157,9 +165,9 @@ class MembershipServiceTest {
                 .id(1L)
                 .membershipType("STUDENT")
                 .membershipStatus("SUSPENDED")
-                .expirationDate("2027-04-01")
-                .renewalDate("2027-03-01")
-                .cancellationDate("2027-02-01")
+                .expirationDate(LocalDate.of(2027,4,1))
+                .renewalDate(LocalDate.of(2027,3,1))
+                .cancellationDate(LocalDate.of(2027,2,1))
                 .build();
 
         when(membershipRepository.findById(1L)).thenReturn(Optional.of(existingMembership));
@@ -182,6 +190,8 @@ class MembershipServiceTest {
 
     @Test
     void updateMembershipSetsOptionalDatesToNullWhenBlank() {
+        givenUserHasPermission(UPDATE_MEMBERSHIP);
+
         Membership existingMembership = Membership.builder()
                 .id(1L)
                 .membershipNumber("MBR-TEST-001")
@@ -197,9 +207,9 @@ class MembershipServiceTest {
                 .id(1L)
                 .membershipType("SENIOR")
                 .membershipStatus("ACTIVE")
-                .expirationDate("2027-06-01")
-                .renewalDate("")
-                .cancellationDate("")
+                .expirationDate(LocalDate.of(2027, 6, 1))
+                .renewalDate(null)
+                .cancellationDate(null)
                 .build();
 
         when(membershipRepository.findById(1L)).thenReturn(Optional.of(existingMembership));
@@ -221,13 +231,14 @@ class MembershipServiceTest {
 
     @Test
     void updateMembershipReturnsEmptyWhenMembershipDoesNotExist() {
+        givenUserHasPermission(UPDATE_MEMBERSHIP);
         MembershipEditDTO dto = MembershipEditDTO.builder()
                 .id(99L)
                 .membershipType("STANDARD")
                 .membershipStatus("ACTIVE")
-                .expirationDate("2027-01-01")
-                .renewalDate("")
-                .cancellationDate("")
+                .expirationDate(LocalDate.of(2027, 1, 1))
+                .renewalDate(null)
+                .cancellationDate(null)
                 .build();
 
         when(membershipRepository.findById(99L)).thenReturn(Optional.empty());
@@ -239,5 +250,9 @@ class MembershipServiceTest {
         verify(membershipRepository).findById(99L);
         verify(membershipRepository, never()).save(any(Membership.class));
         verifyNoInteractions(membershipNumberGenerator);
+    }
+
+    private void givenUserHasPermission(String permission) {
+        when(authenticationContext.hasAuthority(permission)).thenReturn(true);
     }
 }
