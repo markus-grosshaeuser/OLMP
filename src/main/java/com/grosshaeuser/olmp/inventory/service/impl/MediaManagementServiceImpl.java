@@ -137,7 +137,13 @@ public class MediaManagementServiceImpl implements MediaManagementService {
 
     @Override
     public List<MediaSummaryDto> findMedia(String query, Pageable pageable) {
-        List<MediaRepository.SummaryRow> rows = mediaRepository.search(searchPattern(query), sortedPageable(pageable));
+        return findMedia(query, null, null, pageable);
+    }
+
+    @Override
+    public List<MediaSummaryDto> findMedia(String query, Long authorId, Long publisherId, Pageable pageable) {
+        List<MediaRepository.SummaryRow> rows = mediaRepository.search(
+                searchPattern(query), authorId, publisherId, sortedPageable(pageable));
         if (rows.isEmpty()) {
             return List.of();
         }
@@ -155,7 +161,12 @@ public class MediaManagementServiceImpl implements MediaManagementService {
 
     @Override
     public long countMedia(String query) {
-        return mediaRepository.countSearch(searchPattern(query));
+        return countMedia(query, null, null);
+    }
+
+    @Override
+    public long countMedia(String query, Long authorId, Long publisherId) {
+        return mediaRepository.countSearch(searchPattern(query), authorId, publisherId);
     }
 
     @Override

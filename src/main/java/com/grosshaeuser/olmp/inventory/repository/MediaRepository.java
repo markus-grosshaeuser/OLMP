@@ -12,8 +12,12 @@ import java.util.Optional;
 public interface MediaRepository extends JpaRepository<Media, Long> {
 
     String SEARCH_FILTER = """
-             where lower(m.title) like :pattern escape '!'
-                or lower(m.subtitle) like :pattern escape '!'
+             where (lower(m.title) like :pattern escape '!'
+                or lower(m.subtitle) like :pattern escape '!')
+               and (:publisherId is null or m.publisher.id = :publisherId)
+               and (:authorId is null or exists (
+                   select 1 from MediaAuthor ma where ma.media = m and ma.author.id = :authorId
+               ))
             """;
 
     @Query("""
@@ -24,10 +28,12 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
               join m.mediaType mt
               left join m.publisher p
             """ + SEARCH_FILTER)
-    List<SummaryRow> search(@Param("pattern") String pattern, Pageable pageable);
+    List<SummaryRow> search(@Param("pattern") String pattern, @Param("authorId") Long authorId,
+                            @Param("publisherId") Long publisherId, Pageable pageable);
 
     @Query("select count(m) from Media m " + SEARCH_FILTER)
-    long countSearch(@Param("pattern") String pattern);
+    long countSearch(@Param("pattern") String pattern, @Param("authorId") Long authorId,
+                     @Param("publisherId") Long publisherId);
 
     @EntityGraph(attributePaths = {"mediaType", "publisher"})
     @Query("select m from Media m where m.id = :id")

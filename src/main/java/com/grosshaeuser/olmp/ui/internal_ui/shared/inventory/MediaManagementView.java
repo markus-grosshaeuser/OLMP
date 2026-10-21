@@ -1,5 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
+import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
+import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.service.MediaLookupService;
 import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.grosshaeuser.olmp.inventory.service.MediaManagementService;
@@ -16,6 +18,7 @@ import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
 import com.vaadin.flow.component.grid.GridVariant;
@@ -43,6 +46,8 @@ public class MediaManagementView extends VerticalLayout {
     private final UiExceptionHandler uiExceptionHandler;
     private final UiNotificationHandler uiNotificationHandler;
     private final TextField searchField = new TextField("Search media");
+    private final ComboBox<AuthorSummaryDto> authorFilter = new ComboBox<>("Author");
+    private final ComboBox<PublisherSummaryDto> publisherFilter = new ComboBox<>("Publisher");
     private final Grid<MediaSummaryDto> mediaGrid = new Grid<>(MediaSummaryDto.class, false);
 
     public MediaManagementView(
@@ -62,14 +67,20 @@ public class MediaManagementView extends VerticalLayout {
         this.uiExceptionHandler = Objects.requireNonNull(uiExceptionHandler, "uiExceptionHandler");
         this.uiNotificationHandler = Objects.requireNonNull(uiNotificationHandler, "uiNotificationHandler");
         configureSearch();
+        configureFilters();
         configureGrid();
 
-        Button create = new Button("Create media", VaadinIcon.PLUS.create(), _ -> openCreateDialog());
-        create.addThemeVariants(ButtonVariant.PRIMARY);
-        HorizontalLayout toolbar = new HorizontalLayout(searchField, create);
+        Button createMedia = new Button("Create media", VaadinIcon.PLUS.create(), _ -> openCreateDialog());
+        createMedia.addThemeVariants(ButtonVariant.PRIMARY);
+        HorizontalLayout toolbar = new HorizontalLayout(searchField, authorFilter, publisherFilter, createMedia);
         toolbar.setWidthFull();
         toolbar.setAlignItems(Alignment.BASELINE);
-        toolbar.setFlexGrow(1, searchField);
+        toolbar.setFlexGrow(2, searchField);
+        toolbar.setFlexGrow(1, authorFilter, publisherFilter);
+        for (Component field : List.of(searchField, authorFilter, publisherFilter)) {
+            field.getElement().getStyle().set("flex-basis", "0").set("min-width", "0");
+        }
+        toolbar.setFlexShrink(0, createMedia);
         toolbar.setWrap(true);
         add(new H2("Media management"), toolbar, mediaGrid);
         setSizeFull();
@@ -83,6 +94,32 @@ public class MediaManagementView extends VerticalLayout {
         searchField.setValueChangeMode(ValueChangeMode.LAZY);
         searchField.setValueChangeTimeout(300);
         searchField.addValueChangeListener(_ -> refreshGrid());
+    }
+
+    private void configureFilters() {
+        authorFilter.setItemLabelGenerator(MediaForm::authorName);
+        authorFilter.setPlaceholder("All authors");
+        authorFilter.setClearButtonVisible(true);
+        publisherFilter.setItemLabelGenerator(PublisherSummaryDto::name);
+        publisherFilter.setPlaceholder("All publishers");
+        publisherFilter.setClearButtonVisible(true);
+        try {
+            MediaFormOptions options = lookupService.getFormOptions();
+            authorFilter.setItems(options.authors());
+            publisherFilter.setItems(options.publishers());
+        } catch (RuntimeException exception) {
+            uiExceptionHandler.handleException(exception);
+        }
+        authorFilter.addValueChangeListener(_ -> refreshGrid());
+        publisherFilter.addValueChangeListener(_ -> refreshGrid());
+    }
+
+    private Long selectedAuthorId() {
+        return authorFilter.getValue() == null ? null : authorFilter.getValue().id();
+    }
+
+    private Long selectedPublisherId() {
+        return publisherFilter.getValue() == null ? null : publisherFilter.getValue().id();
     }
 
     private void configureGrid() {
@@ -139,7 +176,7 @@ public class MediaManagementView extends VerticalLayout {
 
     private List<MediaSummaryDto> fetchMedia(Pageable pageable) {
         try {
-            return mediaService.findMedia(searchField.getValue().strip(), pageable);
+            return mediaService.findMedia(searchField.getValue().strip(), selectedAuthorId(), selectedPublisherId(), pageable);
         } catch (RuntimeException exception) {
             uiExceptionHandler.handleException(exception);
             return List.of();
@@ -148,7 +185,7 @@ public class MediaManagementView extends VerticalLayout {
 
     private int countMedia() {
         try {
-            return Math.toIntExact(mediaService.countMedia(searchField.getValue().strip()));
+            return Math.toIntExact(mediaService.countMedia(searchField.getValue().strip(), selectedAuthorId(), selectedPublisherId()));
         } catch (RuntimeException exception) {
             uiExceptionHandler.handleException(exception);
             return 0;

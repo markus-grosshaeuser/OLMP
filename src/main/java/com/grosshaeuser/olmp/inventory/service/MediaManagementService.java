@@ -12,7 +12,11 @@ public interface MediaManagementService {
 
     List<MediaSummaryDto> findMedia(String query, Pageable pageable);
 
+    List<MediaSummaryDto> findMedia(String query, Long authorId, Long publisherId, Pageable pageable);
+
     long countMedia(String query);
+
+    long countMedia(String query, Long authorId, Long publisherId);
 
     Optional<MediaEditDto> findMediaForEdit(long id);
 
