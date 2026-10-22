@@ -1,87 +1,27 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
-import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
-import com.grosshaeuser.olmp.inventory.dto.author.AuthorCreateDto;
-import com.grosshaeuser.olmp.inventory.dto.author.AuthorEditDto;
-import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCreateDto;
-import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCondition;
-import com.grosshaeuser.olmp.inventory.dto.location.LocationSummaryDto;
-import com.grosshaeuser.olmp.inventory.dto.media.MediaAuthorWriteDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
+import com.grosshaeuser.olmp.inventory.dto.media.MediaAuthorWriteDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaIdentifierWriteDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaInventoryItemDto;
-import com.grosshaeuser.olmp.inventory.dto.media.MediaTypeSummaryDto;
-import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
-import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherCreateDto;
-import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherEditDto;
 import com.grosshaeuser.olmp.inventory.service.InventoryNumberService;
 import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
 import com.grosshaeuser.olmp.inventory.service.BarcodeService;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
-import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Composite;
-import com.vaadin.flow.component.HasSize;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
-import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.datepicker.DatePicker;
-import com.vaadin.flow.component.formlayout.FormLayout;
-import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
-import com.vaadin.flow.component.textfield.IntegerField;
-import com.vaadin.flow.component.textfield.BigDecimalField;
-import com.vaadin.flow.component.textfield.TextArea;
-import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.BeanValidationBinder;
-import com.vaadin.flow.data.provider.ListDataProvider;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
-class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> implements Structurable, Printing {
+class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> {
 
-    private final BeanValidationBinder<T> binder;
-    private final MediaFormOptions options;
-    private final InventoryNumberService inventoryNumberService;
-    private final BarcodePrintService barcodePrintService;
-    private final MediaReferenceService referenceService;
-    private final List<PublisherSummaryDto> publisherOptions;
-    private final List<AuthorSummaryDto> authorOptions;
-    private final ListDataProvider<PublisherSummaryDto> publisherProvider;
-    private final ListDataProvider<AuthorSummaryDto> authorProvider;
-    private final InlineReferenceForm<PublisherCreateDto> publisherForm;
-    private final ComboBox<MediaTypeSummaryDto> mediaType = new ComboBox<>("Media type");
-    private final ComboBox<PublisherSummaryDto> publisher = new ComboBox<>("Publisher");
-    private final TextField title = new TextField("Title");
-    private final TextField subtitle = new TextField("Subtitle");
-    private final TextField edition = new TextField("Edition");
-    private final IntegerField publicationYear = new IntegerField("Publication year");
-    private final TextField languageCode = new TextField("Language code");
-    private final TextField coverImageFileName = new TextField("Cover image filename");
-    private final TextArea description = new TextArea("Description");
-    private final VerticalLayout authorRows = new VerticalLayout();
-    private final VerticalLayout identifierRows = new VerticalLayout();
-    private final VerticalLayout inventoryRows = new VerticalLayout();
-    private final List<InventoryRow> inventoryItems = new ArrayList<>();
-    private final IntegerField copyCount = new IntegerField("Number of copies");
-    private final VerticalLayout copyForm = new VerticalLayout();
-    private final InventoryFields batchFields;
-    private final Span inventoryCount = new Span();
-    private final List<AuthorRow> authors = new ArrayList<>();
-    private final List<IdentifierRow> identifiers = new ArrayList<>();
-    private final Span validationMessage = new Span();
+    private final MediaCatalogueForm<T> catalogue;
+    private final MediaAuthorsForm authors;
+    private final MediaIdentifiersForm identifiers;
+    private final MediaInventoryForm inventory;
 
     MediaForm(
             Class<T> dtoType,
@@ -91,607 +31,49 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             BarcodePrintService barcodePrintService,
             MediaReferenceService referenceService
     ) {
-        this.options = Objects.requireNonNull(options, "options");
-        this.referenceService = Objects.requireNonNull(referenceService, "referenceService");
-        publisherOptions = new ArrayList<>(options.publishers());
-        authorOptions = new ArrayList<>(options.authors());
-        publisherProvider = new ListDataProvider<>(publisherOptions);
-        authorProvider = new ListDataProvider<>(authorOptions);
+        Objects.requireNonNull(options, "options");
         Objects.requireNonNull(barcodeService, "barcodeService");
-        binder = new BeanValidationBinder<>(dtoType);
-        this.inventoryNumberService = inventoryNumberService;
-        this.barcodePrintService = barcodePrintService;
-        configureFields();
-        configureBindings();
-        publisherForm = createPublisherForm();
-        batchFields = new InventoryFields();
-
-        FormLayout catalogue = responsiveForm();
-        Button createPublisher = new Button(VaadinIcon.PLUS.create(), _ -> publisherForm.open());
-        createPublisher.setTooltipText("Create new publisher");
-        createPublisher.setAriaLabel("Create new publisher");
-        Button editPublisher = editButton(publisher, "publisher", selected -> {
-            PublisherEditDto dto = new PublisherEditDto();
-            dto.setId(selected.id());
-            dto.setName(selected.name());
-            dto.setWebsite(selected.website());
-            publisherForm.openForEdit(dto);
-        });
-        publisher.addValueChangeListener(_ -> publisherForm.reset());
-        catalogue.add(title, subtitle, mediaType, referenceSection(publisher, editPublisher, createPublisher, publisherForm),
-                edition, publicationYear, languageCode, coverImageFileName, description);
-        catalogue.setColspan(title, 2);
-        catalogue.setColspan(subtitle, 2);
-        catalogue.setColspan(description, 2);
-        authorRows.setPadding(false);
-        identifierRows.setPadding(false);
-        inventoryRows.setPadding(false);
-        Button addAuthor = new Button("Add author", _ -> addAuthor(new MediaAuthorWriteDto()));
-        Button addIdentifier = new Button("Add identifier", _ -> addIdentifier(new MediaIdentifierWriteDto()));
-        copyCount.setMin(1);
-        copyCount.setMax(1000);
-        copyCount.setValue(1);
-        copyCount.setStepButtonsVisible(true);
-        copyCount.setHelperText("Add between 1 and 1,000 copies per batch.");
-        copyCount.setAriaLabel("Number of copies to add");
-        copyCount.setLabel("Number of copies to add");
-        Button addCopies = new Button("Add copies", _ -> addInventoryBatch());
-        Button cancelCopies = new Button("Cancel", _ -> resetCopyForm());
-        cancelCopies.setAriaLabel("Cancel adding copies");
-        HorizontalLayout inventoryActions = new HorizontalLayout(addCopies, cancelCopies);
-        inventoryActions.setAlignItems(FlexComponent.Alignment.BASELINE);
-        inventoryActions.setWrap(true);
-        batchFields.layout.add(copyCount);
-        copyForm.addClassName("inline-create-form");
-        copyForm.setWidthFull();
-        copyForm.add(batchFields.layout, inventoryActions);
-        resetCopyForm();
-        Button addCopy = new Button("Add copy", _ -> {
-            copyForm.setVisible(true);
-            batchFields.condition.focus();
-        });
-        inventoryCount.getElement().setAttribute("aria-live", "polite");
-        updateInventoryCount();
-        validationMessage.getElement().setAttribute("role", "alert");
-        validationMessage.getStyle().set("color", "var(--vaadin-text-color-error, #b71c1c)");
-        validationMessage.setVisible(false);
-
-        getContent().setPadding(false);
-        getContent().setWidthFull();
+        catalogue = new MediaCatalogueForm<>(dtoType, options.mediaTypes(), options.publishers(), referenceService);
+        authors = new MediaAuthorsForm(options.authors(), referenceService);
+        identifiers = new MediaIdentifiersForm();
+        inventory = new MediaInventoryForm(options.locations(), inventoryNumberService, barcodePrintService, catalogue::title);
 
         TabSheet sheet = new TabSheet();
         sheet.setSizeFull();
-        sheet.add("Catalogue", createSection("Catalogue", "Title, publication information and description.", catalogue));
-        sheet.add("Authors and contributors", createSection("Authors and contributors", "Assign authors, roles and display order.", authorRows, addAuthor));
-        sheet.add("Identifiers", createSection("Identifiers", "Add identifiers such as ISBN, ISSN or DOI.", identifierRows, addIdentifier));
-        sheet.add("Inventory items", createSection("Inventory items",
-                "Manage physical copies. Inventory numbers and barcodes are generated when you add copies. Changes take effect when you save the medium.",
-                addCopy, copyForm, inventoryCount, inventoryRows));
+        sheet.add("Catalogue", catalogue);
+        sheet.add("Authors and contributors", authors);
+        sheet.add("Identifiers", identifiers);
+        sheet.add("Inventory items", inventory);
 
-        getContent().add(sheet, validationMessage);
+        getContent().setPadding(false);
+        getContent().setWidthFull();
+        getContent().add(sheet);
     }
 
     void read(T source) {
         Objects.requireNonNull(source, "source");
-        binder.readBean(source);
-        publisherForm.reset();
-        authors.clear();
-        authorRows.removeAll();
-        source.getAuthors().forEach(this::addAuthor);
-        identifiers.clear();
-        identifierRows.removeAll();
-        source.getIdentifiers().forEach(this::addIdentifier);
-        inventoryItems.clear();
-        inventoryRows.removeAll();
-        source.getInventoryItems().forEach(this::addInventoryItem);
-        updateInventoryCount();
-        resetCopyForm();
-        validationMessage.setVisible(false);
+        catalogue.read(source);
+        authors.read(source.getAuthors());
+        identifiers.read(source.getIdentifiers());
+        inventory.read(source.getInventoryItems());
     }
 
     boolean write(T target) {
-        validationMessage.setVisible(false);
         List<MediaAuthorWriteDto> authorDtos = new ArrayList<>();
         List<MediaIdentifierWriteDto> identifierDtos = new ArrayList<>();
         List<MediaInventoryItemDto> inventoryDtos = new ArrayList<>();
-        boolean valid = true;
-        for (AuthorRow row : authors) {
-            MediaAuthorWriteDto dto = new MediaAuthorWriteDto();
-            valid = row.binder.writeBeanIfValid(dto) && valid;
-            authorDtos.add(dto);
-        }
-        for (IdentifierRow row : identifiers) {
-            MediaIdentifierWriteDto dto = new MediaIdentifierWriteDto();
-            dto.setId(row.id);
-            valid = row.binder.writeBeanIfValid(dto) && valid;
-            identifierDtos.add(dto);
-        }
-        for (InventoryRow row : inventoryItems) {
-            InventoryItemCreateDto values = new InventoryItemCreateDto();
-            valid = row.fields.binder.writeBeanIfValid(values) && valid;
-            inventoryDtos.add(row.fields.copy(row.dto, values));
-        }
-        valid = binder.writeBeanIfValid(target) && valid;
+
+        boolean valid = authors.write(authorDtos);
+        valid = identifiers.write(identifierDtos) && valid;
+        valid = inventory.write(inventoryDtos) && valid;
+        valid = catalogue.write(target) && valid;
         if (!valid) {
             return false;
         }
-        if (hasDuplicateAuthors(authorDtos)) {
-            showValidationMessage("An author can only be assigned once for the same role.");
-            return false;
-        }
-        if (hasDuplicateIdentifiers(identifierDtos)) {
-            showValidationMessage("Each identifier type and value combination must be unique.");
-            return false;
-        }
+
         target.setAuthors(authorDtos);
         target.setIdentifiers(identifierDtos);
         target.setInventoryItems(inventoryDtos);
         return true;
-    }
-
-    private void configureFields() {
-        mediaType.setItems(options.mediaTypes());
-        mediaType.setItemLabelGenerator(type -> type.name() + " (" + type.code() + ")");
-        publisher.setItems(publisherProvider);
-        publisher.setItemLabelGenerator(PublisherSummaryDto::name);
-        publisher.setClearButtonVisible(true);
-        title.setMaxLength(500);
-        subtitle.setMaxLength(500);
-        edition.setMaxLength(100);
-        languageCode.setMaxLength(10);
-        languageCode.setHelperText("For example: en or de");
-        coverImageFileName.setMaxLength(100);
-        publicationYear.setMin(1);
-        publicationYear.setMax(9999);
-        description.setMinHeight("8rem");
-        List.<HasSize>of(mediaType, publisher, title, subtitle, edition, publicationYear, languageCode, coverImageFileName, description).forEach(HasSize::setWidthFull);
-    }
-
-    private void configureBindings() {
-        binder.forField(title).asRequired("Title is required").bind("title");
-        binder.forField(subtitle).withNullRepresentation("").bind("subtitle");
-        binder.forField(edition).withNullRepresentation("").bind("edition");
-        binder.forField(languageCode).withNullRepresentation("").bind("languageCode");
-        binder.forField(coverImageFileName).withNullRepresentation("").bind("coverImageFileName");
-        binder.forField(description).withNullRepresentation("").bind("description");
-        binder.forField(mediaType).asRequired("Media type is required")
-                .withConverter(value -> value == null ? null : value.id(),
-                        id -> lookup(options.mediaTypes(), MediaTypeSummaryDto::id, id, "Media type"))
-                .bind("mediaTypeId");
-        binder.forField(publisher)
-                .withConverter(value -> value == null ? null : value.id(),
-                        id -> lookup(publisherOptions, PublisherSummaryDto::id, id, "Publisher"))
-                .bind("publisherId");
-        binder.forField(publicationYear)
-                .withValidator(value -> value == null || value >= 1 && value <= 9999,
-                        "Publication year must be between 1 and 9999")
-                .withConverter(value -> value == null ? null : value.shortValue(),
-                        value -> value == null ? null : value.intValue())
-                .bind("publicationYear");
-    }
-
-    private void addAuthor(MediaAuthorWriteDto dto) {
-        AuthorRow row = new AuthorRow(dto);
-        authors.add(row);
-        authorRows.add(row.layout);
-    }
-
-    private InlineReferenceForm<PublisherCreateDto> createPublisherForm() {
-        TextField name = new TextField("Publisher name");
-        name.setMaxLength(255);
-        TextField website = new TextField("Publisher URL");
-        website.setMaxLength(500);
-        website.setPlaceholder("https://example.org");
-        var form = new InlineReferenceForm<>(PublisherCreateDto.class, PublisherCreateDto::new, dto -> {
-            PublisherSummaryDto saved;
-            if (dto instanceof PublisherEditDto edit) {
-                saved = Objects.requireNonNull(referenceService.updatePublisher(edit), "Updated publisher");
-                publisherOptions.replaceAll(option -> option.id().equals(saved.id()) ? saved : option);
-            } else {
-                saved = Objects.requireNonNull(referenceService.createPublisher(dto), "Created publisher");
-                publisherOptions.add(saved);
-            }
-            publisherProvider.refreshAll();
-            publisher.setValue(saved);
-        }, "publisher", name, website);
-        form.binder.forField(name).withConverter(String::strip, text -> text == null ? "" : text)
-                .asRequired("Publisher name is required").bind("name");
-        form.binder.forField(website).withConverter(String::strip, text -> text == null ? "" : text).bind("website");
-        form.reset();
-        return form;
-    }
-
-    private InlineReferenceForm<AuthorCreateDto> createAuthorForm(ComboBox<AuthorSummaryDto> author) {
-        TextField firstName = new TextField("First name");
-        firstName.setMaxLength(255);
-        TextField lastName = new TextField("Last name");
-        lastName.setMaxLength(255);
-        var form = new InlineReferenceForm<>(AuthorCreateDto.class, AuthorCreateDto::new, dto -> {
-            AuthorSummaryDto saved;
-            List<AuthorRow> selectedRows = List.of();
-            if (dto instanceof AuthorEditDto edit) {
-                saved = Objects.requireNonNull(referenceService.updateAuthor(edit), "Updated author");
-                selectedRows = authors.stream().filter(row -> row.author.getValue() != null
-                        && row.author.getValue().id().equals(saved.id())).toList();
-                authorOptions.replaceAll(option -> option.id().equals(saved.id()) ? saved : option);
-            } else {
-                saved = Objects.requireNonNull(referenceService.createAuthor(dto), "Created author");
-                authorOptions.add(saved);
-            }
-            authorProvider.refreshAll();
-            selectedRows.forEach(row -> row.author.setValue(saved));
-            author.setValue(saved);
-        }, "author", firstName, lastName);
-        form.binder.forField(firstName).withConverter(String::strip, text -> text == null ? "" : text).bind("firstName");
-        form.binder.forField(lastName).withConverter(String::strip, text -> text == null ? "" : text)
-                .asRequired("Last name is required").bind("lastName");
-        form.reset();
-        return form;
-    }
-
-    private static <R> Button editButton(ComboBox<R> selection, String label, Consumer<R> edit) {
-        Button button = new Button(VaadinIcon.EDIT.create(), _ -> {
-            if (selection.getValue() != null) {
-                edit.accept(selection.getValue());
-            }
-        });
-        button.setTooltipText("Edit " + label);
-        button.setAriaLabel("Edit " + label);
-        button.setEnabled(selection.getValue() != null);
-        selection.addValueChangeListener(event -> button.setEnabled(event.getValue() != null));
-        return button;
-    }
-
-    private static VerticalLayout referenceSection(Component selection, Button edit, Button create, Component form) {
-        HorizontalLayout selector = new HorizontalLayout(selection, edit, create);
-        selector.setAlignItems(FlexComponent.Alignment.BASELINE);
-        selector.setWidthFull();
-        selector.setFlexGrow(1, selection);
-        VerticalLayout section = new VerticalLayout(selector, form);
-        section.setPadding(false);
-        section.setSpacing(false);
-        section.setWidthFull();
-        return section;
-    }
-
-    private static class InlineReferenceForm<D> extends VerticalLayout {
-        private final BeanValidationBinder<D> binder;
-        private final Supplier<D> factory;
-        private final Span error = new Span();
-        private final TextField firstField;
-        private D draft;
-        private boolean editing;
-
-        InlineReferenceForm(Class<D> type, Supplier<D> factory, Consumer<D> saveRecord, String label, TextField... fields) {
-            this.binder = new BeanValidationBinder<>(type);
-            this.factory = factory;
-            firstField = fields[0];
-            setPadding(true);
-            setWidthFull();
-            addClassName("inline-create-form");
-            FormLayout inputs = responsiveForm();
-            for (TextField field : fields) {
-                field.setWidthFull();
-                inputs.add(field);
-            }
-            error.getElement().setAttribute("role", "alert");
-            error.getStyle().set("color", "var(--vaadin-text-color-error, #b71c1c)");
-            Button save = new Button("Save " + label, _ -> {
-                error.setVisible(false);
-                if (!binder.writeBeanIfValid(draft)) {
-                    return;
-                }
-                try {
-                    saveRecord.accept(draft);
-                    reset();
-                } catch (RuntimeException exception) {
-                    error.setText("Could not " + (editing ? "update " : "create ") + label + ". "
-                            + Objects.requireNonNullElse(exception.getMessage(), "Please try again."));
-                    error.setVisible(true);
-                }
-            });
-            save.addThemeVariants(ButtonVariant.PRIMARY);
-            HorizontalLayout actions = new HorizontalLayout();
-            actions.setWidthFull();
-            actions.addToStart(save);
-            actions.addToEnd(new Button("Cancel", _ -> reset()));
-            add(inputs, actions, error);
-        }
-
-        void open() {
-            if (editing) {
-                reset();
-            }
-            setVisible(true);
-            firstField.focus();
-        }
-
-        void openForEdit(D dto) {
-            draft = dto;
-            editing = true;
-            binder.readBean(draft);
-            error.setVisible(false);
-            setVisible(true);
-            firstField.focus();
-        }
-
-        void reset() {
-            draft = factory.get();
-            editing = false;
-            binder.readBean(draft);
-            error.setVisible(false);
-            setVisible(false);
-        }
-    }
-
-    private void addIdentifier(MediaIdentifierWriteDto dto) {
-        IdentifierRow row = new IdentifierRow(dto);
-        identifiers.add(row);
-        identifierRows.add(row.layout);
-    }
-
-    private void addInventoryItem(MediaInventoryItemDto dto) {
-        InventoryRow row = new InventoryRow(dto);
-        inventoryItems.add(row);
-        inventoryRows.add(row.layout);
-        updateInventoryCount();
-    }
-
-    private void addInventoryBatch() {
-        Integer count = copyCount.getValue();
-        if (count == null || count < 1 || count > 1000) {
-            copyCount.setErrorMessage("Enter a number of copies between 1 and 1,000.");
-            copyCount.setInvalid(true);
-            return;
-        }
-        copyCount.setInvalid(false);
-        InventoryItemCreateDto values = new InventoryItemCreateDto();
-        if (!batchFields.binder.writeBeanIfValid(values)) {
-            return;
-        }
-        for (int i = 0; i < count; i++) {
-            String inventoryNumber = inventoryNumberService.generate();
-            addInventoryItem(batchFields.copy(new MediaInventoryItemDto(null, inventoryNumber, inventoryNumber), values));
-        }
-        resetCopyForm();
-    }
-
-    private void resetCopyForm() {
-        batchFields.binder.readBean(new InventoryItemCreateDto());
-        copyCount.setValue(1);
-        copyCount.setInvalid(false);
-        copyForm.setVisible(false);
-    }
-
-    private void updateInventoryCount() {
-        inventoryCount.setText("Copies: " + inventoryItems.size());
-    }
-
-    private void showValidationMessage(String message) {
-        validationMessage.setText(message);
-        validationMessage.setVisible(true);
-    }
-
-    private static boolean hasDuplicateAuthors(List<MediaAuthorWriteDto> rows) {
-        record Key(Long authorId, String role) { }
-        var seen = new HashSet<Key>();
-        return rows.stream().anyMatch(row -> !seen.add(new Key(row.getAuthorId(), row.getRole())));
-    }
-
-    private static boolean hasDuplicateIdentifiers(List<MediaIdentifierWriteDto> rows) {
-        record Key(String type, String value) { }
-        var seen = new HashSet<Key>();
-        return rows.stream().anyMatch(row -> !seen.add(new Key(row.getIdentifierType(), row.getIdentifierValue())));
-    }
-
-    private static FormLayout responsiveForm() {
-        FormLayout layout = new FormLayout();
-        layout.setWidthFull();
-        layout.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("0", 1),
-                new FormLayout.ResponsiveStep("40rem", 2)
-        );
-        return layout;
-    }
-
-    private static <R> R lookup(List<R> options, Function<R, Long> idGetter, Long id, String label) {
-        if (id == null) {
-            return null;
-        }
-        return options.stream().filter(option -> id.equals(idGetter.apply(option))).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(label + " is no longer available. Reopen the form."));
-    }
-
-    static String authorName(AuthorSummaryDto author) {
-        return author.firstName() == null || author.firstName().isBlank() ? author.lastName()
-                : author.firstName() + " " + author.lastName();
-    }
-
-    private class InventoryFields {
-        private final BeanValidationBinder<InventoryItemCreateDto> binder = new BeanValidationBinder<>(InventoryItemCreateDto.class);
-        private final FormLayout layout = responsiveForm();
-        private final ComboBox<InventoryItemCondition> condition = new ComboBox<>("Condition");
-        private final ComboBox<LocationSummaryDto> location = new ComboBox<>("Location");
-        private final DatePicker acquiredAt = new DatePicker("Acquisition date");
-        private final BigDecimalField acquisitionCost = new BigDecimalField("Acquisition cost");
-        private final TextArea notes = new TextArea("Notes");
-
-        InventoryFields() {
-            condition.setItems(InventoryItemCondition.values());
-            condition.setItemLabelGenerator(value -> value.name().charAt(0) + value.name().substring(1).toLowerCase(Locale.ROOT));
-            location.setItems(options.locations());
-            location.setItemLabelGenerator(value -> value.name() + " (" + value.code() + ")");
-            location.setClearButtonVisible(true);
-            binder.forField(condition).asRequired("Condition is required").bind("condition");
-            binder.forField(location)
-                    .withConverter(value -> value == null ? null : value.id(),
-                            id -> lookup(options.locations(), LocationSummaryDto::id, id, "Location"))
-                    .bind("locationId");
-            binder.forField(acquiredAt).bind("acquiredAt");
-            binder.forField(acquisitionCost).bind("acquisitionCost");
-            binder.forField(notes).withNullRepresentation("").bind("notes");
-            List.<HasSize>of(condition, location, acquiredAt, acquisitionCost, notes).forEach(HasSize::setWidthFull);
-            notes.setWidthFull();
-            HorizontalLayout detailsFields = new HorizontalLayout(condition, location, acquiredAt, acquisitionCost);
-            detailsFields.setWidthFull();
-            detailsFields.setWrap(false);
-            detailsFields.setAlignItems(FlexComponent.Alignment.END);
-            detailsFields.setFlexGrow(1, condition, location, acquiredAt, acquisitionCost);
-            layout.addFormRow(detailsFields);
-            layout.addFormRow(notes);
-        }
-
-        void read(MediaInventoryItemDto source) {
-            InventoryItemCreateDto values = new InventoryItemCreateDto();
-            values.setCondition(source.condition());
-            values.setLocationId(source.locationId());
-            values.setAcquiredAt(source.acquiredAt());
-            values.setAcquisitionCost(source.acquisitionCost());
-            values.setNotes(source.notes());
-            binder.readBean(values);
-        }
-
-        MediaInventoryItemDto copy(MediaInventoryItemDto source, InventoryItemCreateDto values) {
-            return new MediaInventoryItemDto(source.id(), source.inventoryNumber(), source.barcode(),
-                    values.getCondition(), values.getLocationId(), values.getAcquiredAt(),
-                    values.getAcquisitionCost(), source.withdrawnAt(), values.getNotes());
-        }
-    }
-
-    private class InventoryRow {
-        private final MediaInventoryItemDto dto;
-        private final VerticalLayout layout = new VerticalLayout();
-        private final InventoryFields fields = new InventoryFields();
-
-        InventoryRow(MediaInventoryItemDto dto) {
-            this.dto = dto;
-            TextField number = new TextField("Inventory number");
-            number.setValue(Objects.requireNonNullElse(dto.inventoryNumber(), ""));
-            number.setReadOnly(true);
-            number.setWidthFull();
-            fields.read(dto);
-            fields.acquiredAt.setReadOnly(true);
-            fields.acquisitionCost.setReadOnly(true);
-            Button print = new Button(VaadinIcon.PRINT.create());
-            print.setAriaLabel("Print barcode");
-            print.setTooltipText("Print barcode");
-            print.setEnabled(dto.barcode() != null && !dto.barcode().isBlank());
-            print.setVisible(false);
-            if (barcodePrintService != null) {
-                print.setVisible(true);
-                print.addClickListener(_ -> {
-                    String document = barcodePrintService.createPrintDocument(title.getValue(), List.of(dto));
-                    UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
-                });
-            }
-            Button remove = new Button(VaadinIcon.TRASH.create(), _ -> {
-                inventoryItems.remove(this);
-                inventoryRows.remove(layout);
-                updateInventoryCount();
-            });
-            remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
-            remove.setAriaLabel("Remove copy");
-            layout.setWidthFull();
-            layout.setPadding(false);
-            layout.addClassName("inventory-row");
-            HorizontalLayout header = new HorizontalLayout(number, print, remove);
-            header.setWidthFull();
-            header.setWrap(false);
-            header.setAlignItems(FlexComponent.Alignment.END);
-            header.setFlexGrow(1, number);
-            layout.add(header, fields.layout);
-        }
-    }
-
-    private class AuthorRow {
-        private final BeanValidationBinder<MediaAuthorWriteDto> binder = new BeanValidationBinder<>(MediaAuthorWriteDto.class);
-        private final HorizontalLayout layout = new HorizontalLayout();
-        private final ComboBox<AuthorSummaryDto> author = new ComboBox<>("Author");
-
-        AuthorRow(MediaAuthorWriteDto dto) {
-            author.setItems(authorProvider);
-            author.setItemLabelGenerator(MediaForm::authorName);
-            var creation = createAuthorForm(author);
-            Button createAuthor = new Button(VaadinIcon.PLUS.create(), _ -> creation.open());
-            createAuthor.setTooltipText("Create new author");
-            createAuthor.setAriaLabel("Create new author");
-            Button editAuthor = editButton(author, "author", selected -> {
-                AuthorEditDto edit = new AuthorEditDto();
-                edit.setId(selected.id());
-                edit.setFirstName(selected.firstName());
-                edit.setLastName(selected.lastName());
-                creation.openForEdit(edit);
-            });
-            author.addValueChangeListener(_ -> creation.reset());
-            VerticalLayout authorSection = referenceSection(author, editAuthor, createAuthor, creation);
-            authorSection.getStyle().set("margin-inline-end", "var(--lumo-space-l)");
-            author.setMinWidth("0");
-            TextField role = new TextField("Role");
-            role.setMaxLength(50);
-            role.setHelperText("For example: AUTHOR, EDITOR or TRANSLATOR");
-            IntegerField order = new IntegerField("Display order");
-            order.setMin(0);
-            order.setMax(Short.MAX_VALUE);
-            order.setStepButtonsVisible(true);
-            Button remove = new Button(VaadinIcon.TRASH.create(), _ -> {
-                authors.remove(this);
-                authorRows.remove(layout);
-            });
-            remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
-            remove.setAriaLabel("Remove author");
-            binder.forField(author).asRequired("Choose an author")
-                    .withConverter(value -> value == null ? null : value.id(),
-                            id -> lookup(authorOptions, AuthorSummaryDto::id, id, "Author"))
-                    .bind("authorId");
-            binder.forField(role).asRequired("Role is required")
-                    .withConverter(String::strip, value -> value == null ? "" : value).bind("role");
-            binder.forField(order).asRequired("Display order is required")
-                    .withValidator(value -> value >= 0 && value <= Short.MAX_VALUE,
-                            "Display order must be between 0 and " + Short.MAX_VALUE)
-                    .withConverter(Integer::shortValue, Short::intValue).bind("sortOrder");
-            List.<HasSize>of(author).forEach(HasSize::setWidthFull);
-            layout.setSizeFull();
-            layout.setAlignItems(FlexComponent.Alignment.BASELINE);
-            layout.add(authorSection, role, order, remove);
-            layout.setFlexGrow(1, authorSection);
-            layout.setFlexGrow(1, role);
-            binder.readBean(dto);
-        }
-    }
-
-    private class IdentifierRow {
-        private final BeanValidationBinder<MediaIdentifierWriteDto> binder = new BeanValidationBinder<>(MediaIdentifierWriteDto.class);
-        private final HorizontalLayout layout = new HorizontalLayout();
-        private final Long id;
-
-        IdentifierRow(MediaIdentifierWriteDto dto) {
-            id = dto.getId();
-            TextField type = new TextField("Identifier type");
-            type.setMaxLength(30);
-            type.setPlaceholder("ISBN, ISSN, ...");
-
-            TextField value = new TextField("Identifier value");
-            value.setMaxLength(100);
-
-            Button remove = new Button(VaadinIcon.TRASH.create(), _ -> {
-                identifiers.remove(this);
-                identifierRows.remove(layout);
-            });
-            remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
-            remove.setAriaLabel("Remove identifier");
-            binder.forField(type).asRequired("Identifier type is required")
-                    .withConverter(text -> text.strip().toUpperCase(Locale.ROOT), text -> text == null ? "" : text)
-                    .bind("identifierType");
-            binder.forField(value).asRequired("Identifier value is required")
-                    .withConverter(String::strip, text -> text == null ? "" : text).bind("identifierValue");
-
-            List.<HasSize>of(type, value).forEach(HasSize::setWidthFull);
-            layout.setSizeFull();
-            layout.setAlignItems(FlexComponent.Alignment.BASELINE);
-            layout.add(type, value, remove);
-            layout.setFlexGrow(1, type);
-            layout.setFlexGrow(1, value);
-            binder.readBean(dto);
-        }
     }
 }

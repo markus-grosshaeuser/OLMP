@@ -4,6 +4,7 @@ import com.grosshaeuser.olmp.inventory.dto.media.*;
 import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCondition;
 import com.grosshaeuser.olmp.inventory.dto.location.LocationSummaryDto;
 import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
+import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodePrintServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodeServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.InventoryNumberServiceImpl;
@@ -18,6 +19,7 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.server.VaadinSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,9 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 
 class MediaInventoryFormTest {
     private UI ui;
@@ -72,6 +77,26 @@ class MediaInventoryFormTest {
         assertThat(button("Print barcode").isEnabled()).isTrue();
         assertThat(descendants(form).filter(TextField.class::isInstance).map(TextField.class::cast))
                 .noneMatch(field -> field.getLabel().equals("Barcode"));
+    }
+
+    @Test
+    void printingUsesTheCurrentCatalogueTitle() {
+        ui.getInternals().setSession(mock(VaadinSession.class, RETURNS_DEEP_STUBS));
+        var printService = mock(BarcodePrintService.class);
+        when(printService.createPrintDocument("Changed title", source.getInventoryItems())).thenReturn("<html></html>");
+        var book = new MediaTypeSummaryDto(1L, "BOOK", "Book");
+        form = new MediaForm<>(MediaEditDto.class,
+                new MediaFormOptions(List.of(book), List.of(), List.of(), List.of(shelf)),
+                new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), printService, mock(MediaReferenceService.class));
+        form.read(source);
+        field("Title").setValue("Changed title");
+        descendants(form).filter(TabSheet.class::isInstance).map(TabSheet.class::cast)
+                .findFirst().orElseThrow().setSelectedIndex(3);
+
+        button("Print barcode").click();
+
+        verify(printService).createPrintDocument("Changed title", source.getInventoryItems());
+        assertThat(source.getTitle()).isEqualTo("Title");
     }
 
     @Test

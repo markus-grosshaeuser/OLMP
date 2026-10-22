@@ -96,7 +96,7 @@ public class MediaManagementView extends VerticalLayout {
     }
 
     private void configureFilters() {
-        authorFilter.setItemLabelGenerator(MediaForm::authorName);
+        authorFilter.setItemLabelGenerator(MediaAuthorsForm::authorName);
         authorFilter.setPlaceholder("All authors");
         authorFilter.setClearButtonVisible(true);
         publisherFilter.setItemLabelGenerator(PublisherSummaryDto::name);
@@ -130,7 +130,7 @@ public class MediaManagementView extends VerticalLayout {
                 .setResizable(true);
         mediaGrid.addColumn(media -> media.authors()
                         .stream()
-                        .map(author -> MediaForm.authorName(author.author()) + " (" + author.role() + ")")
+                        .map(author -> MediaAuthorsForm.authorName(author.author()) + " (" + author.role() + ")")
                         .collect(Collectors.joining(", "))
                 )
                 .setHeader("Authors / contributors").setFlexGrow(2).setResizable(true);
@@ -235,11 +235,7 @@ public class MediaManagementView extends VerticalLayout {
         List<MediaInventoryItemDto> newCopies = newlyAddedCopies(dto);
         Objects.requireNonNull(mediaService.createMediaWithInventory(dto), "Media creation failed");
         uiNotificationHandler.showSuccessNotification("Media created successfully.");
-        if (searchField.isEmpty()) {
-            refreshGrid();
-        } else {
-            searchField.clear();
-        }
+        searchField.setValue(dto.getTitle());
         offerBarcodePrinting(dto.getTitle(), newCopies);
     }
 

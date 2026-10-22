@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
 import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
+import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCondition;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.media.*;
 import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
@@ -150,6 +151,50 @@ class MediaUiTest {
         assertThat(submission.getIdentifiers().getFirst().getId()).isEqualTo(20L);
         assertThat(submission.getIdentifiers().getFirst().getIdentifierValue()).isEqualTo("changed");
         assertThat(source.getTitle()).isEqualTo("Original");
+        assertThat(source.getAuthors().getFirst().getRole()).isEqualTo("AUTHOR");
+        assertThat(source.getIdentifiers().getFirst().getIdentifierValue()).isEqualTo("original");
+    }
+
+    @Test
+    void invalidSectionsAllShowErrorsAndKeepTargetCollectionsUntilCorrected() {
+        MediaEditDto source = editableMedia();
+        source.getInventoryItems().add(new MediaInventoryItemDto(30L, "number", "barcode"));
+        BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
+        var form = new MediaForm<>(MediaEditDto.class, OPTIONS, new InventoryNumberServiceImpl(),
+                barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        form.read(source);
+
+        text(form, "Title").clear();
+        text(form, "Role").clear();
+        text(form, "Identifier value").clear();
+        @SuppressWarnings("unchecked")
+        var condition = (ComboBox<InventoryItemCondition>) descendants(form).filter(ComboBox.class::isInstance).map(ComboBox.class::cast)
+                .filter(field -> field.getLabel().equals("Condition")).toList().getLast();
+        condition.clear();
+
+        MediaEditDto target = new MediaEditDto();
+        target.setAuthors(source.getAuthors());
+        target.setIdentifiers(source.getIdentifiers());
+        target.setInventoryItems(source.getInventoryItems());
+        assertThat(form.write(target)).isFalse();
+        assertThat(text(form, "Title").isInvalid()).isTrue();
+        assertThat(text(form, "Role").isInvalid()).isTrue();
+        assertThat(text(form, "Identifier value").isInvalid()).isTrue();
+        assertThat(condition.isInvalid()).isTrue();
+        assertThat(target.getAuthors()).isSameAs(source.getAuthors());
+        assertThat(target.getIdentifiers()).isSameAs(source.getIdentifiers());
+        assertThat(target.getInventoryItems()).isSameAs(source.getInventoryItems());
+
+        text(form, "Title").setValue("Corrected title");
+        text(form, "Role").setValue("EDITOR");
+        text(form, "Identifier value").setValue("corrected");
+        condition.setValue(InventoryItemCondition.NEW);
+        assertThat(form.write(target)).isTrue();
+        assertThat(target.getTitle()).isEqualTo("Corrected title");
+        assertThat(target.getAuthors().getFirst().getRole()).isEqualTo("EDITOR");
+        assertThat(target.getIdentifiers().getFirst().getIdentifierValue()).isEqualTo("corrected");
+        assertThat(target.getInventoryItems().getFirst().condition())
+                .isEqualTo(InventoryItemCondition.NEW);
         assertThat(source.getAuthors().getFirst().getRole()).isEqualTo("AUTHOR");
         assertThat(source.getIdentifiers().getFirst().getIdentifierValue()).isEqualTo("original");
     }
