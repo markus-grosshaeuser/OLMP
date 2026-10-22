@@ -1,5 +1,7 @@
 package com.grosshaeuser.olmp.inventory.service.impl;
 
+import com.grosshaeuser.olmp.inventory.dto.location.LocationSummaryDto;
+import com.grosshaeuser.olmp.inventory.repository.LocationRepository;
 import com.grosshaeuser.olmp.inventory.mappers.AuthorMapper;
 import com.grosshaeuser.olmp.inventory.mappers.MediaTypeMapper;
 import com.grosshaeuser.olmp.inventory.mappers.PublisherMapper;
@@ -27,6 +29,7 @@ public class MediaLookupServiceImpl implements MediaLookupService {
     private final MediaTypeRepository mediaTypeRepository;
     private final PublisherRepository publisherRepository;
     private final AuthorRepository authorRepository;
+    private final LocationRepository locationRepository;
     private final MediaTypeMapper mediaTypeMapper;
     private final PublisherMapper publisherMapper;
     private final AuthorMapper authorMapper;
@@ -37,6 +40,8 @@ public class MediaLookupServiceImpl implements MediaLookupService {
                 mediaTypeRepository.findAll(Sort.by("name", "id")).stream().map(mediaTypeMapper::toSummary).toList(),
                 publisherRepository.findAll(Sort.by("name", "id")).stream().map(publisherMapper::toSummary).toList(),
                 authorRepository.findAll(Sort.by("lastName", "firstName", "id")).stream()
-                        .map(authorMapper::toSummary).toList());
+                        .map(authorMapper::toSummary).toList(),
+                locationRepository.findAll(Sort.by("name", "code", "id")).stream()
+                        .map(location -> new LocationSummaryDto(location.getId(), location.getCode(), location.getName())).toList());
     }
 }

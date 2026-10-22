@@ -4,12 +4,16 @@ import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.author.AuthorCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.media.*;
+import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCondition;
+import com.grosshaeuser.olmp.inventory.dto.location.LocationSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.entity.Author;
+import com.grosshaeuser.olmp.inventory.entity.Location;
 import com.grosshaeuser.olmp.inventory.entity.MediaType;
 import com.grosshaeuser.olmp.inventory.entity.Publisher;
 import com.grosshaeuser.olmp.inventory.mappers.*;
 import com.grosshaeuser.olmp.inventory.repository.AuthorRepository;
+import com.grosshaeuser.olmp.inventory.repository.LocationRepository;
 import com.grosshaeuser.olmp.inventory.repository.MediaRepository;
 import com.grosshaeuser.olmp.inventory.repository.MediaTypeRepository;
 import com.grosshaeuser.olmp.inventory.repository.PublisherRepository;
@@ -54,6 +58,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import javax.sql.DataSource;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -85,6 +91,8 @@ class MediaServicesIntegrationTest {
     @Autowired
     AuthorRepository authors;
     @Autowired
+    LocationRepository locations;
+    @Autowired
     MediaRepository media;
     @Autowired JdbcTemplate jdbc;
     @Autowired SqlCapture sql;
@@ -94,7 +102,7 @@ class MediaServicesIntegrationTest {
 
     @BeforeEach
     void seedReferences() {
-        jdbc.execute("truncate media_identifiers, media_authors, media, authors, publishers, media_types restart identity cascade");
+        jdbc.execute("truncate media_identifiers, media_authors, media, authors, publishers, media_types, locations restart identity cascade");
         book = types.saveAndFlush(MediaType.builder().code("BOOK").name("Book").build());
         author = authors.saveAndFlush(Author.builder().firstName("Ada").lastName("Lovelace").build());
         sql.statements.clear();
@@ -384,10 +392,12 @@ class MediaServicesIntegrationTest {
         publishers.saveAndFlush(Publisher.builder().name("Z publisher").build());
         publishers.saveAndFlush(Publisher.builder().name("A publisher").build());
         authors.saveAndFlush(Author.builder().lastName("Adams").build());
+        Location shelf = locations.saveAndFlush(Location.builder().code("A1").name("Main shelf").build());
         MediaFormOptions options = lookupService.getFormOptions();
         assertThat(options.mediaTypes()).extracting(MediaTypeSummaryDto::name).containsExactly("Audio", "Book");
         assertThat(options.publishers()).extracting(PublisherSummaryDto::name).containsExactly("A publisher", "Z publisher");
         assertThat(options.authors()).extracting(AuthorSummaryDto::lastName).containsExactly("Adams", "Lovelace");
+        assertThat(options.locations()).containsExactly(new LocationSummaryDto(shelf.getId(), "A1", "Main shelf"));
     }
 
     @Test
@@ -521,12 +531,15 @@ class MediaServicesIntegrationTest {
         jdbc.update("update inventory_items set condition='WORN', notes='Keep these notes', acquisition_cost=12.34 where id=?", keep.id());
 
         String thridInventoryNumber = inventoryNumberService.generate();
-        loaded.setInventoryItems(List.of(new MediaInventoryItemDto(keep.id(), "tampered", "tampered"),
+        loaded.setInventoryItems(List.of(new MediaInventoryItemDto(keep.id(), "tampered", "tampered", InventoryItemCondition.WORN,
+                        null, null, null, null, "Keep these notes"),
                 MediaInventoryItemDto.builder().inventoryNumber(thridInventoryNumber).barcode(thridInventoryNumber).build()));
         loaded.setTitle("Updated with inventory");
         MediaEditDto updated = service.updateMediaWithInventory(loaded);
         assertThat(updated.getTitle()).isEqualTo("Updated with inventory");
-        assertThat(updated.getInventoryItems()).hasSize(2).contains(keep);
+        assertThat(updated.getInventoryItems()).hasSize(2);
+        assertThat(updated.getInventoryItems().getFirst().inventoryNumber()).isEqualTo(keep.inventoryNumber());
+        assertThat(updated.getInventoryItems().getFirst().barcode()).isEqualTo(keep.barcode());
         assertThat(updated.getInventoryItems().getLast().inventoryNumber())
                 .isEqualTo(loaded.getInventoryItems().getLast().inventoryNumber());
         assertThat(updated.getInventoryItems()).doesNotContain(loaded.getInventoryItems().getLast());
@@ -561,6 +574,57 @@ class MediaServicesIntegrationTest {
         dto.setInventoryItems(List.of(copy));
         assertThatIllegalArgumentException().isThrownBy(() -> service.createMediaWithInventory(dto));
         assertThat(service.countMedia("Owner")).isEqualTo(1);
+    }
+
+    @Test
+    void inventoryDetailsRoundTripAndExistingCopiesUpdateConditionLocationAndNotes() {
+        Location first = locations.saveAndFlush(Location.builder().code("A1").name("First shelf").build());
+        Location second = locations.saveAndFlush(Location.builder().code("B1").name("Second shelf").build());
+        MediaCreateDto dto = form("Delivery");
+        for (int i = 0; i < 3; i++) {
+            String number = inventoryNumberService.generate();
+            dto.getInventoryItems().add(new MediaInventoryItemDto(null, number, number, InventoryItemCondition.NEW,
+                    first.getId(), LocalDate.of(2026, 10, 1), new BigDecimal("12.34"), null, "Delivery notes"));
+        }
+        long id = service.createMediaWithInventory(dto).id();
+        MediaEditDto loaded = service.findMediaWithInventoryForEdit(id).orElseThrow();
+        assertThat(loaded.getInventoryItems()).hasSize(3).allSatisfy(copy -> {
+            assertThat(copy.condition()).isEqualTo(InventoryItemCondition.NEW);
+            assertThat(copy.locationId()).isEqualTo(first.getId());
+            assertThat(copy.acquiredAt()).isEqualTo(LocalDate.of(2026, 10, 1));
+            assertThat(copy.acquisitionCost()).isEqualByComparingTo("12.34");
+            assertThat(copy.notes()).isEqualTo("Delivery notes");
+        });
+        MediaInventoryItemDto original = loaded.getInventoryItems().getFirst();
+        loaded.setInventoryItems(List.of(new MediaInventoryItemDto(original.id(), "tampered", "tampered",
+                InventoryItemCondition.WORN, second.getId(), null, null, null, "Updated notes")));
+        MediaInventoryItemDto updated = service.updateMediaWithInventory(loaded).getInventoryItems().getFirst();
+        assertThat(updated).isEqualTo(new MediaInventoryItemDto(original.id(), original.inventoryNumber(), original.barcode(),
+                InventoryItemCondition.WORN, second.getId(), original.acquiredAt(), original.acquisitionCost(), null, "Updated notes"));
+        assertThat(service.findMediaWithInventoryForEdit(id).orElseThrow().getInventoryItems().getFirst().notes())
+                .isEqualTo("Updated notes");
+        loaded.setInventoryItems(List.of(new MediaInventoryItemDto(updated.id(), updated.inventoryNumber(), updated.barcode(),
+                updated.condition(), null, updated.acquiredAt(), updated.acquisitionCost(), null, null)));
+        MediaInventoryItemDto cleared = service.updateMediaWithInventory(loaded).getInventoryItems().getFirst();
+        assertThat(cleared.locationId()).isNull();
+        assertThat(cleared.notes()).isNull();
+        assertThat(service.findMediaWithInventoryForEdit(id).orElseThrow().getInventoryItems().getFirst().notes()).isNull();
+    }
+
+    @Test
+    void unknownInventoryLocationsAndInvalidCostsAreRejectedBeforeSaving() {
+        MediaCreateDto dto = form("Rejected delivery");
+        String number = inventoryNumberService.generate();
+        dto.setInventoryItems(List.of(new MediaInventoryItemDto(null, number, number, InventoryItemCondition.NEW,
+                Long.MAX_VALUE, null, null, null, null)));
+        assertThatIllegalArgumentException().isThrownBy(() -> service.createMediaWithInventory(dto))
+                .withMessageContaining("locations no longer exist");
+        for (String invalid : List.of("-1", "1.234", "100000000")) {
+            dto.setInventoryItems(List.of(new MediaInventoryItemDto(null, number, number, InventoryItemCondition.NEW,
+                    null, null, new BigDecimal(invalid), null, null)));
+            assertThatIllegalArgumentException().isThrownBy(() -> service.createMediaWithInventory(dto));
+        }
+        assertThat(service.countMedia("Rejected delivery")).isZero();
     }
 
     @Test

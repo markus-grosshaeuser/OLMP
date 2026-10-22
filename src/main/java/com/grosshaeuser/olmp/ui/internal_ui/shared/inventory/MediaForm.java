@@ -3,6 +3,9 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.author.AuthorCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.author.AuthorEditDto;
+import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCreateDto;
+import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCondition;
+import com.grosshaeuser.olmp.inventory.dto.location.LocationSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaAuthorWriteDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaIdentifierWriteDto;
@@ -23,22 +26,22 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.BigDecimalField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.provider.ListDataProvider;
 
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -52,7 +55,6 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
     private final BeanValidationBinder<T> binder;
     private final MediaFormOptions options;
     private final InventoryNumberService inventoryNumberService;
-    private final BarcodeService barcodeService;
     private final BarcodePrintService barcodePrintService;
     private final MediaReferenceService referenceService;
     private final List<PublisherSummaryDto> publisherOptions;
@@ -74,6 +76,8 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
     private final VerticalLayout inventoryRows = new VerticalLayout();
     private final List<InventoryRow> inventoryItems = new ArrayList<>();
     private final IntegerField copyCount = new IntegerField("Number of copies");
+    private final VerticalLayout copyForm = new VerticalLayout();
+    private final InventoryFields batchFields;
     private final Span inventoryCount = new Span();
     private final List<AuthorRow> authors = new ArrayList<>();
     private final List<IdentifierRow> identifiers = new ArrayList<>();
@@ -93,13 +97,14 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         authorOptions = new ArrayList<>(options.authors());
         publisherProvider = new ListDataProvider<>(publisherOptions);
         authorProvider = new ListDataProvider<>(authorOptions);
-        this.barcodeService = Objects.requireNonNull(barcodeService, "barcodeService");
+        Objects.requireNonNull(barcodeService, "barcodeService");
         binder = new BeanValidationBinder<>(dtoType);
         this.inventoryNumberService = inventoryNumberService;
         this.barcodePrintService = barcodePrintService;
         configureFields();
         configureBindings();
         publisherForm = createPublisherForm();
+        batchFields = new InventoryFields();
 
         FormLayout catalogue = responsiveForm();
         Button createPublisher = new Button(VaadinIcon.PLUS.create(), _ -> publisherForm.open());
@@ -131,9 +136,20 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         copyCount.setAriaLabel("Number of copies to add");
         copyCount.setLabel("Number of copies to add");
         Button addCopies = new Button("Add copies", _ -> addInventoryBatch());
-        HorizontalLayout inventoryActions = new HorizontalLayout(copyCount, addCopies);
+        Button cancelCopies = new Button("Cancel", _ -> resetCopyForm());
+        cancelCopies.setAriaLabel("Cancel adding copies");
+        HorizontalLayout inventoryActions = new HorizontalLayout(addCopies, cancelCopies);
         inventoryActions.setAlignItems(FlexComponent.Alignment.BASELINE);
         inventoryActions.setWrap(true);
+        batchFields.layout.add(copyCount);
+        copyForm.addClassName("inline-create-form");
+        copyForm.setWidthFull();
+        copyForm.add(batchFields.layout, inventoryActions);
+        resetCopyForm();
+        Button addCopy = new Button("Add copy", _ -> {
+            copyForm.setVisible(true);
+            batchFields.condition.focus();
+        });
         inventoryCount.getElement().setAttribute("aria-live", "polite");
         updateInventoryCount();
         validationMessage.getElement().setAttribute("role", "alert");
@@ -150,7 +166,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         sheet.add("Identifiers", createSection("Identifiers", "Add identifiers such as ISBN, ISSN or DOI.", identifierRows, addIdentifier));
         sheet.add("Inventory items", createSection("Inventory items",
                 "Manage physical copies. Inventory numbers and barcodes are generated when you add copies. Changes take effect when you save the medium.",
-                inventoryActions, inventoryCount, inventoryRows));
+                addCopy, copyForm, inventoryCount, inventoryRows));
 
         getContent().add(sheet, validationMessage);
     }
@@ -169,8 +185,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         inventoryRows.removeAll();
         source.getInventoryItems().forEach(this::addInventoryItem);
         updateInventoryCount();
-        copyCount.setValue(1);
-        copyCount.setInvalid(false);
+        resetCopyForm();
         validationMessage.setVisible(false);
     }
 
@@ -178,6 +193,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         validationMessage.setVisible(false);
         List<MediaAuthorWriteDto> authorDtos = new ArrayList<>();
         List<MediaIdentifierWriteDto> identifierDtos = new ArrayList<>();
+        List<MediaInventoryItemDto> inventoryDtos = new ArrayList<>();
         boolean valid = true;
         for (AuthorRow row : authors) {
             MediaAuthorWriteDto dto = new MediaAuthorWriteDto();
@@ -189,6 +205,11 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             dto.setId(row.id);
             valid = row.binder.writeBeanIfValid(dto) && valid;
             identifierDtos.add(dto);
+        }
+        for (InventoryRow row : inventoryItems) {
+            InventoryItemCreateDto values = new InventoryItemCreateDto();
+            valid = row.fields.binder.writeBeanIfValid(values) && valid;
+            inventoryDtos.add(row.fields.copy(row.dto, values));
         }
         valid = binder.writeBeanIfValid(target) && valid;
         if (!valid) {
@@ -204,7 +225,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         }
         target.setAuthors(authorDtos);
         target.setIdentifiers(identifierDtos);
-        target.setInventoryItems(new ArrayList<>(inventoryItems.stream().map(row -> row.dto).toList()));
+        target.setInventoryItems(inventoryDtos);
         return true;
     }
 
@@ -424,11 +445,22 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             return;
         }
         copyCount.setInvalid(false);
-        for (int i = 0; i < count; i++) {
-//            addInventoryItem(MediaInventoryItemDto.newCopy());
-            String inventoryNumber = inventoryNumberService.generate();
-            addInventoryItem(MediaInventoryItemDto.builder().inventoryNumber(inventoryNumber).barcode(inventoryNumber).build());
+        InventoryItemCreateDto values = new InventoryItemCreateDto();
+        if (!batchFields.binder.writeBeanIfValid(values)) {
+            return;
         }
+        for (int i = 0; i < count; i++) {
+            String inventoryNumber = inventoryNumberService.generate();
+            addInventoryItem(batchFields.copy(new MediaInventoryItemDto(null, inventoryNumber, inventoryNumber), values));
+        }
+        resetCopyForm();
+    }
+
+    private void resetCopyForm() {
+        batchFields.binder.readBean(new InventoryItemCreateDto());
+        copyCount.setValue(1);
+        copyCount.setInvalid(false);
+        copyForm.setVisible(false);
     }
 
     private void updateInventoryCount() {
@@ -475,9 +507,61 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
                 : author.firstName() + " " + author.lastName();
     }
 
+    private class InventoryFields {
+        private final BeanValidationBinder<InventoryItemCreateDto> binder = new BeanValidationBinder<>(InventoryItemCreateDto.class);
+        private final FormLayout layout = responsiveForm();
+        private final ComboBox<InventoryItemCondition> condition = new ComboBox<>("Condition");
+        private final ComboBox<LocationSummaryDto> location = new ComboBox<>("Location");
+        private final DatePicker acquiredAt = new DatePicker("Acquisition date");
+        private final BigDecimalField acquisitionCost = new BigDecimalField("Acquisition cost");
+        private final TextArea notes = new TextArea("Notes");
+
+        InventoryFields() {
+            condition.setItems(InventoryItemCondition.values());
+            condition.setItemLabelGenerator(value -> value.name().charAt(0) + value.name().substring(1).toLowerCase(Locale.ROOT));
+            location.setItems(options.locations());
+            location.setItemLabelGenerator(value -> value.name() + " (" + value.code() + ")");
+            location.setClearButtonVisible(true);
+            binder.forField(condition).asRequired("Condition is required").bind("condition");
+            binder.forField(location)
+                    .withConverter(value -> value == null ? null : value.id(),
+                            id -> lookup(options.locations(), LocationSummaryDto::id, id, "Location"))
+                    .bind("locationId");
+            binder.forField(acquiredAt).bind("acquiredAt");
+            binder.forField(acquisitionCost).bind("acquisitionCost");
+            binder.forField(notes).withNullRepresentation("").bind("notes");
+            List.<HasSize>of(condition, location, acquiredAt, acquisitionCost, notes).forEach(HasSize::setWidthFull);
+            notes.setWidthFull();
+            HorizontalLayout detailsFields = new HorizontalLayout(condition, location, acquiredAt, acquisitionCost);
+            detailsFields.setWidthFull();
+            detailsFields.setWrap(false);
+            detailsFields.setAlignItems(FlexComponent.Alignment.END);
+            detailsFields.setFlexGrow(1, condition, location, acquiredAt, acquisitionCost);
+            layout.addFormRow(detailsFields);
+            layout.addFormRow(notes);
+        }
+
+        void read(MediaInventoryItemDto source) {
+            InventoryItemCreateDto values = new InventoryItemCreateDto();
+            values.setCondition(source.condition());
+            values.setLocationId(source.locationId());
+            values.setAcquiredAt(source.acquiredAt());
+            values.setAcquisitionCost(source.acquisitionCost());
+            values.setNotes(source.notes());
+            binder.readBean(values);
+        }
+
+        MediaInventoryItemDto copy(MediaInventoryItemDto source, InventoryItemCreateDto values) {
+            return new MediaInventoryItemDto(source.id(), source.inventoryNumber(), source.barcode(),
+                    values.getCondition(), values.getLocationId(), values.getAcquiredAt(),
+                    values.getAcquisitionCost(), source.withdrawnAt(), values.getNotes());
+        }
+    }
+
     private class InventoryRow {
         private final MediaInventoryItemDto dto;
-        private final HorizontalLayout layout = new HorizontalLayout();
+        private final VerticalLayout layout = new VerticalLayout();
+        private final InventoryFields fields = new InventoryFields();
 
         InventoryRow(MediaInventoryItemDto dto) {
             this.dto = dto;
@@ -485,24 +569,18 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             number.setValue(Objects.requireNonNullElse(dto.inventoryNumber(), ""));
             number.setReadOnly(true);
             number.setWidthFull();
-            VerticalLayout barcode = new VerticalLayout();
-            barcode.setPadding(false);
-            barcode.setSpacing(false);
-            if (dto.barcode() == null || dto.barcode().isBlank()) {
-                barcode.add(new Span("No barcode"));
-            } else {
-                String source = "data:image/png;base64," + Base64.getEncoder()
-                        .encodeToString(barcodeService.generateBarcodePng(dto.barcode()));
-                Image image = new Image(source, "Barcode " + dto.barcode());
-                image.getStyle().set("max-width", "100%").set("height", "auto");
-                barcode.add(image);
-            }
+            fields.read(dto);
+            fields.acquiredAt.setReadOnly(true);
+            fields.acquisitionCost.setReadOnly(true);
             Button print = new Button(VaadinIcon.PRINT.create());
+            print.setAriaLabel("Print barcode");
+            print.setTooltipText("Print barcode");
+            print.setEnabled(dto.barcode() != null && !dto.barcode().isBlank());
             print.setVisible(false);
             if (barcodePrintService != null) {
                 print.setVisible(true);
                 print.addClickListener(_ -> {
-                    String document = barcodePrintService.createPrintDocument("", List.of(dto));
+                    String document = barcodePrintService.createPrintDocument(title.getValue(), List.of(dto));
                     UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
                 });
             }
@@ -514,10 +592,14 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
             remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
             remove.setAriaLabel("Remove copy");
             layout.setWidthFull();
-            layout.setWrap(false);
-            layout.setAlignItems(FlexComponent.Alignment.END);
-            layout.add(number, barcode, print, remove);
-            layout.setFlexGrow(1, number, barcode);
+            layout.setPadding(false);
+            layout.addClassName("inventory-row");
+            HorizontalLayout header = new HorizontalLayout(number, print, remove);
+            header.setWidthFull();
+            header.setWrap(false);
+            header.setAlignItems(FlexComponent.Alignment.END);
+            header.setFlexGrow(1, number);
+            layout.add(header, fields.layout);
         }
     }
 

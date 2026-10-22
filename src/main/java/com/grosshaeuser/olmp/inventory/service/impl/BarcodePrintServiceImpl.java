@@ -40,16 +40,16 @@ public class BarcodePrintServiceImpl implements BarcodePrintService {
         return """
                 <!doctype html>
                 <html lang="en"><head><meta charset="utf-8">
-                <title>Barcode labels</title>
+                <title></title>
                 <style>
                 @page { size: A4 portrait; margin: 10mm; }
                 * { box-sizing: border-box; }
                 body { margin: 0; color: black; background: white; font-family: Arial, sans-serif; }
-                main { display: grid; grid-template-columns: 1fr; gap: 4mm; justify-items: center; }
-                .label { width: 124mm; height: 38mm; padding: 2mm; break-inside: avoid;
+                main { display: grid; grid-template-columns: auto auto; gap: 6mm; justify-items: center; }
+                .label { width: 90mm; height: 29mm; padding: 0mm; break-inside: avoid;
                 page-break-inside: avoid; overflow: hidden; text-align: center; }
                 .title { font-size: 10pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-                img { display: block; width: 120mm; height: 14mm; object-fit: contain; margin: 1mm auto; }
+                img { display: block; width: 90mm; height: 14mm; object-fit: contain; margin: 1mm auto; }
                 .number { font-family: monospace; font-size: 8pt; white-space: nowrap; }
                 </style></head><body><main>
                 """ + labels + "</main></body></html>";

@@ -1,9 +1,11 @@
 package com.grosshaeuser.olmp.inventory.service.impl;
 
 import com.grosshaeuser.olmp.inventory.dto.media.*;
+import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCondition;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.entity.Author;
 import com.grosshaeuser.olmp.inventory.entity.InventoryItem;
+import com.grosshaeuser.olmp.inventory.entity.Location;
 import com.grosshaeuser.olmp.inventory.entity.Media;
 import com.grosshaeuser.olmp.inventory.entity.MediaAuthor;
 import com.grosshaeuser.olmp.inventory.entity.MediaIdentifier;
@@ -53,6 +55,7 @@ public class MediaManagementServiceImpl implements MediaManagementService {
     private final MediaAuthorRepository mediaAuthorRepository;
     private final MediaIdentifierRepository identifierRepository;
     private final InventoryItemRepository inventoryItemRepository;
+    private final LocationRepository locationRepository;
     private final MediaMapper mediaMapper;
     private final MediaAuthorMapper mediaAuthorMapper;
     private final MediaIdentifierMapper identifierMapper;
@@ -68,9 +71,10 @@ public class MediaManagementServiceImpl implements MediaManagementService {
     public MediaSummaryDto createMediaWithInventory(MediaCreateDto dto) {
         validateSubmission(dto, true);
         validateInventorySelection(dto.getInventoryItems(), List.of());
+        Map<Long, Location> locations = resolveInventoryLocations(dto.getInventoryItems());
         MediaSummaryDto created = createMedia(dto);
         Media media = mediaRepository.getReferenceById(created.id());
-        saveNewInventoryItems(dto.getInventoryItems(), media);
+        saveNewInventoryItems(dto.getInventoryItems(), media, locations);
         inventoryItemRepository.flush();
         return created;
     }
@@ -83,16 +87,27 @@ public class MediaManagementServiceImpl implements MediaManagementService {
                 .orElseThrow(() -> new IllegalArgumentException("Media no longer exists: " + dto.getId()));
         List<InventoryItem> existing = inventoryItemRepository.findAllByMediaIdOrderByIdAsc(media.getId());
         Set<Long> retained = validateInventorySelection(dto.getInventoryItems(), existing);
+        Map<Long, Location> locations = resolveInventoryLocations(dto.getInventoryItems());
+        Map<Long, InventoryItem> byId = existing.stream().collect(Collectors.toMap(InventoryItem::getId, item -> item));
+        dto.getInventoryItems().stream().filter(item -> item.id() != null).forEach(item -> {
+            InventoryItem current = byId.get(item.id());
+            current.setCondition(InventoryItem.Condition.valueOf(item.condition().name()));
+            current.setLocation(item.locationId() == null ? null : locations.get(item.locationId()));
+            current.setNotes(item.notes());
+        });
         MediaEditDto updated = updateMedia(dto);
         inventoryItemRepository.deleteAll(existing.stream().filter(item -> !retained.contains(item.getId())).toList());
-        saveNewInventoryItems(dto.getInventoryItems(), media);
+        saveNewInventoryItems(dto.getInventoryItems(), media, locations);
         inventoryItemRepository.flush();
         return includeInventory(updated);
     }
 
     private MediaEditDto includeInventory(MediaEditDto dto) {
         dto.setInventoryItems(inventoryItemRepository.findAllByMediaIdOrderByIdAsc(dto.getId()).stream()
-                .map(item -> new MediaInventoryItemDto(item.getId(), item.getInventoryNumber(), item.getBarcode()))
+                .map(item -> new MediaInventoryItemDto(item.getId(), item.getInventoryNumber(), item.getBarcode(),
+                        InventoryItemCondition.valueOf(item.getCondition().name()),
+                        item.getLocation() == null ? null : item.getLocation().getId(),
+                        item.getAcquiredAt(), item.getAcquisitionCost(), item.getWithdrawnAt(), item.getNotes()))
                 .toList());
         return dto;
     }
@@ -121,10 +136,24 @@ public class MediaManagementServiceImpl implements MediaManagementService {
         return retained;
     }
 
-    private void saveNewInventoryItems(List<MediaInventoryItemDto> submitted, Media media) {
+    private Map<Long, Location> resolveInventoryLocations(List<MediaInventoryItemDto> submitted) {
+        Set<Long> ids = submitted.stream().map(MediaInventoryItemDto::locationId).filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, Location> locations = ids.isEmpty() ? Map.of() : locationRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(Location::getId, location -> location));
+        if (locations.size() != ids.size()) {
+            throw new IllegalArgumentException("One or more selected locations no longer exist");
+        }
+        return locations;
+    }
+
+    private void saveNewInventoryItems(List<MediaInventoryItemDto> submitted, Media media, Map<Long, Location> locations) {
         inventoryItemRepository.saveAll(submitted.stream().filter(item -> item.id() == null)
                 .map(item -> InventoryItem.builder().media(media)
-                        .inventoryNumber(item.inventoryNumber()).barcode(item.barcode()).build())
+                        .inventoryNumber(item.inventoryNumber()).barcode(item.barcode())
+                        .condition(InventoryItem.Condition.valueOf(item.condition().name()))
+                        .location(item.locationId() == null ? null : locations.get(item.locationId())).acquiredAt(item.acquiredAt())
+                        .acquisitionCost(item.acquisitionCost()).withdrawnAt(item.withdrawnAt()).notes(item.notes()).build())
                 .toList());
     }
 
