@@ -4,6 +4,7 @@ import com.grosshaeuser.olmp.inventory.dto.media.*;
 import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodePrintServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodeServiceImpl;
+import com.grosshaeuser.olmp.inventory.service.impl.InventoryNumberServiceImpl;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -18,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,7 +35,7 @@ class MediaInventoryFormTest {
         UI.setCurrent(ui);
         var book = new MediaTypeSummaryDto(1L, "BOOK", "Book");
         BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        form = new MediaForm<>(MediaEditDto.class, new MediaFormOptions(List.of(book), List.of(), List.of()), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        form = new MediaForm<>(MediaEditDto.class, new MediaFormOptions(List.of(book), List.of(), List.of()), new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
         source = new MediaEditDto();
         source.setId(1L);
         source.setMediaTypeId(book.id());
@@ -84,7 +84,6 @@ class MediaInventoryFormTest {
         List<TextField> numbers = descendants(form).filter(TextField.class::isInstance).map(TextField.class::cast)
                 .filter(field -> field.getLabel().equals("Inventory number")).toList();
         String immediateNumber = numbers.getLast().getValue();
-        assertThat(UUID.fromString(immediateNumber).toString()).isEqualTo(immediateNumber);
         assertThat(descendants(form).filter(Image.class::isInstance).map(Image.class::cast))
                 .anyMatch(image -> image.getAlt().orElse("").equals("Barcode " + immediateNumber));
         count().setValue(3);
@@ -94,7 +93,6 @@ class MediaInventoryFormTest {
         assertThat(submitted.getInventoryItems().getFirst().id()).isEqualTo(2L);
         assertThat(submitted.getInventoryItems().subList(1, 5)).allSatisfy(copy -> {
             assertThat(copy.id()).isNull();
-            assertThat(UUID.fromString(copy.inventoryNumber()).toString()).isEqualTo(copy.inventoryNumber());
             assertThat(copy.barcode()).isEqualTo(copy.inventoryNumber());
         });
         assertThat(submitted.getInventoryItems().get(1).inventoryNumber()).isEqualTo(immediateNumber);
@@ -127,7 +125,7 @@ class MediaInventoryFormTest {
         List<MediaCreateDto> saved = new ArrayList<>();
         var book = new MediaTypeSummaryDto(1L, "BOOK", "Book");
         MediaCreateDialog dialog = new MediaCreateDialog(
-                new MediaFormOptions(List.of(book), List.of(), List.of()), new BarcodeServiceImpl(), mock(MediaReferenceService.class), saved::add,
+                new MediaFormOptions(List.of(book), List.of(), List.of()), new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), mock(MediaReferenceService.class), saved::add,
                 exception -> { throw exception; });
         dialog.open();
         descendants(dialog).filter(TextField.class::isInstance).map(TextField.class::cast)

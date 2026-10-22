@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
 import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
+import com.grosshaeuser.olmp.inventory.service.InventoryNumberService;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaEditDto;
@@ -23,6 +24,7 @@ public class MediaEditComponent extends Composite<VerticalLayout> implements Str
     public MediaEditComponent(
             MediaEditDto media,
             MediaFormOptions options,
+            InventoryNumberService inventoryNumberService,
             BarcodeService barcodeService,
             BarcodePrintService barcodePrintService,
             MediaReferenceService referenceService,
@@ -35,7 +37,7 @@ public class MediaEditComponent extends Composite<VerticalLayout> implements Str
         this.updateCallback = Objects.requireNonNull(updateCallback, "updateCallback");
         this.errorCallback = Objects.requireNonNull(errorCallback, "errorCallback");
         Objects.requireNonNull(closeCallback, "closeCallback");
-        form = new MediaForm<>(MediaEditDto.class, options, barcodeService, barcodePrintService, referenceService);
+        form = new MediaForm<>(MediaEditDto.class, options, inventoryNumberService, barcodeService, barcodePrintService, referenceService);
         form.read(media);
         Button save = new Button("Save changes", _ -> save());
         save.addThemeVariants(ButtonVariant.PRIMARY);

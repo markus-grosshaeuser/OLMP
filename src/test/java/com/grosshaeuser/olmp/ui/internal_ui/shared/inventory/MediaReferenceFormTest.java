@@ -9,6 +9,7 @@ import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherEditDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodeServiceImpl;
+import com.grosshaeuser.olmp.inventory.service.impl.InventoryNumberServiceImpl;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -42,7 +43,7 @@ class MediaReferenceFormTest {
         UI.setCurrent(ui);
         references = mock(MediaReferenceService.class);
         var book = new MediaTypeSummaryDto(1L, "BOOK", "Book");
-        form = new MediaForm<>(MediaCreateDto.class, new MediaFormOptions(List.of(book), List.of(PUBLISHER), List.of(AUTHOR)),
+        form = new MediaForm<>(MediaCreateDto.class, new MediaFormOptions(List.of(book), List.of(PUBLISHER), List.of(AUTHOR)), new InventoryNumberServiceImpl(),
                 new BarcodeServiceImpl(), null, references);
         source = new MediaCreateDto();
         source.setMediaTypeId(book.id());

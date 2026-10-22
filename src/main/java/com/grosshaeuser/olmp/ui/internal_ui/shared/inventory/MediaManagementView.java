@@ -2,11 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
 import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
-import com.grosshaeuser.olmp.inventory.service.MediaLookupService;
-import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
-import com.grosshaeuser.olmp.inventory.service.MediaManagementService;
-import com.grosshaeuser.olmp.inventory.service.BarcodeService;
-import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
+import com.grosshaeuser.olmp.inventory.service.*;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaInventoryItemDto;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
@@ -41,6 +37,7 @@ public class MediaManagementView extends VerticalLayout {
     private final MediaManagementService mediaService;
     private final MediaLookupService lookupService;
     private final MediaReferenceService referenceService;
+    private final InventoryNumberService inventoryNumberService;
     private final BarcodeService barcodeService;
     private final BarcodePrintService barcodePrintService;
     private final UiExceptionHandler uiExceptionHandler;
@@ -53,6 +50,7 @@ public class MediaManagementView extends VerticalLayout {
     public MediaManagementView(
             MediaManagementService mediaService,
             MediaLookupService lookupService,
+            InventoryNumberService inventoryNumberService,
             BarcodeService barcodeService,
             BarcodePrintService barcodePrintService,
             MediaReferenceService referenceService,
@@ -62,6 +60,7 @@ public class MediaManagementView extends VerticalLayout {
         this.mediaService = Objects.requireNonNull(mediaService, "mediaService");
         this.lookupService = Objects.requireNonNull(lookupService, "lookupService");
         this.referenceService = Objects.requireNonNull(referenceService, "referenceService");
+        this.inventoryNumberService = Objects.requireNonNull(inventoryNumberService, "inventoryNumberService");
         this.barcodeService = Objects.requireNonNull(barcodeService, "barcodeService");
         this.barcodePrintService = Objects.requireNonNull(barcodePrintService, "barcodeLabelService");
         this.uiExceptionHandler = Objects.requireNonNull(uiExceptionHandler, "uiExceptionHandler");
@@ -198,6 +197,7 @@ public class MediaManagementView extends VerticalLayout {
                     .<Component>map(dto -> new MediaEditComponent(
                             dto,
                             lookupService.getFormOptions(),
+                            inventoryNumberService,
                             barcodeService,
                             barcodePrintService,
                             referenceService,
@@ -220,6 +220,7 @@ public class MediaManagementView extends VerticalLayout {
         try {
             new MediaCreateDialog(
                     lookupService.getFormOptions(),
+                    inventoryNumberService,
                     barcodeService,
                     referenceService,
                     this::createMedia,

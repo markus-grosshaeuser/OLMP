@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
+import com.grosshaeuser.olmp.inventory.service.InventoryNumberService;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
@@ -19,6 +20,7 @@ public class MediaCreateDialog extends Dialog implements Structurable, Delegatab
 
     public MediaCreateDialog(
             MediaFormOptions options,
+            InventoryNumberService inventoryNumberService,
             BarcodeService barcodeService,
             MediaReferenceService referenceService,
             CreateCallback<MediaCreateDto> createCallback,
@@ -26,7 +28,7 @@ public class MediaCreateDialog extends Dialog implements Structurable, Delegatab
     ) {
         this.createCallback = Objects.requireNonNull(createCallback, "createCallback");
         this.errorCallback = Objects.requireNonNull(errorCallback, "errorCallback");
-        form = new MediaForm<>(MediaCreateDto.class, options, barcodeService, null, referenceService);
+        form = new MediaForm<>(MediaCreateDto.class, options, inventoryNumberService, barcodeService, null, referenceService);
         form.read(new MediaCreateDto());
 
         getHeader().add(createDialogHeader("Create medium", "Create a new medium", this::close));

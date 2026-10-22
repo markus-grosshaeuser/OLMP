@@ -11,6 +11,7 @@ import com.grosshaeuser.olmp.inventory.dto.media.MediaTypeSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherEditDto;
+import com.grosshaeuser.olmp.inventory.service.InventoryNumberService;
 import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
 import com.grosshaeuser.olmp.inventory.service.BarcodeService;
@@ -50,6 +51,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
 
     private final BeanValidationBinder<T> binder;
     private final MediaFormOptions options;
+    private final InventoryNumberService inventoryNumberService;
     private final BarcodeService barcodeService;
     private final BarcodePrintService barcodePrintService;
     private final MediaReferenceService referenceService;
@@ -77,8 +79,14 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
     private final List<IdentifierRow> identifiers = new ArrayList<>();
     private final Span validationMessage = new Span();
 
-    MediaForm(Class<T> dtoType, MediaFormOptions options, BarcodeService barcodeService, BarcodePrintService barcodePrintService,
-              MediaReferenceService referenceService) {
+    MediaForm(
+            Class<T> dtoType,
+            MediaFormOptions options,
+            InventoryNumberService inventoryNumberService,
+            BarcodeService barcodeService,
+            BarcodePrintService barcodePrintService,
+            MediaReferenceService referenceService
+    ) {
         this.options = Objects.requireNonNull(options, "options");
         this.referenceService = Objects.requireNonNull(referenceService, "referenceService");
         publisherOptions = new ArrayList<>(options.publishers());
@@ -87,6 +95,7 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         authorProvider = new ListDataProvider<>(authorOptions);
         this.barcodeService = Objects.requireNonNull(barcodeService, "barcodeService");
         binder = new BeanValidationBinder<>(dtoType);
+        this.inventoryNumberService = inventoryNumberService;
         this.barcodePrintService = barcodePrintService;
         configureFields();
         configureBindings();
@@ -416,7 +425,9 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> impl
         }
         copyCount.setInvalid(false);
         for (int i = 0; i < count; i++) {
-            addInventoryItem(MediaInventoryItemDto.newCopy());
+//            addInventoryItem(MediaInventoryItemDto.newCopy());
+            String inventoryNumber = inventoryNumberService.generate();
+            addInventoryItem(MediaInventoryItemDto.builder().inventoryNumber(inventoryNumber).barcode(inventoryNumber).build());
         }
     }
 

@@ -7,6 +7,7 @@ import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.grosshaeuser.olmp.inventory.service.MediaManagementService;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodeServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodePrintServiceImpl;
+import com.grosshaeuser.olmp.inventory.service.impl.InventoryNumberServiceImpl;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.component.Component;
@@ -56,7 +57,7 @@ class MediaUiTest {
     @Test
     void createFormRequiresTitleAndTypeAndRejectsWhitespaceTitle() {
         BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaForm<MediaCreateDto> form = new MediaForm<>(MediaCreateDto.class, OPTIONS, barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        MediaForm<MediaCreateDto> form = new MediaForm<>(MediaCreateDto.class, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
         form.read(new MediaCreateDto());
         assertThat(form.write(new MediaCreateDto())).isFalse();
         text(form, "Title").setValue(" ");
@@ -121,7 +122,7 @@ class MediaUiTest {
         duplicateAuthor.setAuthorId(2L);
         existing.getAuthors().add(duplicateAuthor);
         BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaForm<MediaEditDto> form = new MediaForm<>(MediaEditDto.class, OPTIONS, barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        MediaForm<MediaEditDto> form = new MediaForm<>(MediaEditDto.class, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
         form.read(existing);
         assertThat(form.write(new MediaEditDto())).isFalse();
 
@@ -138,7 +139,7 @@ class MediaUiTest {
     void bufferedEditingRetainsIdentifierIdsAndDoesNotMutateLoadedDto() {
         MediaEditDto source = editableMedia();
         BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaForm<MediaEditDto> form = new MediaForm<>(MediaEditDto.class, OPTIONS, barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        MediaForm<MediaEditDto> form = new MediaForm<>(MediaEditDto.class, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
         form.read(source);
         text(form, "Title").setValue("Changed");
         text(form, "Role").setValue("EDITOR");
@@ -159,7 +160,7 @@ class MediaUiTest {
         AtomicReference<MediaEditDto> saved = new AtomicReference<>();
         AtomicInteger closed = new AtomicInteger();
         BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaEditComponent editor = new MediaEditComponent(source, OPTIONS, barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class), dto -> {
+        MediaEditComponent editor = new MediaEditComponent(source, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class), dto -> {
             saved.set(dto);
             return dto;
         }, closed::incrementAndGet, exception -> { throw exception; });
@@ -186,7 +187,7 @@ class MediaUiTest {
         List<RuntimeException> errors = new ArrayList<>();
         AtomicInteger attempts = new AtomicInteger();
         BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaEditComponent editor = new MediaEditComponent(editableMedia(), OPTIONS, barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class), dto -> {
+        MediaEditComponent editor = new MediaEditComponent(editableMedia(), OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class), dto -> {
             if (attempts.getAndIncrement() == 0) {
                 throw new IllegalArgumentException("Already exists");
             }
@@ -204,7 +205,7 @@ class MediaUiTest {
     void createDialogStaysOpenOnSaveFailureAndClosesAfterRetry() {
         List<RuntimeException> errors = new ArrayList<>();
         AtomicInteger attempts = new AtomicInteger();
-        MediaCreateDialog dialog = new MediaCreateDialog(OPTIONS, new BarcodeServiceImpl(), mock(MediaReferenceService.class), dto -> {
+        MediaCreateDialog dialog = new MediaCreateDialog(OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), mock(MediaReferenceService.class), dto -> {
             if (attempts.getAndIncrement() == 0) {
                 throw new IllegalArgumentException("Already exists");
             }
@@ -224,7 +225,7 @@ class MediaUiTest {
     @Test
     void searchUsesTrimmedFilterAndBackendPagingSortingAndCount() {
         FakeMediaService service = new FakeMediaService();
-        MediaManagementView view = new MediaManagementView(service, () -> OPTIONS, new BarcodeServiceImpl(),
+        MediaManagementView view = new MediaManagementView(service, () -> OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
                 new BarcodePrintServiceImpl(new BarcodeServiceImpl()), mock(MediaReferenceService.class),
                 new UiExceptionHandler(), new UiNotificationHandler());
         Grid<MediaSummaryDto> grid = grid(view);
@@ -245,7 +246,7 @@ class MediaUiTest {
     @Test
     void authorAndPublisherFiltersCombineWithSearchAndCanBeClearedIndependently() {
         FakeMediaService service = new FakeMediaService();
-        MediaManagementView view = new MediaManagementView(service, () -> OPTIONS, new BarcodeServiceImpl(),
+        MediaManagementView view = new MediaManagementView(service, () -> OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
                 new BarcodePrintServiceImpl(new BarcodeServiceImpl()), mock(MediaReferenceService.class),
                 new UiExceptionHandler(), new UiNotificationHandler());
         Grid<MediaSummaryDto> grid = grid(view);
@@ -284,7 +285,7 @@ class MediaUiTest {
 
     private MediaForm<MediaCreateDto> populatedForm() {
         BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaForm<MediaCreateDto> form = new MediaForm<>(MediaCreateDto.class, OPTIONS, barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        MediaForm<MediaCreateDto> form = new MediaForm<>(MediaCreateDto.class, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
         form.read(new MediaCreateDto());
         text(form, "Title").setValue("A title");
         combo(form, "Media type").setValue(BOOK);

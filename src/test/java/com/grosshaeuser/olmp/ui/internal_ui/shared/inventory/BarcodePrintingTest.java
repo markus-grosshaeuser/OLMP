@@ -5,6 +5,7 @@ import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
 import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
 import com.grosshaeuser.olmp.inventory.service.MediaManagementService;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodeServiceImpl;
+import com.grosshaeuser.olmp.inventory.service.impl.InventoryNumberServiceImpl;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.component.Component;
@@ -55,7 +56,7 @@ class BarcodePrintingTest {
         when(media.createMediaWithInventory(any())).thenReturn(SUMMARY);
         when(labels.createPrintDocument(anyString(), anyList())).thenReturn("<!doctype html><html>Labels</html>");
         view = new MediaManagementView(media,
-                () -> new MediaFormOptions(List.of(BOOK), List.of(), List.of()), new BarcodeServiceImpl(),
+                () -> new MediaFormOptions(List.of(BOOK), List.of(), List.of()), new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
                 labels, mock(MediaReferenceService.class), errors, mock(UiNotificationHandler.class));
         ui.add(view);
     }

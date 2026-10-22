@@ -3,6 +3,7 @@ package com.grosshaeuser.olmp.inventory.service;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaInventoryItemDto;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodePrintServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodeServiceImpl;
+import com.grosshaeuser.olmp.inventory.service.impl.InventoryNumberServiceImpl;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -15,12 +16,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 class BarcodePrintServiceTest {
+    private final InventoryNumberService inventoryNumberService = new InventoryNumberServiceImpl();
     private final BarcodePrintService service = new BarcodePrintServiceImpl(new BarcodeServiceImpl());
 
     @Test
     void createsA4LabelsWithEmbeddedBarcodesAndEscapedTitles() throws Exception {
-        var first = MediaInventoryItemDto.newCopy();
-        var second = MediaInventoryItemDto.newCopy();
+        String firstInventoryNumber = inventoryNumberService.generate();
+        String secondInventoryNumber = inventoryNumberService.generate();
+        var first = MediaInventoryItemDto.builder().inventoryNumber(firstInventoryNumber).barcode(firstInventoryNumber).build();
+        var second = MediaInventoryItemDto.builder().inventoryNumber(secondInventoryNumber).barcode(secondInventoryNumber).build();
         String html = service.createPrintDocument("<script>alert('x')</script> & Title", List.of(first, second));
         assertThat(html).contains("size: A4", "break-inside: avoid");
         assertThat(html).contains("&lt;script&gt;").doesNotContain("<script>");

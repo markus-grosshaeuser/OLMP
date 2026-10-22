@@ -13,8 +13,10 @@ import com.grosshaeuser.olmp.inventory.repository.AuthorRepository;
 import com.grosshaeuser.olmp.inventory.repository.MediaRepository;
 import com.grosshaeuser.olmp.inventory.repository.MediaTypeRepository;
 import com.grosshaeuser.olmp.inventory.repository.PublisherRepository;
+import com.grosshaeuser.olmp.inventory.service.InventoryNumberService;
 import com.grosshaeuser.olmp.inventory.service.MediaLookupService;
 import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
+import com.grosshaeuser.olmp.inventory.service.impl.InventoryNumberServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.MediaReferenceServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.MediaLookupServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.MediaManagementService;
@@ -68,6 +70,8 @@ class MediaServicesIntegrationTest {
     @Container
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18-alpine");
 
+    @Autowired
+    InventoryNumberService inventoryNumberService;
     @Autowired
     MediaManagementService service;
     @Autowired
@@ -463,10 +467,16 @@ class MediaServicesIntegrationTest {
     }
 
     @Test
-    void inventoryCreationPreservesPreassignedUuidsAndMatchingBarcodes() {
+    void inventoryCreationPreservesPreassignedInventoryNumbersAndMatchingBarcodes() {
         MediaCreateDto dto = form("Three copies");
-        dto.getInventoryItems().addAll(List.of(MediaInventoryItemDto.newCopy(),
-                MediaInventoryItemDto.newCopy(), MediaInventoryItemDto.newCopy()));
+        String firstInventoryNumber = inventoryNumberService.generate();
+        String secondInventoryNumber = inventoryNumberService.generate();
+        String thirdInventoryNumber = inventoryNumberService.generate();
+        dto.getInventoryItems().addAll(List.of(
+                MediaInventoryItemDto.builder().inventoryNumber(firstInventoryNumber).barcode(firstInventoryNumber).build(),
+                MediaInventoryItemDto.builder().inventoryNumber(secondInventoryNumber).barcode(secondInventoryNumber).build(),
+                MediaInventoryItemDto.builder().inventoryNumber(thirdInventoryNumber).barcode(thirdInventoryNumber).build())
+        );
         long id = service.createMediaWithInventory(dto).id();
         MediaEditDto loaded = service.findMediaWithInventoryForEdit(id).orElseThrow();
         assertThat(loaded.getInventoryItems()).hasSize(3);
@@ -474,23 +484,23 @@ class MediaServicesIntegrationTest {
                 .containsExactlyElementsOf(dto.getInventoryItems().stream().map(MediaInventoryItemDto::inventoryNumber).toList());
         assertThat(loaded.getInventoryItems()).extracting(MediaInventoryItemDto::inventoryNumber).doesNotHaveDuplicates();
         assertThat(loaded.getInventoryItems()).allSatisfy(copy -> {
-            assertThat(copy.id()).isPositive();
-            assertThat(java.util.UUID.fromString(copy.inventoryNumber()).toString()).isEqualTo(copy.inventoryNumber());
+            assertThat(copy.id()).isNotNull();
             assertThat(copy.barcode()).isEqualTo(copy.inventoryNumber());
         });
     }
 
     @Test
-    void newInventoryCopiesRequireDistinctMatchingUuids() {
+    void newInventoryCopiesRequireDistinctMatchingInventoryNumbers() {
         MediaCreateDto dto = form("Invalid inventory");
-        String uuid = java.util.UUID.randomUUID().toString();
+        String inventoryNumber = inventoryNumberService.generate();
         for (var copy : List.of(new MediaInventoryItemDto(null, null, null),
-                new MediaInventoryItemDto(null, "not-a-uuid", "not-a-uuid"),
-                new MediaInventoryItemDto(null, uuid, "different-barcode"))) {
+                new MediaInventoryItemDto(null, "not-an-inventoroy-number", "not-an-inventory-number"),
+                new MediaInventoryItemDto(null, inventoryNumber, "different-barcode"))) {
             dto.setInventoryItems(List.of(copy));
             assertThatIllegalArgumentException().isThrownBy(() -> service.createMediaWithInventory(dto));
         }
-        MediaInventoryItemDto copy = MediaInventoryItemDto.newCopy();
+        String secondInventoryNumber = inventoryNumberService.generate();
+        MediaInventoryItemDto copy = MediaInventoryItemDto.builder().inventoryNumber(secondInventoryNumber).barcode(secondInventoryNumber).build();
         dto.setInventoryItems(List.of(copy, copy));
         assertThatIllegalArgumentException().isThrownBy(() -> service.createMediaWithInventory(dto));
         assertThat(service.countMedia("Invalid inventory")).isZero();
@@ -499,14 +509,20 @@ class MediaServicesIntegrationTest {
     @Test
     void inventoryUpdateRetainsExistingCopyDataAndAddsAndRemovesCopies() {
         MediaCreateDto dto = form("Copies");
-        dto.getInventoryItems().addAll(List.of(MediaInventoryItemDto.newCopy(),
-                MediaInventoryItemDto.newCopy()));
+        String firstInventoryNumber = inventoryNumberService.generate();
+        String secondInventoryNumber = inventoryNumberService.generate();
+        dto.getInventoryItems().addAll(List.of(
+                MediaInventoryItemDto.builder().inventoryNumber(firstInventoryNumber).barcode(firstInventoryNumber).build(),
+                MediaInventoryItemDto.builder().inventoryNumber(secondInventoryNumber).barcode(secondInventoryNumber).build()
+        ));
         long id = service.createMediaWithInventory(dto).id();
         MediaEditDto loaded = service.findMediaWithInventoryForEdit(id).orElseThrow();
         MediaInventoryItemDto keep = loaded.getInventoryItems().getFirst();
         jdbc.update("update inventory_items set condition='WORN', notes='Keep these notes', acquisition_cost=12.34 where id=?", keep.id());
+
+        String thridInventoryNumber = inventoryNumberService.generate();
         loaded.setInventoryItems(List.of(new MediaInventoryItemDto(keep.id(), "tampered", "tampered"),
-                MediaInventoryItemDto.newCopy()));
+                MediaInventoryItemDto.builder().inventoryNumber(thridInventoryNumber).barcode(thridInventoryNumber).build()));
         loaded.setTitle("Updated with inventory");
         MediaEditDto updated = service.updateMediaWithInventory(loaded);
         assertThat(updated.getTitle()).isEqualTo("Updated with inventory");
@@ -526,7 +542,8 @@ class MediaServicesIntegrationTest {
     @Test
     void inventoryRejectsForeignMissingAndDuplicateCopyIdsWithoutSavingMediaChanges() {
         MediaCreateDto dto = form("Owner");
-        dto.getInventoryItems().add(MediaInventoryItemDto.newCopy());
+        String inventoryNumber = inventoryNumberService.generate();
+        dto.getInventoryItems().add(MediaInventoryItemDto.builder().inventoryNumber(inventoryNumber).barcode(inventoryNumber).build());
         long owner = service.createMediaWithInventory(dto).id();
         MediaInventoryItemDto copy = service.findMediaWithInventoryForEdit(owner).orElseThrow().getInventoryItems().getFirst();
         long other = service.createMedia(form("Other")).id();
@@ -549,15 +566,18 @@ class MediaServicesIntegrationTest {
     @Test
     void failedCopyInsertRollsBackMediaCreationAndInventoryReplacement() {
         MediaCreateDto dto = form("Owner");
-        dto.getInventoryItems().add(MediaInventoryItemDto.newCopy());
+        String firstInventoryNumber = inventoryNumberService.generate();
+        String secondInventoryNumber = inventoryNumberService.generate();
+        String thirdInventoryNumber = inventoryNumberService.generate();
+        dto.getInventoryItems().add(MediaInventoryItemDto.builder().inventoryNumber(firstInventoryNumber).barcode(firstInventoryNumber).build());
         long id = service.createMediaWithInventory(dto).id();
         MediaEditDto loaded = service.findMediaWithInventoryForEdit(id).orElseThrow();
         List<MediaInventoryItemDto> originalCopies = loaded.getInventoryItems();
         loaded.setTitle("Must roll back");
-        loaded.setInventoryItems(List.of(MediaInventoryItemDto.newCopy()));
+        loaded.setInventoryItems(List.of(MediaInventoryItemDto.builder().inventoryNumber(secondInventoryNumber).barcode(secondInventoryNumber).build()));
         MediaCreateDto rejected = form("Rejected");
         rejected.getIdentifiers().add(identifier("ISBN", "must-roll-back"));
-        rejected.getInventoryItems().add(MediaInventoryItemDto.newCopy());
+        rejected.getInventoryItems().add(MediaInventoryItemDto.builder().inventoryNumber(thirdInventoryNumber).barcode(thirdInventoryNumber).build());
         jdbc.execute("""
                 create function reject_test_inventory_insert() returns trigger language plpgsql as $$
                 begin
@@ -626,7 +646,7 @@ class MediaServicesIntegrationTest {
     @EnableMethodSecurity
     @Import({MediaManagementServiceImpl.class, MediaLookupServiceImpl.class, MediaReferenceServiceImpl.class, MediaMapper.class,
             MediaAuthorMapper.class, MediaIdentifierMapper.class, AuthorMapper.class,
-            MediaTypeMapper.class, PublisherMapper.class})
+            MediaTypeMapper.class, PublisherMapper.class, InventoryNumberServiceImpl.class})
     static class Config {
         @Bean
         DataSource dataSource() {

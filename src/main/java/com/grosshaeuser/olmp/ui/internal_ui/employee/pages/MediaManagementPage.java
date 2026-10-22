@@ -1,10 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.employee.pages;
 
-import com.grosshaeuser.olmp.inventory.service.MediaLookupService;
-import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
-import com.grosshaeuser.olmp.inventory.service.MediaManagementService;
-import com.grosshaeuser.olmp.inventory.service.BarcodeService;
-import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
+import com.grosshaeuser.olmp.inventory.service.*;
 import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.grosshaeuser.olmp.ui.internal_ui.employee.EmployeeLayout;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
@@ -18,7 +14,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("Media Management")
 @RolesAllowed(SecurityConstants.Roles.STAFF)
 public class MediaManagementPage extends MediaManagementView {
-    public MediaManagementPage(MediaManagementService mediaService, MediaLookupService lookupService, BarcodeService barcodeService, BarcodePrintService barcodePrintService, MediaReferenceService referenceService, UiExceptionHandler uiExceptionHandler, UiNotificationHandler uiNotificationHandler) {
-        super(mediaService, lookupService, barcodeService, barcodePrintService, referenceService, uiExceptionHandler, uiNotificationHandler);
+    public MediaManagementPage(MediaManagementService mediaService, MediaLookupService lookupService, InventoryNumberService inventoryNumberService, BarcodeService barcodeService, BarcodePrintService barcodePrintService, MediaReferenceService referenceService, UiExceptionHandler uiExceptionHandler, UiNotificationHandler uiNotificationHandler) {
+        super(mediaService, lookupService, inventoryNumberService, barcodeService, barcodePrintService, referenceService, uiExceptionHandler, uiNotificationHandler);
     }
 }

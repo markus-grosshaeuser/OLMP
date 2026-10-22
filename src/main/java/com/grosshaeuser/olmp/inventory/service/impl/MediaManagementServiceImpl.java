@@ -113,13 +113,6 @@ public class MediaManagementServiceImpl implements MediaManagementService {
                 if (item.inventoryNumber() == null || !item.inventoryNumber().equals(item.barcode())) {
                     throw new IllegalArgumentException("New copies require matching UUID inventory numbers and barcodes");
                 }
-                try {
-                    if (!UUID.fromString(item.inventoryNumber()).toString().equals(item.inventoryNumber())) {
-                        throw new IllegalArgumentException("Inventory number must be a UUID");
-                    }
-                } catch (IllegalArgumentException exception) {
-                    throw new IllegalArgumentException("Inventory number must be a UUID", exception);
-                }
                 if (!newInventoryNumbers.add(item.inventoryNumber())) {
                     throw new IllegalArgumentException("Each new copy must have a unique inventory number");
                 }
