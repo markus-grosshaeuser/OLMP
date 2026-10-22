@@ -17,10 +17,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import static com.grosshaeuser.olmp.security.SecurityConstants.Privileges.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -254,5 +256,21 @@ class MembershipServiceTest {
 
     private void givenUserHasPermission(String permission) {
         when(authenticationContext.hasAuthority(permission)).thenReturn(true);
+    }
+
+    @Test
+    void findAllByMemberIdRequiresReadPermission() {
+        assertThatThrownBy(() -> membershipService.findAllByMemberId(10L))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        verifyNoInteractions(membershipRepository);
+    }
+
+    @Test
+    void findAllByMemberIdIncludesInactiveMembershipsInRepositoryOrder() {
+        givenUserHasPermission(READ_MEMBERSHIP);
+        Membership expired = Membership.builder().status(Membership.MembershipStatus.EXPIRED).build();
+        Membership cancelled = Membership.builder().status(Membership.MembershipStatus.CANCELLED).build();
+        when(membershipRepository.findAllByMemberIdOrderByStartDateDescIdDesc(10L)).thenReturn(List.of(expired, cancelled));
+        assertThat(membershipService.findAllByMemberId(10L)).containsExactly(expired, cancelled);
     }
 }

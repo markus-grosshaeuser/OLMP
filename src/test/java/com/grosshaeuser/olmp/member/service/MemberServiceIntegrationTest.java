@@ -3,6 +3,7 @@ package com.grosshaeuser.olmp.member.service;
 import com.grosshaeuser.olmp.TestcontainersConfiguration;
 import com.grosshaeuser.olmp.members.dto.*;
 import com.grosshaeuser.olmp.members.entity.MemberAccount;
+import com.grosshaeuser.olmp.members.entity.Member;
 import com.grosshaeuser.olmp.members.entity.MemberContactInformation;
 import com.grosshaeuser.olmp.members.repository.MemberAccountRepository;
 import com.grosshaeuser.olmp.members.repository.MemberContactInformationRepository;
@@ -22,6 +23,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.grosshaeuser.olmp.security.SecurityConstants.Privileges.*;
 import static org.assertj.core.api.Assertions.*;
@@ -366,7 +369,7 @@ class MemberServiceIntegrationTest {
         assertThat(contactInfo).isNotNull();
         assertThat(contactInfo.getPhoneNumber()).isEqualTo("123-456789");
         assertThat(contactInfo.getStreet()).isEqualTo("Main Street");
-        MembershipEditDTO membership = dto.getMembership();
+        MembershipEditDTO membership = dto.getMemberships().getFirst();
         assertThat(membership).isNotNull();
         assertThat(membership.getMembershipType()).isEqualTo("STANDARD");
         assertThat(membership.getMembershipStatus()).isEqualTo("ACTIVE");
@@ -393,10 +396,7 @@ class MemberServiceIntegrationTest {
         assertThat(contactInfo).isNotNull();
         assertThat(contactInfo.getPhoneNumber()).isNull();
         assertThat(contactInfo.getStreet()).isNull();
-        MembershipEditDTO membership = dto.getMembership();
-        assertThat(membership).isNotNull();
-        assertThat(membership.getMembershipType()).isNull();
-        assertThat(membership.getMembershipStatus()).isNull();
+        assertThat(dto.getMemberships()).isEmpty();
     }
 
     @Test
@@ -421,10 +421,7 @@ class MemberServiceIntegrationTest {
         assertThat(contactInfo).isNotNull();
         assertThat(contactInfo.getPhoneNumber()).isEqualTo("123-456789");
         assertThat(contactInfo.getStreet()).isEqualTo("Main Street");
-        MembershipEditDTO membership = dto.getMembership();
-        assertThat(membership).isNotNull();
-        assertThat(membership.getMembershipType()).isNull();
-        assertThat(membership.getMembershipStatus()).isNull();
+        assertThat(dto.getMemberships()).isEmpty();
     }
 
     @Test
@@ -449,7 +446,7 @@ class MemberServiceIntegrationTest {
         assertThat(contactInfo).isNotNull();
         assertThat(contactInfo.getPhoneNumber()).isNull();
         assertThat(contactInfo.getStreet()).isNull();
-        MembershipEditDTO membership = dto.getMembership();
+        MembershipEditDTO membership = dto.getMemberships().getFirst();
         assertThat(membership).isNotNull();
         assertThat(membership.getMembershipType()).isEqualTo("STANDARD");
         assertThat(membership.getMembershipStatus()).isEqualTo("ACTIVE");
@@ -464,6 +461,79 @@ class MemberServiceIntegrationTest {
         givenUserHasPermission(UPDATE_MEMBER_ACCOUNT);
         MemberEditDTO updateDto = createBasicMemberEditDTO(999L, "Missing", "Member", LocalDate.of(1990, 1, 1));
         assertThat(serviceUnderTest.updateMember(updateDto)).isEmpty();
+    }
+
+    @Test
+    void loadsAllMembershipsNewestFirstEvenWithoutAnActiveMembership() {
+        givenUserHasPermission(READ_MEMBER_ACCOUNT);
+        givenUserHasPermission(READ_MEMBERSHIP);
+        Member member = memberRepository.save(Member.builder().firstName("Ada").lastName("Lovelace").build());
+        Membership older = saveMembership(member, "MBR-OLD", LocalDate.of(2024, 1, 1), Membership.MembershipStatus.EXPIRED);
+        Membership newer = saveMembership(member, "MBR-NEW", LocalDate.of(2025, 1, 1), Membership.MembershipStatus.CANCELLED);
+
+        assertThat(serviceUnderTest.getDetailedMember(member.getId()).orElseThrow().getMemberships())
+                .extracting(MembershipEditDTO::getId).containsExactly(newer.getId(), older.getId());
+    }
+
+    @Test
+    void savesHistoricalEditsAndNewMembershipAndReloadsGeneratedIdentity() {
+        givenUserHasPermission(READ_MEMBER_ACCOUNT);
+        givenUserHasPermission(READ_MEMBERSHIP);
+        givenUserHasPermission(UPDATE_MEMBER_ACCOUNT);
+        givenUserHasPermission(UPDATE_MEMBERSHIP);
+        givenUserHasPermission(CREATE_MEMBERSHIP);
+        Member member = memberRepository.save(Member.builder().firstName("Ada").lastName("Lovelace").build());
+        Membership old = saveMembership(member, "MBR-OLD", LocalDate.of(2024, 1, 1), Membership.MembershipStatus.EXPIRED);
+        MemberEditDTO dto = serviceUnderTest.getDetailedMember(member.getId()).orElseThrow();
+        dto.setAccount(null);
+        dto.setWithMembershipDetails(true);
+        dto.getMemberships().getFirst().setMembershipType("STUDENT");
+        var rows = new ArrayList<>(dto.getMemberships());
+        rows.add(MembershipEditDTO.builder().membershipType("PREMIUM").membershipStatus("ACTIVE")
+                .startDate(LocalDate.of(2026, 1, 1)).build());
+        dto.setMemberships(rows);
+
+        var result = serviceUnderTest.updateMember(dto).orElseThrow().getMemberships();
+        assertThat(result).hasSize(2);
+        assertThat(result.getFirst().getId()).isNotNull().isNotEqualTo(old.getId());
+        assertThat(result.getFirst().getMembershipNumber()).isNotBlank().isNotEqualTo("MBR-OLD");
+        assertThat(result.getFirst().getExpirationDate()).isEqualTo(LocalDate.of(2027, 1, 1));
+        assertThat(result.getLast().getMembershipType()).isEqualTo("STUDENT");
+        assertThat(result.getLast().getMembershipStatus()).isEqualTo("EXPIRED");
+        assertThat(result.getLast().getMembershipNumber()).isEqualTo("MBR-OLD");
+        assertThat(result.getLast().getStartDate()).isEqualTo(old.getStartDate());
+        assertThat(serviceUnderTest.getDetailedMember(member.getId()).orElseThrow().getMemberships()).isEqualTo(result);
+    }
+
+    @Test
+    void rollsBackProfileAndHistoricalEditsWhenNewMembershipCannotBeCreated() {
+        givenUserHasPermission(READ_MEMBER_ACCOUNT);
+        givenUserHasPermission(READ_MEMBERSHIP);
+        givenUserHasPermission(UPDATE_MEMBER_ACCOUNT);
+        givenUserHasPermission(UPDATE_MEMBERSHIP);
+        Member member = memberRepository.save(Member.builder().firstName("Ada").lastName("Lovelace").build());
+        Membership old = saveMembership(member, "MBR-OLD", LocalDate.of(2024, 1, 1), Membership.MembershipStatus.EXPIRED);
+        MemberEditDTO dto = serviceUnderTest.getDetailedMember(member.getId()).orElseThrow();
+        dto.setAccount(null);
+        dto.setFirstName("Augusta");
+        dto.setWithMembershipDetails(true);
+        dto.getMemberships().getFirst().setMembershipType("STUDENT");
+        var rows = new ArrayList<>(dto.getMemberships());
+        rows.add(MembershipEditDTO.builder().membershipType("STANDARD").membershipStatus("ACTIVE")
+                .startDate(LocalDate.now()).build());
+        dto.setMemberships(rows);
+
+        assertThatThrownBy(() -> serviceUnderTest.updateMember(dto))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        assertThat(memberRepository.findById(member.getId()).orElseThrow().getFirstName()).isEqualTo("Ada");
+        assertThat(membershipRepository.findById(old.getId()).orElseThrow().getType()).isEqualTo(Membership.MembershipType.STANDARD);
+        assertThat(membershipRepository.count()).isEqualTo(1);
+    }
+
+    private Membership saveMembership(Member member, String number, LocalDate start, Membership.MembershipStatus status) {
+        return membershipRepository.save(Membership.builder().member(member).membershipNumber(number)
+                .type(Membership.MembershipType.STANDARD).status(status).startDate(start)
+                .expirationDate(start.plusYears(1)).build());
     }
 
 
@@ -499,10 +569,10 @@ class MemberServiceIntegrationTest {
         updateDto.setContact(contactUpdate);
         updateDto.setWithContactInformation(true);
 
-        MembershipEditDTO membershipUpdate = updateDto.getMembership();
+        MembershipEditDTO membershipUpdate = updateDto.getMemberships().getFirst();
         assertNotNull(membershipUpdate);
         membershipUpdate.setMembershipType("STUDENT");
-        updateDto.setMembership(membershipUpdate);
+        updateDto.setMemberships(List.of(membershipUpdate));
         updateDto.setWithMembershipDetails(true);
 
         Optional<MemberEditDTO> updatedMember = serviceUnderTest.updateMember(updateDto);
@@ -512,11 +582,11 @@ class MemberServiceIntegrationTest {
 
         assertNotNull(updatedMemberDto.getAccount());
         assertNotNull(updatedMemberDto.getContact());
-        assertNotNull(updatedMemberDto.getMembership());
+        assertNotNull(updatedMemberDto.getMemberships().getFirst());
 
         assertEquals("new@doe.com", updatedMemberDto.getAccount().getEmail());
         assertEquals("987654321", updatedMemberDto.getContact().getPhoneNumber());
-        assertEquals("STUDENT", updatedMemberDto.getMembership().getMembershipType());
+        assertEquals("STUDENT", updatedMemberDto.getMemberships().getFirst().getMembershipType());
     }
 
     @Test
@@ -545,10 +615,10 @@ class MemberServiceIntegrationTest {
         updateDto.setContact(contactUpdate);
         updateDto.setWithContactInformation(true);
 
-        MembershipEditDTO membershipUpdate = updateDto.getMembership();
+        MembershipEditDTO membershipUpdate = updateDto.getMemberships().getFirst();
         assertNotNull(membershipUpdate);
         membershipUpdate.setMembershipType("STUDENT");
-        updateDto.setMembership(membershipUpdate);
+        updateDto.setMemberships(List.of(membershipUpdate));
         updateDto.setWithMembershipDetails(true);
 
         Optional<MemberEditDTO> updatedMemberDtoOpt = serviceUnderTest.updateMember(updateDto);
@@ -558,11 +628,11 @@ class MemberServiceIntegrationTest {
 
         assertNotNull(updatedMemberDto.getAccount());
         assertNotNull(updatedMemberDto.getContact());
-        assertNotNull(updatedMemberDto.getMembership());
+        assertNotNull(updatedMemberDto.getMemberships().getFirst());
 
         assertEquals("john@doe.com", updatedMemberDto.getAccount().getEmail());
         assertEquals("987654321", updatedMemberDto.getContact().getPhoneNumber());
-        assertEquals("STUDENT", updatedMemberDto.getMembership().getMembershipType());
+        assertEquals("STUDENT", updatedMemberDto.getMemberships().getFirst().getMembershipType());
     }
 
     @Test
@@ -590,10 +660,10 @@ class MemberServiceIntegrationTest {
         accountUpdate.setEmail("new@doe.com");
         updateDto.setAccount(accountUpdate);
 
-        MembershipEditDTO membershipUpdate = updateDto.getMembership();
+        MembershipEditDTO membershipUpdate = updateDto.getMemberships().getFirst();
         assertNotNull(membershipUpdate);
         membershipUpdate.setMembershipType("STUDENT");
-        updateDto.setMembership(membershipUpdate);
+        updateDto.setMemberships(List.of(membershipUpdate));
         updateDto.setWithMembershipDetails(true);
 
         Optional<MemberEditDTO> updatedMemberDtoOpt = serviceUnderTest.updateMember(updateDto);
@@ -603,12 +673,12 @@ class MemberServiceIntegrationTest {
 
         assertNotNull(updatedMemberDto.getAccount());
         assertNotNull(updatedMemberDto.getContact());
-        assertNotNull(updatedMemberDto.getMembership());
+        assertNotNull(updatedMemberDto.getMemberships().getFirst());
 
         assertEquals("new@doe.com", updatedMemberDto.getAccount().getEmail());
         assertEquals("123456789", updatedMemberDto.getContact().getPhoneNumber());
         assertEquals("Main St", updatedMemberDto.getContact().getStreet());
-        assertEquals("STUDENT", updatedMemberDto.getMembership().getMembershipType());
+        assertEquals("STUDENT", updatedMemberDto.getMemberships().getFirst().getMembershipType());
     }
 
     @Test
@@ -649,12 +719,12 @@ class MemberServiceIntegrationTest {
 
         assertNotNull(updatedMemberDto.getAccount());
         assertNotNull(updatedMemberDto.getContact());
-        assertNotNull(updatedMemberDto.getMembership());
+        assertNotNull(updatedMemberDto.getMemberships().getFirst());
 
         assertEquals("new@doe.com", updatedMemberDto.getAccount().getEmail());
         assertEquals("987654321", updatedMemberDto.getContact().getPhoneNumber());
-        assertEquals("STANDARD", updatedMemberDto.getMembership().getMembershipType());
-        assertEquals("ACTIVE", updatedMemberDto.getMembership().getMembershipStatus());
+        assertEquals("STANDARD", updatedMemberDto.getMemberships().getFirst().getMembershipType());
+        assertEquals("ACTIVE", updatedMemberDto.getMemberships().getFirst().getMembershipStatus());
     }
 
 
