@@ -19,7 +19,7 @@ import static com.grosshaeuser.olmp.security.SecurityConstants.Privileges.*;
 
 @Service
 @RequiredArgsConstructor
-class EmployeeAccountServiceImpl implements EmployeeAccountService {
+public class EmployeeAccountServiceImpl implements EmployeeAccountService {
 
     private final EmployeeAccountRepository employeeAccountRepository;
     private final PasswordEncoder passwordEncoder;
