@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
+import com.grosshaeuser.olmp.memberships.service.MembershipCardPrintService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
@@ -61,6 +62,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
             UpdateCallback<MemberEditDTO> updateCallback,
             ErrorCallback errorCallback,
             Runnable closeCallback,
+            MembershipCardPrintService printService,
             HashMap<String, Integer> membershipPeriodsInMonths,
             PasswordProperties passwordProperties
     ) {
@@ -97,10 +99,12 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
                 membershipTypes,
                 membershipStatuses,
                 membershipPeriodsInMonths,
+                printService,
                 value -> {
                     membershipDataChanged = value;
                     handleDataChange();
-                }
+                },
+                memberEditDTO
         );
 
         configureRootLayout();

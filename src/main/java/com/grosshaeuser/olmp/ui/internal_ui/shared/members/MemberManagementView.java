@@ -6,6 +6,7 @@ import com.grosshaeuser.olmp.members.dto.MemberDTO;
 import com.grosshaeuser.olmp.members.service.MemberService;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
+import com.grosshaeuser.olmp.memberships.service.MembershipCardPrintService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 public class MemberManagementView extends VerticalLayout {
     private final MemberService memberService;
     private final MembershipService membershipService;
+    private final MembershipCardPrintService printService;
     private final PasswordProperties passwordProperties;
     private final UiExceptionHandler uiExceptionHandler;
     private final UiNotificationHandler uiNotificationHandler;
@@ -44,12 +46,14 @@ public class MemberManagementView extends VerticalLayout {
     public MemberManagementView(
             MemberService memberService,
             MembershipService membershipService,
+            MembershipCardPrintService printService,
             PasswordProperties passwordProperties,
             UiExceptionHandler uiExceptionHandler,
             UiNotificationHandler uiNotificationHandler
     ) {
         this.memberService = memberService;
         this.membershipService = membershipService;
+        this.printService = printService;
         this.passwordProperties = passwordProperties;
         this.uiExceptionHandler = uiExceptionHandler;
         this.uiNotificationHandler = uiNotificationHandler;
@@ -169,6 +173,7 @@ public class MemberManagementView extends VerticalLayout {
                             this::updateMember,
                             uiExceptionHandler::handleException,
                             () -> memberGrid.setDetailsVisible(member, false),
+                            printService,
                             membershipService.getMembershipPeriodsInMonths(),
                             passwordProperties)
                     )

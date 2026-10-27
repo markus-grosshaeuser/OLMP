@@ -1,7 +1,10 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
+import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
+import com.grosshaeuser.olmp.memberships.service.MembershipCardPrintService;
 import com.vaadin.flow.component.Composite;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -29,6 +32,8 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
     private final Set<String> membershipStatuses;
     private final HashMap<String, Integer> membershipPeriodsInMonths;
     private final MemberEditComponent.WithMembershipDetailsCallback callback;
+    private final MembershipCardPrintService printService;
+    private final MemberEditDTO memberDTO;
     private List<MembershipEditDTO> snapshot = List.of();
 
     MemberEditComponentMembershipForm(
@@ -36,12 +41,16 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
             Set<String> membershipTypes,
             Set<String> membershipStatuses,
             HashMap<String, Integer> membershipPeriodsInMonths,
-            MemberEditComponent.WithMembershipDetailsCallback callback
+            MembershipCardPrintService printService,
+            MemberEditComponent.WithMembershipDetailsCallback callback,
+            MemberEditDTO memberDTO
     ) {
         this.membershipTypes = membershipTypes;
         this.membershipStatuses = membershipStatuses;
         this.membershipPeriodsInMonths = membershipPeriodsInMonths;
+        this.printService = printService;
         this.callback = callback;
+        this.memberDTO = memberDTO;
 
         Button addMembership = new Button("Add membership", VaadinIcon.PLUS.create(), _ -> {
             addNewMembership(MembershipEditDTO.builder()
@@ -71,13 +80,13 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
     }
 
     private void addMembership(MembershipEditDTO dto) {
-        MembershipRow row = new MembershipRow(dto);
+        MembershipRow row = new MembershipRow(memberDTO, dto, printService);
         memberships.add(row);
         membershipRows.add(row.layout);
     }
 
     private void addNewMembership(MembershipEditDTO dto) {
-        MembershipRow row = new MembershipRow(dto);
+        MembershipRow row = new MembershipRow(memberDTO, dto, printService);
         memberships.addFirst(row);
         membershipRows.addComponentAsFirst(row.layout);
     }
@@ -102,7 +111,7 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
         return valid ? Optional.of(data) : Optional.empty();
     }
 
-    private class MembershipRow {
+    private class MembershipRow implements Printing{
         private final MembershipEditDTO original;
         private final BeanValidationBinder<MembershipEditDTO> binder = new BeanValidationBinder<>(MembershipEditDTO.class);
         private final VerticalLayout layout = new VerticalLayout();
@@ -110,8 +119,8 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
         private final DatePicker startDate = new DatePicker("Start date");
         private final DatePicker expirationDate = new DatePicker("Expiration date");
 
-        MembershipRow(MembershipEditDTO dto) {
-            original = dto.toBuilder().build();
+        MembershipRow(MemberEditDTO memberDTO, MembershipEditDTO membershipDTO, MembershipCardPrintService printService) {
+            original = membershipDTO.toBuilder().build();
             TextField number = new TextField("Membership number");
             number.setPlaceholder("Generated on save");
             Select<String> status = new Select<>();
@@ -131,7 +140,7 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
                     .bind(MembershipEditDTO::getMembershipType, MembershipEditDTO::setMembershipType);
             binder.forField(status).asRequired("Choose a membership status")
                     .bind(MembershipEditDTO::getMembershipStatus, MembershipEditDTO::setMembershipStatus);
-            if (dto.getId() == null) {
+            if (membershipDTO.getId() == null) {
                 binder.forField(startDate).asRequired("Choose a start date")
                         .bind(MembershipEditDTO::getStartDate, MembershipEditDTO::setStartDate);
             } else {
@@ -140,7 +149,7 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
             binder.forField(expirationDate).bind(MembershipEditDTO::getExpirationDate, MembershipEditDTO::setExpirationDate);
             binder.forField(renewalDate).bind(MembershipEditDTO::getRenewalDate, MembershipEditDTO::setRenewalDate);
             binder.forField(cancellationDate).bind(MembershipEditDTO::getCancellationDate, MembershipEditDTO::setCancellationDate);
-            binder.readBean(dto);
+            binder.readBean(membershipDTO);
 
             membershipType.addValueChangeListener(_ -> updateExpirationDate());
             startDate.addValueChangeListener(_ -> updateExpirationDate());
@@ -152,13 +161,20 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
             layout.setAlignItems(FlexComponent.Alignment.END);
             HorizontalLayout baseData = new HorizontalLayout();
             baseData.setWidthFull();
-            baseData.add(number, membershipType, status);
+            baseData.setAlignItems(FlexComponent.Alignment.BASELINE);
+
+            Button printButton = new Button(VaadinIcon.PRINT.create(), _ -> {
+                String document = printService.createPrintDocument(memberDTO, membershipDTO);
+                UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
+            });
+
+            baseData.add(number, printButton, membershipType, status);
             HorizontalLayout dates = new HorizontalLayout();
             dates.setWidthFull();
             dates.add(startDate, expirationDate, renewalDate, cancellationDate);
             layout.add(baseData, dates);
             baseData.setFlexGrow(1, number);
-            if (dto.getId() == null) {
+            if (membershipDTO.getId() == null) {
                 Button remove = new Button(VaadinIcon.TRASH.create(), _ -> {
                     memberships.remove(this);
                     membershipRows.remove(layout);

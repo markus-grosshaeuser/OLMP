@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.employee.pages;
 
 import com.grosshaeuser.olmp.members.service.MemberService;
+import com.grosshaeuser.olmp.memberships.service.MembershipCardPrintService;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
@@ -19,10 +20,11 @@ public class MemberManagementPage extends MemberManagementView {
     public MemberManagementPage(
             MemberService memberService,
             MembershipService membershipService,
+            MembershipCardPrintService printService,
             PasswordProperties passwordProperties,
             UiExceptionHandler uiExceptionHandler,
             UiNotificationHandler uiNotificationHandler
     ) {
-        super(memberService, membershipService, passwordProperties, uiExceptionHandler, uiNotificationHandler);
+        super(memberService, membershipService, printService, passwordProperties, uiExceptionHandler, uiNotificationHandler);
     }
 }
