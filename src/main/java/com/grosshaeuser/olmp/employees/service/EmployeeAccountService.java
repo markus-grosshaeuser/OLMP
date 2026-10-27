@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public interface EmployeeAccountService {
     Optional<EmployeeAccount> findById(Long employeeId);
+    Optional<EmployeeAccount> findByEmployeeId(Long employeeId);
     Optional<EmployeeAccount> findByUsername(String username);
     Optional<EmployeeAccount> createEmployeeAccount(EmployeeAccountCreateDTO employeeAccountCreateDTO);
     Optional<EmployeeAccount> updateEmployeeAccount(EmployeeAccountEditDTO dto);

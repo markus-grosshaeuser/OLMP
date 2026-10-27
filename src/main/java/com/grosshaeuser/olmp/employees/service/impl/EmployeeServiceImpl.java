@@ -64,7 +64,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employeeRepository.findById(id).flatMap(employee -> {
             Set<String> readableRoles = getReadableRoles();
             validateRolePermission(readableRoles, employee.getRoles());
-            return employeeAccountService.findById(employee.getId())
+            return employeeAccountService.findByEmployeeId(employee.getId())
                     .map(account ->
                             EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(employee, account)
                     );

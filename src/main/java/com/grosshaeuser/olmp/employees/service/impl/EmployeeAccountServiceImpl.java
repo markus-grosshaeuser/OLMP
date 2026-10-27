@@ -33,6 +33,11 @@ public class EmployeeAccountServiceImpl implements EmployeeAccountService {
     }
 
     @Override
+    public Optional<EmployeeAccount> findByEmployeeId(Long employeeId) {
+        return employeeAccountRepository.findByEmployeeId(employeeId);
+    }
+
+    @Override
     public Optional<EmployeeAccount> createEmployeeAccount(EmployeeAccountCreateDTO dto) {
         validatePassword(dto.getPassword());
         validateUsernameIsAvailable(dto.getUsername());
