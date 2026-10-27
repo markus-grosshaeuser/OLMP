@@ -2,10 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
-import com.grosshaeuser.olmp.memberships.service.MembershipCardPrintService;
-import com.vaadin.flow.component.Composite;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.Unit;
+import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -32,7 +29,6 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
     private final Set<String> membershipStatuses;
     private final HashMap<String, Integer> membershipPeriodsInMonths;
     private final MemberEditComponent.WithMembershipDetailsCallback callback;
-    private final MembershipCardPrintService printService;
     private final MemberEditDTO memberDTO;
     private List<MembershipEditDTO> snapshot = List.of();
 
@@ -41,14 +37,12 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
             Set<String> membershipTypes,
             Set<String> membershipStatuses,
             HashMap<String, Integer> membershipPeriodsInMonths,
-            MembershipCardPrintService printService,
             MemberEditComponent.WithMembershipDetailsCallback callback,
             MemberEditDTO memberDTO
     ) {
         this.membershipTypes = membershipTypes;
         this.membershipStatuses = membershipStatuses;
         this.membershipPeriodsInMonths = membershipPeriodsInMonths;
-        this.printService = printService;
         this.callback = callback;
         this.memberDTO = memberDTO;
 
@@ -80,15 +74,15 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
     }
 
     private void addMembership(MembershipEditDTO dto) {
-        MembershipRow row = new MembershipRow(memberDTO, dto, printService);
+        MembershipRow row = new MembershipRow(memberDTO, dto);
         memberships.add(row);
-        membershipRows.add(row.layout);
+        membershipRows.add(row);
     }
 
     private void addNewMembership(MembershipEditDTO dto) {
-        MembershipRow row = new MembershipRow(memberDTO, dto, printService);
+        MembershipRow row = new MembershipRow(memberDTO, dto);
         memberships.addFirst(row);
-        membershipRows.addComponentAsFirst(row.layout);
+        membershipRows.addComponentAsFirst(row);
     }
 
     private void handleDataChange() {
@@ -111,15 +105,14 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
         return valid ? Optional.of(data) : Optional.empty();
     }
 
-    private class MembershipRow implements Printing{
+    private class MembershipRow extends VerticalLayout implements Printing{
         private final MembershipEditDTO original;
         private final BeanValidationBinder<MembershipEditDTO> binder = new BeanValidationBinder<>(MembershipEditDTO.class);
-        private final VerticalLayout layout = new VerticalLayout();
         private final Select<String> membershipType = new Select<>();
         private final DatePicker startDate = new DatePicker("Start date");
         private final DatePicker expirationDate = new DatePicker("Expiration date");
 
-        MembershipRow(MemberEditDTO memberDTO, MembershipEditDTO membershipDTO, MembershipCardPrintService printService) {
+        MembershipRow(MemberEditDTO memberDTO, MembershipEditDTO membershipDTO) {
             original = membershipDTO.toBuilder().build();
             TextField number = new TextField("Membership number");
             number.setPlaceholder("Generated on save");
@@ -155,35 +148,33 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
             startDate.addValueChangeListener(_ -> updateExpirationDate());
             binder.addValueChangeListener(_ -> handleDataChange());
 
-            layout.setWidthFull();
-            layout.addClassName("membership-row");
-            layout.setWrap(true);
-            layout.setAlignItems(FlexComponent.Alignment.END);
+            setWidthFull();
+            addClassName("membership-row");
+            setWrap(true);
+            setAlignItems(FlexComponent.Alignment.END);
+
             HorizontalLayout baseData = new HorizontalLayout();
             baseData.setWidthFull();
             baseData.setAlignItems(FlexComponent.Alignment.BASELINE);
 
-            Button printButton = new Button(VaadinIcon.PRINT.create(), _ -> {
-                String document = printService.createPrintDocument(memberDTO, membershipDTO);
-                UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
-            });
+            Button printButton = new Button(VaadinIcon.PRINT.create(), _ -> ComponentUtil.fireEvent(UI.getCurrent(), new PrintMembershipCardRequestEvent(this, false, memberDTO, membershipDTO)));
 
             baseData.add(number, printButton, membershipType, status);
             HorizontalLayout dates = new HorizontalLayout();
             dates.setWidthFull();
             dates.add(startDate, expirationDate, renewalDate, cancellationDate);
-            layout.add(baseData, dates);
+            add(baseData, dates);
             baseData.setFlexGrow(1, number);
             if (membershipDTO.getId() == null) {
                 Button remove = new Button(VaadinIcon.TRASH.create(), _ -> {
                     memberships.remove(this);
-                    membershipRows.remove(layout);
+                    membershipRows.remove(this);
                     handleDataChange();
                 });
                 remove.addThemeVariants(ButtonVariant.LUMO_ERROR);
                 remove.setAriaLabel("Remove new membership");
                 remove.setTooltipText("Remove new membership");
-                layout.add(remove);
+                add(remove);
             }
         }
 

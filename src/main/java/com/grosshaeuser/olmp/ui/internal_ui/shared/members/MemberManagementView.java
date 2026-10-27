@@ -9,10 +9,10 @@ import com.grosshaeuser.olmp.memberships.entity.Membership;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
 import com.grosshaeuser.olmp.memberships.service.MembershipCardPrintService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.ConfirmDelete;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -34,7 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MemberManagementView extends VerticalLayout {
+public class MemberManagementView extends VerticalLayout implements Printing, ConfirmDelete {
     private final MemberService memberService;
     private final MembershipService membershipService;
     private final MembershipCardPrintService printService;
@@ -59,6 +59,8 @@ public class MemberManagementView extends VerticalLayout {
         this.uiExceptionHandler = uiExceptionHandler;
         this.uiNotificationHandler = uiNotificationHandler;
 
+        ComponentUtil.addListener(UI.getCurrent(), PrintMembershipCardRequestEvent.class, this::onPrintMembershipCardRequest);
+
         configureSearch();
         configureGrid();
 
@@ -72,6 +74,11 @@ public class MemberManagementView extends VerticalLayout {
         add(new H2("Member management"), toolbar, memberGrid);
         setSizeFull();
         setFlexGrow(1, memberGrid);
+    }
+
+    private void onPrintMembershipCardRequest(PrintMembershipCardRequestEvent event) {
+        String document = printService.createPrintDocument(event.getMember(), event.getMembership());
+        UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
     }
 
     private void configureSearch() {
@@ -120,11 +127,16 @@ public class MemberManagementView extends VerticalLayout {
                 .setResizable(true);
 
         memberGrid.addComponentColumn(member -> {
-            Button edit = new Button(VaadinIcon.EDIT.create(), _ -> memberGrid.setDetailsVisible(member, !memberGrid.isDetailsVisible(member)));
+            Button edit = new Button(
+                    VaadinIcon.EDIT.create(),
+                    _ -> memberGrid.setDetailsVisible(member, !memberGrid.isDetailsVisible(member))
+            );
             edit.setAriaLabel("Edit "+ member.firstName() + " " + member.lastName());
             edit.addThemeVariants(ButtonVariant.LUMO_ICON);
-
-            Button delete = new Button(VaadinIcon.TRASH.create(), _ -> confirmDelete(member));
+            Button delete = new Button(
+                    VaadinIcon.TRASH.create(),
+                    _ -> confirmDelete(member)
+            );
             delete.setAriaLabel("Delete "+ member.firstName() + " " + member.lastName());
             delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
 
@@ -174,7 +186,6 @@ public class MemberManagementView extends VerticalLayout {
                             this::updateMember,
                             uiExceptionHandler::handleException,
                             () -> memberGrid.setDetailsVisible(member, false),
-                            printService,
                             membershipService.getMembershipPeriodsInMonths(),
                             passwordProperties)
                     )
@@ -237,16 +248,13 @@ public class MemberManagementView extends VerticalLayout {
     }
 
     private void confirmDelete(MemberDTO member) {
-        ConfirmDialog dialog = new ConfirmDialog();
-        dialog.addClassName("confirm-delete-dialog");
-        dialog.setHeader("Delete user account?");
-        dialog.setText(new Html("<p>You are about to delete the user account of:<br /><em> " +
-                member.firstName() + " " + member.lastName() +
-                "</em><br />This action cannot be undone!</p>"));
-        dialog.setCancelable(true);
-        dialog.setConfirmText("Delete");
-        dialog.setConfirmButtonTheme("error primary");
-        dialog.addConfirmListener(_ -> delete(member));
+        ConfirmDialog dialog = getConfirmDialog(
+                "Delete user account?",
+                new Html("<p>You are about to delete the user account of:<br /><em> " +
+                        member.firstName() + " " + member.lastName() +
+                        "</em><br />This action cannot be undone!</p>"),
+                _ -> delete(member)
+        );
         dialog.open();
     }
 

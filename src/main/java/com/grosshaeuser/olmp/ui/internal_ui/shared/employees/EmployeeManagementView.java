@@ -7,6 +7,7 @@ import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.employees.service.RoleService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.ConfirmDelete;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.component.Component;
@@ -31,7 +32,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.HashSet;
 import java.util.List;
 
-public class EmployeeManagementView extends VerticalLayout {
+public class EmployeeManagementView extends VerticalLayout implements ConfirmDelete {
     private final EmployeeService employeeService;
     private final PasswordProperties passwordProperties;
     private final UiExceptionHandler uiExceptionHandler;
@@ -236,16 +237,13 @@ public class EmployeeManagementView extends VerticalLayout {
     }
 
     private void confirmDelete(EmployeeDTO user) {
-        ConfirmDialog dialog = new ConfirmDialog();
-        dialog.addClassName("confirm-delete-dialog");
-        dialog.setHeader("Delete user account?");
-        dialog.setText(new Html("<p>You are about to delete the user account of:<br /><em> " +
-                user.firstName() + " " + user.lastName() +
-                "</em><br />This action cannot be undone!</p>"));
-        dialog.setCancelable(true);
-        dialog.setConfirmText("Delete");
-        dialog.setConfirmButtonTheme("error primary");
-        dialog.addConfirmListener(_ -> delete(user));
+        ConfirmDialog dialog = getConfirmDialog(
+                "Delete user account?",
+                new Html("<p>You are about to delete the user account of:<br /><em> " +
+                        user.firstName() + " " + user.lastName() +
+                        "</em><br />This action cannot be undone!</p>"),
+                _ -> delete(user)
+                );
         dialog.open();
     }
 
