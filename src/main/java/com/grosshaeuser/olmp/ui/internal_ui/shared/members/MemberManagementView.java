@@ -4,6 +4,7 @@ import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
 import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
 import com.grosshaeuser.olmp.members.dto.MemberDTO;
 import com.grosshaeuser.olmp.members.service.MemberService;
+import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
 import com.grosshaeuser.olmp.memberships.service.MembershipService;
 import com.grosshaeuser.olmp.memberships.service.MembershipCardPrintService;
@@ -203,20 +204,26 @@ public class MemberManagementView extends VerticalLayout {
 
     private void createMember(MemberRegistrationDTO dto) {
         try {
-            memberService.createMember(dto).ifPresentOrElse(_ -> {
-                uiNotificationHandler.showSuccessNotification("New member account for " +
-                        dto.getFirstName() + " " + dto.getLastName() +
-                        " was created successfully.");
+            memberService.createMember(dto).ifPresentOrElse(member -> {
                 if (searchField.isEmpty()) {
                     refreshGrid();
                 } else {
                     searchField.clear();
                 }
+                offerMembershipCardPrint(member.id());
             },
                     () -> uiExceptionHandler.handleException(new RuntimeException("Member creation failed.")));
         } catch (Exception exception) {
             uiExceptionHandler.handleException(new RuntimeException("An unexpected error occurred while creating a new member account."));
         }
+    }
+
+    private void offerMembershipCardPrint(Long id) {
+        memberService.getDetailedMember(id)
+                .ifPresent(member -> {
+                    MembershipEditDTO newMembership = member.getMemberships().getFirst();
+                    new MembershipCardPrintDialog(printService, member, newMembership).open();
+                });
     }
 
     private MemberEditDTO updateMember(MemberEditDTO dto) {
