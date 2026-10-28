@@ -24,10 +24,10 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> {
         MediaFormOptions options = inventoryContext.getMediaLookupService().getFormOptions();
         Objects.requireNonNull(options, "options");
         Objects.requireNonNull(inventoryContext.getBarcodeService(), "barcodeService");
-        catalogue = new MediaCatalogueForm<>(dtoType, options.mediaTypes(), options.publishers(), inventoryContext.getMediaReferenceService());
+        catalogue = new MediaCatalogueForm<>(dtoType, options, inventoryContext.getMediaReferenceService());
         authors = new MediaAuthorsForm(options.authors(), inventoryContext.getMediaReferenceService());
         identifiers = new MediaIdentifiersForm();
-        inventory = new MediaInventoryForm(options.locations(), inventoryContext.getInventoryNumberService(), inventoryContext.getBarcodePrintService(), catalogue::title);
+        inventory = new MediaInventoryForm(options, inventoryContext, catalogue::title);
 
         TabSheet sheet = new TabSheet();
         sheet.setSizeFull();

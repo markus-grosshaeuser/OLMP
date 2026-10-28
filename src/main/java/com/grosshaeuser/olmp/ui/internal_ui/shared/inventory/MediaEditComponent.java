@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
-import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.CrudCallbacks;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaEditDto;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
@@ -11,7 +11,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 import java.util.Objects;
 
-public class MediaEditComponent extends Composite<VerticalLayout> implements Structurable, Delegatable {
+public class MediaEditComponent extends Composite<VerticalLayout> implements Structurable, CrudCallbacks {
 
     private final UiContext uiContext;
 

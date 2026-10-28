@@ -2,7 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeRegistrationDTO;
 import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.CrudCallbacks;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.button.Button;
@@ -20,7 +20,7 @@ import com.vaadin.flow.data.binder.BeanValidationBinder;
 
 import java.util.Set;
 
-public class EmployeeCreateDialog extends Dialog implements Structurable, Delegatable {
+public class EmployeeCreateDialog extends Dialog implements Structurable, CrudCallbacks {
 
     private final EmployeeContext employeeContext;
     private final UiContext uiContext;

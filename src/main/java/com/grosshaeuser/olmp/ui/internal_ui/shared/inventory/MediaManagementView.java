@@ -198,10 +198,6 @@ public class MediaManagementView extends VerticalLayout {
             new MediaCreateDialog(
                     inventoryContext,
                     uiContext,
-//                    inventoryContext.getMediaLookupService().getFormOptions(),
-//                    inventoryContext.getInventoryNumberService(),
-//                    inventoryContext.getBarcodeService(),
-//                    inventoryContext.getMediaReferenceService(),
                     this::createMedia
             ).open();
         } catch (RuntimeException exception) {

@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared;
 
-public interface Delegatable {
+public interface CrudCallbacks {
 
     @FunctionalInterface
     interface CreateCallback<T> {
@@ -15,10 +15,5 @@ public interface Delegatable {
     @FunctionalInterface
     interface DeleteCallback<T> {
         void delete(T component);
-    }
-
-    @FunctionalInterface
-    interface ErrorCallback {
-        void handleException(RuntimeException exception);
     }
 }

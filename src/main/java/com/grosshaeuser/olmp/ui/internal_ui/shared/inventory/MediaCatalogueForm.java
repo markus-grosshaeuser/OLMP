@@ -44,11 +44,10 @@ class MediaCatalogueForm<T extends MediaCreateDto> extends Composite<Div> implem
     private final TextField coverImageFileName = new TextField("Cover image filename");
     private final TextArea description = new TextArea("Description");
 
-    MediaCatalogueForm(Class<T> dtoType, List<MediaTypeSummaryDto> mediaTypes,
-                       List<PublisherSummaryDto> publishers, MediaReferenceService referenceService) {
-        this.mediaTypes = List.copyOf(mediaTypes);
+    MediaCatalogueForm(Class<T> dtoType, MediaFormOptions options, MediaReferenceService referenceService) {
+        this.mediaTypes = List.copyOf(options.mediaTypes());
         this.referenceService = Objects.requireNonNull(referenceService, "referenceService");
-        publisherOptions = new ArrayList<>(publishers);
+        publisherOptions = new ArrayList<>(options.publishers());
         publisherProvider = new ListDataProvider<>(publisherOptions);
         binder = new BeanValidationBinder<>(dtoType);
         configureFields();

@@ -2,7 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
 import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.CrudCallbacks;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.Composite;
@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-public class EmployeeEditComponent extends Composite<VerticalLayout> implements Structurable, Delegatable {
+public class EmployeeEditComponent extends Composite<VerticalLayout> implements Structurable, CrudCallbacks {
 
     @FunctionalInterface
     public interface CloseCallback {

@@ -3,7 +3,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
 import com.grosshaeuser.olmp.memberships.MembershipStatus;
 import com.grosshaeuser.olmp.memberships.MembershipType;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.CrudCallbacks;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.button.Button;
@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
-public class MemberCreateDialog extends Dialog implements Structurable, Delegatable {
+public class MemberCreateDialog extends Dialog implements Structurable, CrudCallbacks {
 
     private final MemberContext memberContext;
     private final UiContext uiContext;

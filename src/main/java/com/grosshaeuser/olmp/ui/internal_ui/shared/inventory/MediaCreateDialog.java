@@ -1,6 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
-import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.CrudCallbacks;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
@@ -10,7 +10,7 @@ import com.vaadin.flow.component.dialog.Dialog;
 
 import java.util.Objects;
 
-public class MediaCreateDialog extends Dialog implements Structurable, Delegatable {
+public class MediaCreateDialog extends Dialog implements Structurable, CrudCallbacks {
 
     private final UiContext uiContext;
 

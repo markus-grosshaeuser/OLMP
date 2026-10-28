@@ -49,11 +49,10 @@ class MediaInventoryForm extends Composite<Div> implements Structurable, Printin
     private final InventoryFields batchFields;
     private final Span inventoryCount = new Span();
 
-    MediaInventoryForm(List<LocationSummaryDto> locations, InventoryNumberService inventoryNumberService,
-                       BarcodePrintService barcodePrintService, Supplier<String> mediaTitle) {
-        this.locations = List.copyOf(locations);
-        this.inventoryNumberService = inventoryNumberService;
-        this.barcodePrintService = barcodePrintService;
+    MediaInventoryForm(MediaFormOptions options, InventoryContext inventoryContext, Supplier<String> mediaTitle) {
+        this.locations = List.copyOf(options.locations());
+        this.inventoryNumberService = inventoryContext.getInventoryNumberService();
+        this.barcodePrintService = inventoryContext.getBarcodePrintService();
         this.mediaTitle = Objects.requireNonNull(mediaTitle, "mediaTitle");
         inventoryRows.setPadding(false);
         batchFields = new InventoryFields();
@@ -150,14 +149,13 @@ class MediaInventoryForm extends Composite<Div> implements Structurable, Printin
         private final BeanValidationBinder<InventoryItemCreateDto> binder = new BeanValidationBinder<>(InventoryItemCreateDto.class);
         private final FormLayout layout = responsiveForm();
         private final ComboBox<InventoryItemCondition> condition = new ComboBox<>("Condition");
-        private final ComboBox<LocationSummaryDto> location = new ComboBox<>("Location");
         private final DatePicker acquiredAt = new DatePicker("Acquisition date");
         private final BigDecimalField acquisitionCost = new BigDecimalField("Acquisition cost");
-        private final TextArea notes = new TextArea("Notes");
 
         InventoryFields() {
             condition.setItems(InventoryItemCondition.values());
             condition.setItemLabelGenerator(value -> value.name().charAt(0) + value.name().substring(1).toLowerCase(Locale.ROOT));
+            ComboBox<LocationSummaryDto> location = new ComboBox<>("Location");
             location.setItems(locations);
             location.setItemLabelGenerator(value -> value.name() + " (" + value.code() + ")");
             location.setClearButtonVisible(true);
@@ -168,6 +166,7 @@ class MediaInventoryForm extends Composite<Div> implements Structurable, Printin
                     .bind("locationId");
             binder.forField(acquiredAt).bind("acquiredAt");
             binder.forField(acquisitionCost).bind("acquisitionCost");
+            TextArea notes = new TextArea("Notes");
             binder.forField(notes).withNullRepresentation("").bind("notes");
             List.<HasSize>of(condition, location, acquiredAt, acquisitionCost, notes).forEach(HasSize::setWidthFull);
             notes.setWidthFull();
