@@ -56,9 +56,11 @@ class BarcodePrintingTest {
         when(media.findMedia(anyString(), any())).thenReturn(List.of(SUMMARY));
         when(media.createMediaWithInventory(any())).thenReturn(SUMMARY);
         when(labels.createPrintDocument(anyString(), anyList())).thenReturn("<!doctype html><html>Labels</html>");
-        view = new MediaManagementView(new UiContext(errors, mock(UiNotificationHandler.class)), media,
-                () -> new MediaFormOptions(List.of(BOOK), List.of(), List.of()), new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
-                labels, mock(MediaReferenceService.class));
+        InventoryContext inventoryContext = new InventoryContext(media,
+                () -> new MediaFormOptions(List.of(BOOK), List.of(), List.of()), mock(MediaReferenceService.class),
+                new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), labels);
+        UiContext uiContext = new UiContext(errors, mock(UiNotificationHandler.class));
+        view = new MediaManagementView(inventoryContext, uiContext);
         ui.add(view);
     }
 

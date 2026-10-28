@@ -271,8 +271,10 @@ class MediaUiTest {
     @Test
     void searchUsesTrimmedFilterAndBackendPagingSortingAndCount() {
         FakeMediaService service = new FakeMediaService();
-        MediaManagementView view = new MediaManagementView(new UiContext(new UiExceptionHandler(), new UiNotificationHandler()), service, () -> OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
-                new BarcodePrintServiceImpl(new BarcodeServiceImpl()), mock(MediaReferenceService.class));
+        InventoryContext inventoryContext = new InventoryContext(service, () -> OPTIONS, mock(MediaReferenceService.class),
+                new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), new BarcodePrintServiceImpl(new BarcodeServiceImpl()));
+        UiContext uiContext = new UiContext(new UiExceptionHandler(), new UiNotificationHandler());
+        MediaManagementView view = new MediaManagementView(inventoryContext, uiContext);
         Grid<MediaSummaryDto> grid = grid(view);
         AtomicInteger refreshes = new AtomicInteger();
         grid.getDataProvider().addDataProviderListener(_ -> refreshes.incrementAndGet());
@@ -291,9 +293,10 @@ class MediaUiTest {
     @Test
     void authorAndPublisherFiltersCombineWithSearchAndCanBeClearedIndependently() {
         FakeMediaService service = new FakeMediaService();
-        MediaManagementView view = new MediaManagementView(new UiContext(
-                new UiExceptionHandler(), new UiNotificationHandler()), service, () -> OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
-                new BarcodePrintServiceImpl(new BarcodeServiceImpl()), mock(MediaReferenceService.class));
+        InventoryContext inventoryContext = new InventoryContext(service, () -> OPTIONS, mock(MediaReferenceService.class),
+                new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), new BarcodePrintServiceImpl(new BarcodeServiceImpl()));
+        UiContext uiContext = new UiContext(new UiExceptionHandler(), new UiNotificationHandler());
+        MediaManagementView view = new MediaManagementView(inventoryContext, uiContext);
         Grid<MediaSummaryDto> grid = grid(view);
         ComboBox<Object> author = combo(view, "Author");
         ComboBox<Object> publisher = combo(view, "Publisher");

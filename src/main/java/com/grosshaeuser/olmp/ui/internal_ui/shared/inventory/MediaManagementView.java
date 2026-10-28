@@ -33,35 +33,17 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class MediaManagementView extends VerticalLayout {
+    private final InventoryContext inventoryContext;
     private final UiContext uiContext;
 
-    private final MediaManagementService mediaService;
-    private final MediaLookupService lookupService;
-    private final MediaReferenceService referenceService;
-    private final InventoryNumberService inventoryNumberService;
-    private final BarcodeService barcodeService;
-    private final BarcodePrintService barcodePrintService;
     private final TextField searchField = new TextField("Search media");
     private final ComboBox<AuthorSummaryDto> authorFilter = new ComboBox<>("Author");
     private final ComboBox<PublisherSummaryDto> publisherFilter = new ComboBox<>("Publisher");
     private final Grid<MediaSummaryDto> mediaGrid = new Grid<>(MediaSummaryDto.class, false);
 
-    public MediaManagementView(
-            UiContext uiContext,
-            MediaManagementService mediaService,
-            MediaLookupService lookupService,
-            InventoryNumberService inventoryNumberService,
-            BarcodeService barcodeService,
-            BarcodePrintService barcodePrintService,
-            MediaReferenceService referenceService
-    ) {
+    public MediaManagementView(InventoryContext inventoryContext, UiContext uiContext) {
+        this.inventoryContext = Objects.requireNonNull(inventoryContext, "inventoryContext");
         this.uiContext = Objects.requireNonNull(uiContext, "uiContext");
-        this.mediaService = Objects.requireNonNull(mediaService, "mediaService");
-        this.lookupService = Objects.requireNonNull(lookupService, "lookupService");
-        this.referenceService = Objects.requireNonNull(referenceService, "referenceService");
-        this.inventoryNumberService = Objects.requireNonNull(inventoryNumberService, "inventoryNumberService");
-        this.barcodeService = Objects.requireNonNull(barcodeService, "barcodeService");
-        this.barcodePrintService = Objects.requireNonNull(barcodePrintService, "barcodeLabelService");
 
         configureSearch();
         configureFilters();
@@ -101,7 +83,7 @@ public class MediaManagementView extends VerticalLayout {
         publisherFilter.setPlaceholder("All publishers");
         publisherFilter.setClearButtonVisible(true);
         try {
-            MediaFormOptions options = lookupService.getFormOptions();
+            MediaFormOptions options = inventoryContext.getMediaLookupService().getFormOptions();
             authorFilter.setItems(options.authors());
             publisherFilter.setItems(options.publishers());
         } catch (RuntimeException exception) {
@@ -173,7 +155,7 @@ public class MediaManagementView extends VerticalLayout {
 
     private List<MediaSummaryDto> fetchMedia(Pageable pageable) {
         try {
-            return mediaService.findMedia(searchField.getValue().strip(), selectedAuthorId(), selectedPublisherId(), pageable);
+            return inventoryContext.getMediaManagementService().findMedia(searchField.getValue().strip(), selectedAuthorId(), selectedPublisherId(), pageable);
         } catch (RuntimeException exception) {
             uiContext.handleException(exception);
             return List.of();
@@ -182,7 +164,7 @@ public class MediaManagementView extends VerticalLayout {
 
     private int countMedia() {
         try {
-            return Math.toIntExact(mediaService.countMedia(searchField.getValue().strip(), selectedAuthorId(), selectedPublisherId()));
+            return Math.toIntExact(inventoryContext.getMediaManagementService().countMedia(searchField.getValue().strip(), selectedAuthorId(), selectedPublisherId()));
         } catch (RuntimeException exception) {
             uiContext.handleException(exception);
             return 0;
@@ -191,14 +173,14 @@ public class MediaManagementView extends VerticalLayout {
 
     private Component createEditor(MediaSummaryDto media) {
         try {
-            return mediaService.findMediaWithInventoryForEdit(media.id())
+            return inventoryContext.getMediaManagementService().findMediaWithInventoryForEdit(media.id())
                     .<Component>map(dto -> new MediaEditComponent(
                             dto,
-                            lookupService.getFormOptions(),
-                            inventoryNumberService,
-                            barcodeService,
-                            barcodePrintService,
-                            referenceService,
+                            inventoryContext.getMediaLookupService().getFormOptions(),
+                            inventoryContext.getInventoryNumberService(),
+                            inventoryContext.getBarcodeService(),
+                            inventoryContext.getBarcodePrintService(),
+                            inventoryContext.getMediaReferenceService(),
                             changed -> updateMedia(changed, media),
                             () -> mediaGrid.setDetailsVisible(media, false),
                             uiContext::handleException)
@@ -217,10 +199,10 @@ public class MediaManagementView extends VerticalLayout {
     private void openCreateDialog() {
         try {
             new MediaCreateDialog(
-                    lookupService.getFormOptions(),
-                    inventoryNumberService,
-                    barcodeService,
-                    referenceService,
+                    inventoryContext.getMediaLookupService().getFormOptions(),
+                    inventoryContext.getInventoryNumberService(),
+                    inventoryContext.getBarcodeService(),
+                    inventoryContext.getMediaReferenceService(),
                     this::createMedia,
                     uiContext::handleException
             ).open();
@@ -231,7 +213,7 @@ public class MediaManagementView extends VerticalLayout {
 
     private void createMedia(MediaCreateDto dto) {
         List<MediaInventoryItemDto> newCopies = newlyAddedCopies(dto);
-        Objects.requireNonNull(mediaService.createMediaWithInventory(dto), "Media creation failed");
+        Objects.requireNonNull(inventoryContext.getMediaManagementService().createMediaWithInventory(dto), "Media creation failed");
         uiContext.showSuccessNotification("Media created successfully.");
         searchField.setValue(dto.getTitle());
         offerBarcodePrinting(dto.getTitle(), newCopies);
@@ -239,7 +221,7 @@ public class MediaManagementView extends VerticalLayout {
 
     private MediaEditDto updateMedia(MediaEditDto dto, MediaSummaryDto summary) {
         List<MediaInventoryItemDto> newCopies = newlyAddedCopies(dto);
-        MediaEditDto updated = Objects.requireNonNull(mediaService.updateMediaWithInventory(dto), "Updated media");
+        MediaEditDto updated = Objects.requireNonNull(inventoryContext.getMediaManagementService().updateMediaWithInventory(dto), "Updated media");
         mediaGrid.setDetailsVisible(summary, false);
         mediaGrid.getDataProvider().refreshAll();
         uiContext.showSuccessNotification("Media updated successfully.");
@@ -253,7 +235,7 @@ public class MediaManagementView extends VerticalLayout {
 
     private void offerBarcodePrinting(String title, List<MediaInventoryItemDto> copies) {
         if (!copies.isEmpty()) {
-            new BarcodePrintDialog(barcodePrintService, title, copies).open();
+            new BarcodePrintDialog(inventoryContext.getBarcodePrintService(), title, copies).open();
         }
     }
 
@@ -270,7 +252,7 @@ public class MediaManagementView extends VerticalLayout {
     }
 
     private void delete(MediaSummaryDto medium) {
-        mediaService.deleteMedium(medium.id());
+        inventoryContext.getMediaManagementService().deleteMedium(medium.id());
         refreshGrid();
     }
 
