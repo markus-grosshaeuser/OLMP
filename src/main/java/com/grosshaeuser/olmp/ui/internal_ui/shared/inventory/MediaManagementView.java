@@ -4,8 +4,7 @@ import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.service.*;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaInventoryItemDto;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaEditDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaSummaryDto;
@@ -34,37 +33,36 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class MediaManagementView extends VerticalLayout {
+    private final UiContext uiContext;
+
     private final MediaManagementService mediaService;
     private final MediaLookupService lookupService;
     private final MediaReferenceService referenceService;
     private final InventoryNumberService inventoryNumberService;
     private final BarcodeService barcodeService;
     private final BarcodePrintService barcodePrintService;
-    private final UiExceptionHandler uiExceptionHandler;
-    private final UiNotificationHandler uiNotificationHandler;
     private final TextField searchField = new TextField("Search media");
     private final ComboBox<AuthorSummaryDto> authorFilter = new ComboBox<>("Author");
     private final ComboBox<PublisherSummaryDto> publisherFilter = new ComboBox<>("Publisher");
     private final Grid<MediaSummaryDto> mediaGrid = new Grid<>(MediaSummaryDto.class, false);
 
     public MediaManagementView(
+            UiContext uiContext,
             MediaManagementService mediaService,
             MediaLookupService lookupService,
             InventoryNumberService inventoryNumberService,
             BarcodeService barcodeService,
             BarcodePrintService barcodePrintService,
-            MediaReferenceService referenceService,
-            UiExceptionHandler uiExceptionHandler,
-            UiNotificationHandler uiNotificationHandler
+            MediaReferenceService referenceService
     ) {
+        this.uiContext = Objects.requireNonNull(uiContext, "uiContext");
         this.mediaService = Objects.requireNonNull(mediaService, "mediaService");
         this.lookupService = Objects.requireNonNull(lookupService, "lookupService");
         this.referenceService = Objects.requireNonNull(referenceService, "referenceService");
         this.inventoryNumberService = Objects.requireNonNull(inventoryNumberService, "inventoryNumberService");
         this.barcodeService = Objects.requireNonNull(barcodeService, "barcodeService");
         this.barcodePrintService = Objects.requireNonNull(barcodePrintService, "barcodeLabelService");
-        this.uiExceptionHandler = Objects.requireNonNull(uiExceptionHandler, "uiExceptionHandler");
-        this.uiNotificationHandler = Objects.requireNonNull(uiNotificationHandler, "uiNotificationHandler");
+
         configureSearch();
         configureFilters();
         configureGrid();
@@ -107,7 +105,7 @@ public class MediaManagementView extends VerticalLayout {
             authorFilter.setItems(options.authors());
             publisherFilter.setItems(options.publishers());
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
         }
         authorFilter.addValueChangeListener(_ -> refreshGrid());
         publisherFilter.addValueChangeListener(_ -> refreshGrid());
@@ -177,7 +175,7 @@ public class MediaManagementView extends VerticalLayout {
         try {
             return mediaService.findMedia(searchField.getValue().strip(), selectedAuthorId(), selectedPublisherId(), pageable);
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
             return List.of();
         }
     }
@@ -186,7 +184,7 @@ public class MediaManagementView extends VerticalLayout {
         try {
             return Math.toIntExact(mediaService.countMedia(searchField.getValue().strip(), selectedAuthorId(), selectedPublisherId()));
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
             return 0;
         }
     }
@@ -203,11 +201,11 @@ public class MediaManagementView extends VerticalLayout {
                             referenceService,
                             changed -> updateMedia(changed, media),
                             () -> mediaGrid.setDetailsVisible(media, false),
-                            uiExceptionHandler::handleException)
+                            uiContext::handleException)
                     )
                     .orElseGet(() -> unavailableDetails("This media no longer exists."));
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
             return unavailableDetails("Media details could not be loaded.");
         }
     }
@@ -224,17 +222,17 @@ public class MediaManagementView extends VerticalLayout {
                     barcodeService,
                     referenceService,
                     this::createMedia,
-                    uiExceptionHandler::handleException
+                    uiContext::handleException
             ).open();
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
         }
     }
 
     private void createMedia(MediaCreateDto dto) {
         List<MediaInventoryItemDto> newCopies = newlyAddedCopies(dto);
         Objects.requireNonNull(mediaService.createMediaWithInventory(dto), "Media creation failed");
-        uiNotificationHandler.showSuccessNotification("Media created successfully.");
+        uiContext.showSuccessNotification("Media created successfully.");
         searchField.setValue(dto.getTitle());
         offerBarcodePrinting(dto.getTitle(), newCopies);
     }
@@ -244,7 +242,7 @@ public class MediaManagementView extends VerticalLayout {
         MediaEditDto updated = Objects.requireNonNull(mediaService.updateMediaWithInventory(dto), "Updated media");
         mediaGrid.setDetailsVisible(summary, false);
         mediaGrid.getDataProvider().refreshAll();
-        uiNotificationHandler.showSuccessNotification("Media updated successfully.");
+        uiContext.showSuccessNotification("Media updated successfully.");
         offerBarcodePrinting(updated.getTitle(), newCopies);
         return updated;
     }

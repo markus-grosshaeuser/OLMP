@@ -9,6 +9,7 @@ import com.grosshaeuser.olmp.inventory.service.MediaManagementService;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodeServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodePrintServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.InventoryNumberServiceImpl;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.component.Component;
@@ -270,9 +271,8 @@ class MediaUiTest {
     @Test
     void searchUsesTrimmedFilterAndBackendPagingSortingAndCount() {
         FakeMediaService service = new FakeMediaService();
-        MediaManagementView view = new MediaManagementView(service, () -> OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
-                new BarcodePrintServiceImpl(new BarcodeServiceImpl()), mock(MediaReferenceService.class),
-                new UiExceptionHandler(), new UiNotificationHandler());
+        MediaManagementView view = new MediaManagementView(new UiContext(new UiExceptionHandler(), new UiNotificationHandler()), service, () -> OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
+                new BarcodePrintServiceImpl(new BarcodeServiceImpl()), mock(MediaReferenceService.class));
         Grid<MediaSummaryDto> grid = grid(view);
         AtomicInteger refreshes = new AtomicInteger();
         grid.getDataProvider().addDataProviderListener(_ -> refreshes.incrementAndGet());
@@ -291,9 +291,9 @@ class MediaUiTest {
     @Test
     void authorAndPublisherFiltersCombineWithSearchAndCanBeClearedIndependently() {
         FakeMediaService service = new FakeMediaService();
-        MediaManagementView view = new MediaManagementView(service, () -> OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
-                new BarcodePrintServiceImpl(new BarcodeServiceImpl()), mock(MediaReferenceService.class),
-                new UiExceptionHandler(), new UiNotificationHandler());
+        MediaManagementView view = new MediaManagementView(new UiContext(
+                new UiExceptionHandler(), new UiNotificationHandler()), service, () -> OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(),
+                new BarcodePrintServiceImpl(new BarcodeServiceImpl()), mock(MediaReferenceService.class));
         Grid<MediaSummaryDto> grid = grid(view);
         ComboBox<Object> author = combo(view, "Author");
         ComboBox<Object> publisher = combo(view, "Publisher");
