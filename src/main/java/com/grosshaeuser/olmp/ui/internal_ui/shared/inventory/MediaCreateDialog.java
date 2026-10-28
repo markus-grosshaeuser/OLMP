@@ -1,11 +1,9 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
-import com.grosshaeuser.olmp.inventory.service.InventoryNumberService;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
-import com.grosshaeuser.olmp.inventory.service.BarcodeService;
-import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -14,21 +12,15 @@ import java.util.Objects;
 
 public class MediaCreateDialog extends Dialog implements Structurable, Delegatable {
 
+    private final UiContext uiContext;
+
     private final MediaForm<MediaCreateDto> form;
     private final CreateCallback<MediaCreateDto> createCallback;
-    private final ErrorCallback errorCallback;
 
-    public MediaCreateDialog(
-            MediaFormOptions options,
-            InventoryNumberService inventoryNumberService,
-            BarcodeService barcodeService,
-            MediaReferenceService referenceService,
-            CreateCallback<MediaCreateDto> createCallback,
-            ErrorCallback errorCallback
-    ) {
+    public MediaCreateDialog(InventoryContext inventoryContext, UiContext uiContext, CreateCallback<MediaCreateDto> createCallback) {
+        this.uiContext = Objects.requireNonNull(uiContext, "uiContext");
         this.createCallback = Objects.requireNonNull(createCallback, "createCallback");
-        this.errorCallback = Objects.requireNonNull(errorCallback, "errorCallback");
-        form = new MediaForm<>(MediaCreateDto.class, options, inventoryNumberService, barcodeService, null, referenceService);
+        form = new MediaForm<>(MediaCreateDto.class, inventoryContext);
         form.read(new MediaCreateDto());
 
         getHeader().add(createDialogHeader("Create medium", "Create a new medium", this::close));
@@ -52,7 +44,7 @@ public class MediaCreateDialog extends Dialog implements Structurable, Delegatab
                 close();
             }
         } catch (RuntimeException exception) {
-            errorCallback.handleException(exception);
+            uiContext.handleException(exception);
         }
     }
 }

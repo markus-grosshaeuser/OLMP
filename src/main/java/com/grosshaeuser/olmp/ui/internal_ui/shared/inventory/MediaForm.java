@@ -4,10 +4,6 @@ import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaAuthorWriteDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaIdentifierWriteDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaInventoryItemDto;
-import com.grosshaeuser.olmp.inventory.service.InventoryNumberService;
-import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
-import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
-import com.grosshaeuser.olmp.inventory.service.BarcodeService;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
@@ -23,20 +19,15 @@ class MediaForm<T extends MediaCreateDto> extends Composite<VerticalLayout> {
     private final MediaIdentifiersForm identifiers;
     private final MediaInventoryForm inventory;
 
-    MediaForm(
-            Class<T> dtoType,
-            MediaFormOptions options,
-            InventoryNumberService inventoryNumberService,
-            BarcodeService barcodeService,
-            BarcodePrintService barcodePrintService,
-            MediaReferenceService referenceService
-    ) {
+    MediaForm(Class<T> dtoType, InventoryContext inventoryContext) {
+        Objects.requireNonNull(inventoryContext, "inventoryContext");
+        MediaFormOptions options = inventoryContext.getMediaLookupService().getFormOptions();
         Objects.requireNonNull(options, "options");
-        Objects.requireNonNull(barcodeService, "barcodeService");
-        catalogue = new MediaCatalogueForm<>(dtoType, options.mediaTypes(), options.publishers(), referenceService);
-        authors = new MediaAuthorsForm(options.authors(), referenceService);
+        Objects.requireNonNull(inventoryContext.getBarcodeService(), "barcodeService");
+        catalogue = new MediaCatalogueForm<>(dtoType, options.mediaTypes(), options.publishers(), inventoryContext.getMediaReferenceService());
+        authors = new MediaAuthorsForm(options.authors(), inventoryContext.getMediaReferenceService());
         identifiers = new MediaIdentifiersForm();
-        inventory = new MediaInventoryForm(options.locations(), inventoryNumberService, barcodePrintService, catalogue::title);
+        inventory = new MediaInventoryForm(options.locations(), inventoryContext.getInventoryNumberService(), inventoryContext.getBarcodePrintService(), catalogue::title);
 
         TabSheet sheet = new TabSheet();
         sheet.setSizeFull();

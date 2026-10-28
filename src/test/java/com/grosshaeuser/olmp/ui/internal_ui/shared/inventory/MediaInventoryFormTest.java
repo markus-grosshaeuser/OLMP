@@ -8,6 +8,9 @@ import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodePrintServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.BarcodeServiceImpl;
 import com.grosshaeuser.olmp.inventory.service.impl.InventoryNumberServiceImpl;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -48,7 +51,10 @@ class MediaInventoryFormTest {
         UI.setCurrent(ui);
         var book = new MediaTypeSummaryDto(1L, "BOOK", "Book");
         BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        form = new MediaForm<>(MediaEditDto.class, new MediaFormOptions(List.of(book), List.of(), List.of(), List.of(shelf)), new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        var inventoryContext = new InventoryContext(null,
+                () -> new MediaFormOptions(List.of(book), List.of(), List.of(), List.of(shelf)), mock(MediaReferenceService.class),
+                new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService));
+        form = new MediaForm<>(MediaEditDto.class, inventoryContext);
         source = new MediaEditDto();
         source.setId(1L);
         source.setMediaTypeId(book.id());
@@ -85,9 +91,10 @@ class MediaInventoryFormTest {
         var printService = mock(BarcodePrintService.class);
         when(printService.createPrintDocument("Changed title", source.getInventoryItems())).thenReturn("<html></html>");
         var book = new MediaTypeSummaryDto(1L, "BOOK", "Book");
-        form = new MediaForm<>(MediaEditDto.class,
-                new MediaFormOptions(List.of(book), List.of(), List.of(), List.of(shelf)),
-                new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), printService, mock(MediaReferenceService.class));
+        var inventoryContext = new InventoryContext(null,
+                () -> new MediaFormOptions(List.of(book), List.of(), List.of(), List.of(shelf)), mock(MediaReferenceService.class),
+                new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), printService);
+        form = new MediaForm<>(MediaEditDto.class, inventoryContext);
         form.read(source);
         field("Title").setValue("Changed title");
         descendants(form).filter(TabSheet.class::isInstance).map(TabSheet.class::cast)
@@ -158,9 +165,16 @@ class MediaInventoryFormTest {
     void createDialogSubmitsCopiesAndCancelDoesNotSubmit() {
         List<MediaCreateDto> saved = new ArrayList<>();
         var book = new MediaTypeSummaryDto(1L, "BOOK", "Book");
-        MediaCreateDialog dialog = new MediaCreateDialog(
-                new MediaFormOptions(List.of(book), List.of(), List.of()), new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), mock(MediaReferenceService.class), saved::add,
-                exception -> { throw exception; });
+        var inventoryContext = new InventoryContext(null,
+                () -> new MediaFormOptions(List.of(book), List.of(), List.of()), mock(MediaReferenceService.class),
+                new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), null);
+        var uiContext = new UiContext(new UiExceptionHandler() {
+            @Override
+            public void handleException(RuntimeException exception) {
+                throw exception;
+            }
+        }, new UiNotificationHandler());
+        MediaCreateDialog dialog = new MediaCreateDialog(inventoryContext, uiContext, saved::add);
         dialog.open();
         descendants(dialog).filter(TextField.class::isInstance).map(TextField.class::cast)
                 .filter(field -> field.getLabel().equals("Title")).findFirst().orElseThrow().setValue("New title");

@@ -176,14 +176,11 @@ public class MediaManagementView extends VerticalLayout {
             return inventoryContext.getMediaManagementService().findMediaWithInventoryForEdit(media.id())
                     .<Component>map(dto -> new MediaEditComponent(
                             dto,
-                            inventoryContext.getMediaLookupService().getFormOptions(),
-                            inventoryContext.getInventoryNumberService(),
-                            inventoryContext.getBarcodeService(),
-                            inventoryContext.getBarcodePrintService(),
-                            inventoryContext.getMediaReferenceService(),
+                            inventoryContext,
+                            uiContext,
                             changed -> updateMedia(changed, media),
-                            () -> mediaGrid.setDetailsVisible(media, false),
-                            uiContext::handleException)
+                            () -> mediaGrid.setDetailsVisible(media, false)
+                            )
                     )
                     .orElseGet(() -> unavailableDetails("This media no longer exists."));
         } catch (RuntimeException exception) {
@@ -199,12 +196,13 @@ public class MediaManagementView extends VerticalLayout {
     private void openCreateDialog() {
         try {
             new MediaCreateDialog(
-                    inventoryContext.getMediaLookupService().getFormOptions(),
-                    inventoryContext.getInventoryNumberService(),
-                    inventoryContext.getBarcodeService(),
-                    inventoryContext.getMediaReferenceService(),
-                    this::createMedia,
-                    uiContext::handleException
+                    inventoryContext,
+                    uiContext,
+//                    inventoryContext.getMediaLookupService().getFormOptions(),
+//                    inventoryContext.getInventoryNumberService(),
+//                    inventoryContext.getBarcodeService(),
+//                    inventoryContext.getMediaReferenceService(),
+                    this::createMedia
             ).open();
         } catch (RuntimeException exception) {
             uiContext.handleException(exception);

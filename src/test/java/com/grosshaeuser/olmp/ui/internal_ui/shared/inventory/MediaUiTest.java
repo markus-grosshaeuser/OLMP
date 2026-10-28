@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -58,8 +59,7 @@ class MediaUiTest {
 
     @Test
     void createFormRequiresTitleAndTypeAndRejectsWhitespaceTitle() {
-        BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaForm<MediaCreateDto> form = new MediaForm<>(MediaCreateDto.class, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        MediaForm<MediaCreateDto> form = new MediaForm<>(MediaCreateDto.class, inventoryContext());
         form.read(new MediaCreateDto());
         assertThat(form.write(new MediaCreateDto())).isFalse();
         text(form, "Title").setValue(" ");
@@ -123,8 +123,7 @@ class MediaUiTest {
         MediaAuthorWriteDto duplicateAuthor = new MediaAuthorWriteDto();
         duplicateAuthor.setAuthorId(2L);
         existing.getAuthors().add(duplicateAuthor);
-        BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaForm<MediaEditDto> form = new MediaForm<>(MediaEditDto.class, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        MediaForm<MediaEditDto> form = new MediaForm<>(MediaEditDto.class, inventoryContext());
         form.read(existing);
         assertThat(form.write(new MediaEditDto())).isFalse();
 
@@ -140,8 +139,7 @@ class MediaUiTest {
     @Test
     void bufferedEditingRetainsIdentifierIdsAndDoesNotMutateLoadedDto() {
         MediaEditDto source = editableMedia();
-        BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaForm<MediaEditDto> form = new MediaForm<>(MediaEditDto.class, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        MediaForm<MediaEditDto> form = new MediaForm<>(MediaEditDto.class, inventoryContext());
         form.read(source);
         text(form, "Title").setValue("Changed");
         text(form, "Role").setValue("EDITOR");
@@ -160,9 +158,7 @@ class MediaUiTest {
     void invalidSectionsAllShowErrorsAndKeepTargetCollectionsUntilCorrected() {
         MediaEditDto source = editableMedia();
         source.getInventoryItems().add(new MediaInventoryItemDto(30L, "number", "barcode"));
-        BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        var form = new MediaForm<>(MediaEditDto.class, OPTIONS, new InventoryNumberServiceImpl(),
-                barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        var form = new MediaForm<>(MediaEditDto.class, inventoryContext());
         form.read(source);
 
         text(form, "Title").clear();
@@ -205,11 +201,10 @@ class MediaUiTest {
         MediaEditDto source = editableMedia();
         AtomicReference<MediaEditDto> saved = new AtomicReference<>();
         AtomicInteger closed = new AtomicInteger();
-        BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaEditComponent editor = new MediaEditComponent(source, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class), dto -> {
+        MediaEditComponent editor = new MediaEditComponent(source, inventoryContext(), uiContext(exception -> { throw exception; }), dto -> {
             saved.set(dto);
             return dto;
-        }, closed::incrementAndGet, exception -> { throw exception; });
+        }, closed::incrementAndGet);
 
         text(editor, "Title").setValue("Discard this");
         button(editor, "Remove identifier").click();
@@ -232,13 +227,12 @@ class MediaUiTest {
     void failedEditKeepsInputAvailableForRetryAndRoutesException() {
         List<RuntimeException> errors = new ArrayList<>();
         AtomicInteger attempts = new AtomicInteger();
-        BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaEditComponent editor = new MediaEditComponent(editableMedia(), OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class), dto -> {
+        MediaEditComponent editor = new MediaEditComponent(editableMedia(), inventoryContext(), uiContext(errors::add), dto -> {
             if (attempts.getAndIncrement() == 0) {
                 throw new IllegalArgumentException("Already exists");
             }
             return dto;
-        }, () -> { }, errors::add);
+        }, () -> { });
         text(editor, "Title").setValue("Try again");
         button(editor, "Save changes").click();
         assertThat(errors).hasSize(1);
@@ -251,11 +245,11 @@ class MediaUiTest {
     void createDialogStaysOpenOnSaveFailureAndClosesAfterRetry() {
         List<RuntimeException> errors = new ArrayList<>();
         AtomicInteger attempts = new AtomicInteger();
-        MediaCreateDialog dialog = new MediaCreateDialog(OPTIONS, new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), mock(MediaReferenceService.class), dto -> {
+        MediaCreateDialog dialog = new MediaCreateDialog(inventoryContext(), uiContext(errors::add), dto -> {
             if (attempts.getAndIncrement() == 0) {
                 throw new IllegalArgumentException("Already exists");
             }
-        }, errors::add);
+        });
         dialog.open();
         text(dialog, "Title").setValue("New media");
         combo(dialog, "Media type").setValue(BOOK);
@@ -331,9 +325,23 @@ class MediaUiTest {
         assertThat(refreshes).hasValue(5);
     }
 
-    private MediaForm<MediaCreateDto> populatedForm() {
+    private InventoryContext inventoryContext() {
         BarcodeServiceImpl barcodeService = new BarcodeServiceImpl();
-        MediaForm<MediaCreateDto> form = new MediaForm<>(MediaCreateDto.class, OPTIONS, new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService), mock(MediaReferenceService.class));
+        return new InventoryContext(mock(MediaManagementService.class), () -> OPTIONS, mock(MediaReferenceService.class),
+                new InventoryNumberServiceImpl(), barcodeService, new BarcodePrintServiceImpl(barcodeService));
+    }
+
+    private UiContext uiContext(Consumer<RuntimeException> exceptionHandler) {
+        return new UiContext(new UiExceptionHandler() {
+            @Override
+            public void handleException(RuntimeException exception) {
+                exceptionHandler.accept(exception);
+            }
+        }, new UiNotificationHandler());
+    }
+
+    private MediaForm<MediaCreateDto> populatedForm() {
+        MediaForm<MediaCreateDto> form = new MediaForm<>(MediaCreateDto.class, inventoryContext());
         form.read(new MediaCreateDto());
         text(form, "Title").setValue("A title");
         combo(form, "Media type").setValue(BOOK);

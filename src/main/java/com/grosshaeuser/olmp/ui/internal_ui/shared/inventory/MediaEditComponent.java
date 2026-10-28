@@ -1,12 +1,9 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.inventory;
 
-import com.grosshaeuser.olmp.inventory.service.BarcodePrintService;
-import com.grosshaeuser.olmp.inventory.service.InventoryNumberService;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaEditDto;
-import com.grosshaeuser.olmp.inventory.service.BarcodeService;
-import com.grosshaeuser.olmp.inventory.service.MediaReferenceService;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -16,28 +13,26 @@ import java.util.Objects;
 
 public class MediaEditComponent extends Composite<VerticalLayout> implements Structurable, Delegatable {
 
+    private final UiContext uiContext;
+
     private final MediaForm<MediaEditDto> form;
     private final UpdateCallback<MediaEditDto> updateCallback;
-    private final ErrorCallback errorCallback;
     private MediaEditDto savedMedia;
 
     public MediaEditComponent(
             MediaEditDto media,
-            MediaFormOptions options,
-            InventoryNumberService inventoryNumberService,
-            BarcodeService barcodeService,
-            BarcodePrintService barcodePrintService,
-            MediaReferenceService referenceService,
+            InventoryContext inventoryContext,
+            UiContext uiContext,
             UpdateCallback<MediaEditDto> updateCallback,
-            Runnable closeCallback,
-            ErrorCallback errorCallback
+            Runnable closeCallback
     ) {
+
+        this.uiContext = Objects.requireNonNull(uiContext, "uiContext");
         this.savedMedia = Objects.requireNonNull(media, "media");
         Objects.requireNonNull(media.getId(), "media.id");
         this.updateCallback = Objects.requireNonNull(updateCallback, "updateCallback");
-        this.errorCallback = Objects.requireNonNull(errorCallback, "errorCallback");
         Objects.requireNonNull(closeCallback, "closeCallback");
-        form = new MediaForm<>(MediaEditDto.class, options, inventoryNumberService, barcodeService, barcodePrintService, referenceService);
+        form = new MediaForm<>(MediaEditDto.class, inventoryContext);
         form.read(media);
         Button save = new Button("Save changes", _ -> save());
         save.addThemeVariants(ButtonVariant.PRIMARY);
@@ -64,7 +59,7 @@ public class MediaEditComponent extends Composite<VerticalLayout> implements Str
             savedMedia = updated;
             form.read(updated);
         } catch (RuntimeException exception) {
-            errorCallback.handleException(exception);
+            uiContext.handleException(exception);
         }
     }
 }

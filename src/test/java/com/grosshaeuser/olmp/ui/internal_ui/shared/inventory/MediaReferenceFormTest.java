@@ -43,8 +43,10 @@ class MediaReferenceFormTest {
         UI.setCurrent(ui);
         references = mock(MediaReferenceService.class);
         var book = new MediaTypeSummaryDto(1L, "BOOK", "Book");
-        form = new MediaForm<>(MediaCreateDto.class, new MediaFormOptions(List.of(book), List.of(PUBLISHER), List.of(AUTHOR)), new InventoryNumberServiceImpl(),
-                new BarcodeServiceImpl(), null, references);
+        var inventoryContext = new InventoryContext(null,
+                () -> new MediaFormOptions(List.of(book), List.of(PUBLISHER), List.of(AUTHOR)), references,
+                new InventoryNumberServiceImpl(), new BarcodeServiceImpl(), null);
+        form = new MediaForm<>(MediaCreateDto.class, inventoryContext);
         source = new MediaCreateDto();
         source.setMediaTypeId(book.id());
         source.setTitle("Unsaved title");
