@@ -1,13 +1,10 @@
 package com.grosshaeuser.olmp.ui.internal_ui.admin.pages;
 
-import com.grosshaeuser.olmp.employees.service.EmployeeService;
-import com.grosshaeuser.olmp.employees.service.RoleService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.admin.AdminLayout;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.EmployeeContext;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.employees.EmployeeManagementView;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
@@ -16,13 +13,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("Employee Management")
 @RolesAllowed(SecurityConstants.Roles.ADMIN)
 public class EmployeeManagementPage extends EmployeeManagementView {
-    public EmployeeManagementPage(
-            EmployeeService employeeService,
-            RoleService roleService,
-            PasswordProperties passwordProperties,
-            UiExceptionHandler uiExceptionHandler,
-            UiNotificationHandler uiNotificationHandler
-    ) {
-        super(employeeService, roleService, passwordProperties, uiExceptionHandler, uiNotificationHandler);
+    public EmployeeManagementPage(EmployeeContext employeeContext, UiContext uiContext) {
+        super(employeeContext, uiContext);
     }
 }

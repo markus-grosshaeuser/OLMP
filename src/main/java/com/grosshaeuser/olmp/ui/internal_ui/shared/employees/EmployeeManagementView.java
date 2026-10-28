@@ -5,11 +5,8 @@ import com.grosshaeuser.olmp.employees.dto.EmployeeDTO;
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
 import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
-import com.grosshaeuser.olmp.employees.service.RoleService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.ConfirmDelete;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.*;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.button.Button;
@@ -33,26 +30,22 @@ import java.util.HashSet;
 import java.util.List;
 
 public class EmployeeManagementView extends VerticalLayout implements ConfirmDelete {
+    private final UiContext uiContext;
+
     private final EmployeeService employeeService;
     private final PasswordProperties passwordProperties;
-    private final UiExceptionHandler uiExceptionHandler;
-    private final UiNotificationHandler uiNotificationHandler;
     private final TextField searchField = new TextField("Search Employees");
     private final Grid<EmployeeDTO> employeeGrid = new Grid<>(EmployeeDTO.class, false);
     private final HashSet<String> assignableRoles;
 
-    public EmployeeManagementView(
-            EmployeeService employeeService,
-            RoleService roleService,
-            PasswordProperties passwordProperties,
-            UiExceptionHandler uiExceptionHandler,
-            UiNotificationHandler uiNotificationHandler
-    ) {
-        this.employeeService = employeeService;
-        this.passwordProperties = passwordProperties;
-        this.uiExceptionHandler = uiExceptionHandler;
-        this.uiNotificationHandler = uiNotificationHandler;
-        this.assignableRoles = EmployeeMapper.mapRolesToRoleNames(roleService.getAssignableRoles());
+    public EmployeeManagementView(EmployeeContext employeeContext, UiContext uiContext) {
+
+        this.uiContext = uiContext;
+
+        this.employeeService = employeeContext.getEmployeeService();
+        this.passwordProperties = employeeContext.getPasswordProperties();
+
+        this.assignableRoles = EmployeeMapper.mapRolesToRoleNames(employeeContext.getRoleService().getAssignableRoles());
         configureSearch();
         configureGrid();
 
@@ -156,7 +149,7 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
         try {
             return employeeService.getEmployees(searchField.getValue().strip(), pageable).getContent();
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
             return List.of();
         }
     }
@@ -165,7 +158,7 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
         try {
             return employeeService.countEmployees(searchField.getValue().strip());
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
             return 0;
         }
     }
@@ -177,13 +170,13 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
                             dto,
                             assignableRoles,
                             this::updateEmployee,
-                            uiExceptionHandler::handleException,
+                            uiContext::handleException,
                             () -> employeeGrid.setDetailsVisible(employee, false),
                             passwordProperties)
                     )
                     .orElseGet(() -> unavailableDetails("This employee does not exist."));
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
             return unavailableDetails("Employee details could not be loaded.");
         }
     }
@@ -197,11 +190,11 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
             new EmployeeCreateDialog(
                     assignableRoles,
                     this::createEmployee,
-                    uiExceptionHandler::handleException,
+                    uiContext::handleException,
                     passwordProperties
             ).open();
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
         }
 
     }
@@ -210,7 +203,7 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
         try {
             employeeService.createEmployee(dto).ifPresentOrElse(
                     _ -> {
-                        uiNotificationHandler.showSuccessNotification("New employee account for " +
+                        uiContext.showSuccessNotification("New employee account for " +
                                 dto.getFirstName() + " " + dto.getLastName() +
                                 " was created successfully.");
                         if (searchField.isEmpty()) {
@@ -219,16 +212,16 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
                             searchField.clear();
                         }
                     },
-                    () -> uiExceptionHandler.handleException(new RuntimeException("Employee creation failed."))
+                    () -> uiContext.handleException(new RuntimeException("Employee creation failed."))
             );
         } catch (Exception exception) {
-            uiExceptionHandler.handleException(new RuntimeException("An unexpected error occurred while creating a new employee."));
+            uiContext.handleException(new RuntimeException("An unexpected error occurred while creating a new employee."));
         }
     }
 
     private EmployeeEditDTO updateEmployee(EmployeeEditDTO dto) {
         return employeeService.updateEmployee(dto).map(result -> {
-            uiNotificationHandler.showSuccessNotification("User account for " +
+            uiContext.showSuccessNotification("User account for " +
                     result.getFirstName() + " " + result.getLastName() +
                     " was updated successfully.");
             employeeGrid.getDataProvider().refreshAll();

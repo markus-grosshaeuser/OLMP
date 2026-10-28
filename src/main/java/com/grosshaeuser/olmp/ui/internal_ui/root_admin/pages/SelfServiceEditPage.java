@@ -1,12 +1,10 @@
 package com.grosshaeuser.olmp.ui.internal_ui.root_admin.pages;
 
-import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.root_admin.RootAdminLayout;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.EmployeeContext;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.employees.EmployeeSelfServiceView;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
@@ -15,12 +13,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("My Profile")
 @RolesAllowed(SecurityConstants.Roles.ROOT_ADMIN)
 public class SelfServiceEditPage extends EmployeeSelfServiceView {
-    public SelfServiceEditPage(
-            EmployeeService employeeService,
-            PasswordProperties passwordProperties,
-            UiExceptionHandler uiExceptionHandler,
-            UiNotificationHandler uiNotificationHandler
-    ) {
-        super(employeeService, passwordProperties, uiExceptionHandler, uiNotificationHandler);
+    public SelfServiceEditPage(EmployeeContext employeeContext, UiContext uiContext) {
+        super(employeeContext, uiContext);
     }
 }

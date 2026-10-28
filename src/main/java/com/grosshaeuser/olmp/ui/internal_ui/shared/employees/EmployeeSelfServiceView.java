@@ -2,25 +2,24 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.EmployeeContext;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 
 
 public class EmployeeSelfServiceView extends VerticalLayout {
-    private final EmployeeService employeeService;
-    private final UiNotificationHandler uiNotificationHandler;
 
-    public EmployeeSelfServiceView(
-            EmployeeService employeeService,
-            PasswordProperties passwordProperties,
-            UiExceptionHandler uiExceptionHandler,
-            UiNotificationHandler uiNotificationHandler
-    ) {
-        this.employeeService = employeeService;
-        this.uiNotificationHandler = uiNotificationHandler;
+    private final UiContext uiContext;
+
+    private final EmployeeService employeeService;
+
+
+    public EmployeeSelfServiceView(EmployeeContext employeeContext, UiContext uiContext) {
+
+        this.uiContext = uiContext;
+
+        this.employeeService = employeeContext.getEmployeeService();
 
         setSizeFull();
         setPadding(true);
@@ -32,18 +31,18 @@ public class EmployeeSelfServiceView extends VerticalLayout {
                 .map(employee -> new EmployeeSelfServiceEditComponent(
                         employee,
                         this::updateCurrentEmployee,
-                        uiExceptionHandler::handleException,
-                        passwordProperties
+                        uiContext::handleException,
+                        employeeContext.getPasswordProperties()
                 ))
                 .ifPresentOrElse(
                         this::add,
-                        () -> uiExceptionHandler.showError("No employee account was found for the current user.")
+                        () -> uiContext.showError("No employee account was found for the current user.")
                 );
     }
 
     private EmployeeEditDTO updateCurrentEmployee(EmployeeEditDTO dto) {
         return employeeService.updateCurrentEmployee(dto).map(updatedDto -> {
-            uiNotificationHandler.showSuccessNotification("Your profile was updated.");
+            uiContext.showSuccessNotification("Your profile was updated.");
             return updatedDto;
         }).orElseThrow(() -> new IllegalStateException("Could not update current employee."));
     }
