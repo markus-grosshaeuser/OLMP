@@ -1,7 +1,8 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberAccountEditDTO;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.MemberContext;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.members.MemberEditComponent.AccountDataChangedCallback;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -18,6 +19,9 @@ import java.util.Optional;
 
 class MemberEditComponentAccountForm extends Tab {
 
+    private final MemberContext memberContext;
+    private final AccountDataChangedCallback accountDataChangedCallback;
+
     private final TextField accountIdField = new TextField("Account ID");
     private final TextField emailField = new TextField("Email");
     private final PasswordField newPasswordField = new PasswordField("New Password");
@@ -31,12 +35,10 @@ class MemberEditComponentAccountForm extends Tab {
     private final DateTimePicker accountLastAccessedAtField = new DateTimePicker("Account Last Accessed At");
 
     private final BeanValidationBinder<MemberAccountEditDTO> binder = new BeanValidationBinder<>(MemberAccountEditDTO.class);
-    private final PasswordProperties passwordProperties;
-    private final MemberEditComponent.AccountDataChangedCallback accountDataChangedCallback;
     private MemberAccountEditDTO snapshot;
 
-    MemberEditComponentAccountForm(MemberAccountEditDTO dto, PasswordProperties passwordProperties, MemberEditComponent.AccountDataChangedCallback accountDataChangedCallback) {
-        this.passwordProperties = passwordProperties;
+    MemberEditComponentAccountForm(MemberContext memberContext, MemberAccountEditDTO dto, AccountDataChangedCallback accountDataChangedCallback) {
+        this.memberContext = memberContext;
         this.accountDataChangedCallback = accountDataChangedCallback;
         configureFields();
         configureBinder();
@@ -51,7 +53,7 @@ class MemberEditComponentAccountForm extends Tab {
     }
 
     private void configureFields() {
-        newPasswordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
+        newPasswordField.setTooltipText(memberContext.getPasswordRequirementDescription());
         newPasswordField.setRevealButtonVisible(true);
         newPasswordField.setWidthFull();
         newPasswordField.setRequiredIndicatorVisible(true);
@@ -62,8 +64,8 @@ class MemberEditComponentAccountForm extends Tab {
         binder.forField(emailField).bind(MemberAccountEditDTO::getEmail, MemberAccountEditDTO::setEmail);
         binder.forField(newPasswordField)
                 .withValidator(
-                        value -> value == null || value.isBlank() || value.matches(passwordProperties.getRegExPattern()),
-                        passwordProperties.getPasswordRequirementDescription()
+                        value -> value == null || value.isBlank() || value.matches(memberContext.getRegExPattern()),
+                        memberContext.getPasswordRequirementDescription()
                 )
                 .bind(MemberAccountEditDTO::getNewPassword, MemberAccountEditDTO::setNewPassword);
         binder.forField(verifiedField).bind(MemberAccountEditDTO::isVerified, MemberAccountEditDTO::setVerified);

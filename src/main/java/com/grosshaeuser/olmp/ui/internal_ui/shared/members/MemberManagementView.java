@@ -5,13 +5,7 @@ import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
 import com.grosshaeuser.olmp.members.dto.MemberDTO;
 import com.grosshaeuser.olmp.members.service.MemberService;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
-import com.grosshaeuser.olmp.memberships.entity.Membership;
-import com.grosshaeuser.olmp.memberships.service.MembershipService;
-import com.grosshaeuser.olmp.memberships.service.MembershipCardPrintService;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.ConfirmDelete;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.*;
 import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -30,34 +24,22 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import org.springframework.data.domain.Pageable;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MemberManagementView extends VerticalLayout implements Printing, ConfirmDelete {
+    private final MemberContext memberContext;
+    private final UiContext uiContext;
+    
     private final MemberService memberService;
-    private final MembershipService membershipService;
-    private final MembershipCardPrintService printService;
-    private final PasswordProperties passwordProperties;
-    private final UiExceptionHandler uiExceptionHandler;
-    private final UiNotificationHandler uiNotificationHandler;
+
     private final TextField searchField = new TextField("Search Members");
     private final Grid<MemberDTO> memberGrid = new Grid<>(MemberDTO.class, false);
 
-    public MemberManagementView(
-            MemberService memberService,
-            MembershipService membershipService,
-            MembershipCardPrintService printService,
-            PasswordProperties passwordProperties,
-            UiExceptionHandler uiExceptionHandler,
-            UiNotificationHandler uiNotificationHandler
-    ) {
-        this.memberService = memberService;
-        this.membershipService = membershipService;
-        this.printService = printService;
-        this.passwordProperties = passwordProperties;
-        this.uiExceptionHandler = uiExceptionHandler;
-        this.uiNotificationHandler = uiNotificationHandler;
+    public MemberManagementView(MemberContext memberContext, UiContext uiContext) {
+        this.memberContext = memberContext;
+        this.uiContext = uiContext;
+        
+        this.memberService = memberContext.getMemberService();
 
         ComponentUtil.addListener(UI.getCurrent(), PrintMembershipCardRequestEvent.class, this::onPrintMembershipCardRequest);
 
@@ -77,7 +59,7 @@ public class MemberManagementView extends VerticalLayout implements Printing, Co
     }
 
     private void onPrintMembershipCardRequest(PrintMembershipCardRequestEvent event) {
-        String document = printService.createPrintDocument(event.getMember(), event.getMembership());
+        String document = memberContext.createPrintDocument(event.getMember(), event.getMembership());
         UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
     }
 
@@ -162,7 +144,7 @@ public class MemberManagementView extends VerticalLayout implements Printing, Co
         try {
             return memberService.getMembers(searchField.getValue().strip(), pageable).getContent();
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
             return List.of();
         }
     }
@@ -171,7 +153,7 @@ public class MemberManagementView extends VerticalLayout implements Printing, Co
         try {
             return memberService.countMembers(searchField.getValue().strip());
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
             return 0;
         }
     }
@@ -180,18 +162,16 @@ public class MemberManagementView extends VerticalLayout implements Printing, Co
         try {
             return memberService.getDetailedMember(member.id())
                     .<Component>map(dto -> new MemberEditComponent(
+                            memberContext,
+                            uiContext,
                             dto,
-                            Arrays.stream(Membership.MembershipType.values()).map(Membership.MembershipType::name).collect(Collectors.toSet()),
-                            Arrays.stream(Membership.MembershipStatus.values()).map(Membership.MembershipStatus::name).collect(Collectors.toSet()),
                             this::updateMember,
-                            uiExceptionHandler::handleException,
-                            () -> memberGrid.setDetailsVisible(member, false),
-                            membershipService.getMembershipPeriodsInMonths(),
-                            passwordProperties)
+                            () -> memberGrid.setDetailsVisible(member, false)
+                            )
                     )
                     .orElseGet(() -> unavailableDetails("This member does not exist."));
         } catch (RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
             return unavailableDetails("Member details could not be loaded.");
         }
     }
@@ -203,13 +183,12 @@ public class MemberManagementView extends VerticalLayout implements Printing, Co
     private void openCreateDialog() {
         try {
             new MemberCreateDialog(
-                    this::createMember,
-                    uiExceptionHandler::handleException,
-                    membershipService.getMembershipPeriodsInMonths(),
-                    passwordProperties
+                    memberContext,
+                    uiContext,
+                    this::createMember
             ).open();
         } catch(RuntimeException exception) {
-            uiExceptionHandler.handleException(exception);
+            uiContext.handleException(exception);
         }
     }
 
@@ -223,9 +202,9 @@ public class MemberManagementView extends VerticalLayout implements Printing, Co
                 }
                 offerMembershipCardPrint(member.id());
             },
-                    () -> uiExceptionHandler.handleException(new RuntimeException("Member creation failed.")));
+                    () -> uiContext.handleException(new RuntimeException("Member creation failed.")));
         } catch (Exception exception) {
-            uiExceptionHandler.handleException(new RuntimeException("An unexpected error occurred while creating a new member account."));
+            uiContext.handleException(new RuntimeException("An unexpected error occurred while creating a new member account."));
         }
     }
 
@@ -233,13 +212,13 @@ public class MemberManagementView extends VerticalLayout implements Printing, Co
         memberService.getDetailedMember(id)
                 .ifPresent(member -> {
                     MembershipEditDTO newMembership = member.getMemberships().getFirst();
-                    new MembershipCardPrintDialog(printService, member, newMembership).open();
+                    new MembershipCardPrintDialog(memberContext.getPrintService(), member, newMembership).open();
                 });
     }
 
     private MemberEditDTO updateMember(MemberEditDTO dto) {
         return memberService.updateMember(dto).map(result -> {
-            uiNotificationHandler.showSuccessNotification("Member " +
+            uiContext.showSuccessNotification("Member " +
                     result.getFirstName() + " " + result.getLastName() +
                     " was updated successfully.");
             memberGrid.getDataProvider().refreshAll();

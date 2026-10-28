@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberContactInformationEditDTO;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.members.MemberEditComponent.WithContactInformationCallback;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.textfield.TextField;
@@ -21,9 +22,9 @@ class MemberEditComponentContactInformationForm extends Tab {
     private final BeanValidationBinder<MemberContactInformationEditDTO> binder = new BeanValidationBinder<>(MemberContactInformationEditDTO.class);
 
     private MemberContactInformationEditDTO snapshot;
-    private final MemberEditComponent.WithContactInformationCallback callback;
+    private final WithContactInformationCallback callback;
 
-    MemberEditComponentContactInformationForm(MemberContactInformationEditDTO dto, MemberEditComponent.WithContactInformationCallback callback) {
+    MemberEditComponentContactInformationForm(MemberContactInformationEditDTO dto, WithContactInformationCallback callback) {
         this.callback = callback;
 
         configureBinder();

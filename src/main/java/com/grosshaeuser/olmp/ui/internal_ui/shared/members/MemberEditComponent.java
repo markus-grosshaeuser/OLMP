@@ -1,9 +1,10 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.MemberContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -11,10 +12,12 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.TabSheet;
 
-import java.util.HashMap;
-import java.util.Set;
-
 public class MemberEditComponent extends Composite<VerticalLayout> implements Structurable, Delegatable {
+
+    @FunctionalInterface
+    public interface CloseCallback {
+        void close();
+    }
 
     @FunctionalInterface
     interface WithContactInformationCallback {
@@ -36,14 +39,16 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         void profileDataChanged(boolean value);
     }
 
-    private final UpdateCallback<MemberEditDTO> updateCallback;
-    private final ErrorCallback errorCallback;
-    private final Runnable closeCallback;
+    private final MemberContext memberContext;
+    private final UiContext uiContext;
 
-    private final MemberEditComponentProfileForm memberProfileEditForm;
-    private final MemberEditComponentAccountForm memberAccountEditForm;
-    private final MemberEditComponentContactInformationForm memberContactInformationEditForm;
-    private final MemberEditComponentMembershipForm membershipDetailsEditForm;
+    private final UpdateCallback<MemberEditDTO> updateCallback;
+    private final CloseCallback closeCallback;
+
+    private MemberEditComponentProfileForm memberProfileEditForm;
+    private MemberEditComponentAccountForm memberAccountEditForm;
+    private MemberEditComponentContactInformationForm memberContactInformationEditForm;
+    private MemberEditComponentMembershipForm membershipDetailsEditForm;
 
     private final Button saveButton = new Button("Save");
     private final Button closeButton = new Button("Close");
@@ -55,55 +60,20 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
 
 
     public MemberEditComponent(
+            MemberContext memberContext,
+            UiContext uiContext,
             MemberEditDTO memberEditDTO,
-            Set<String> membershipTypes,
-            Set<String> membershipStatuses,
             UpdateCallback<MemberEditDTO> updateCallback,
-            ErrorCallback errorCallback,
-            Runnable closeCallback,
-            HashMap<String, Integer> membershipPeriodsInMonths,
-            PasswordProperties passwordProperties
+            CloseCallback closeCallback
     ) {
+        this.memberContext = memberContext;
+        this.uiContext = uiContext;
+
         this.updateCallback = updateCallback;
-        this.errorCallback = errorCallback;
         this.closeCallback = closeCallback;
 
         configureActions();
-
-        memberProfileEditForm = new MemberEditComponentProfileForm(
-                memberEditDTO,
-                value -> {
-                    profileDataChanged = value;
-                    handleDataChange();
-                }
-        );
-        memberAccountEditForm = new MemberEditComponentAccountForm(
-                memberEditDTO.getAccount(),
-                passwordProperties,
-                value -> {
-                    accountDataChanged = value;
-                    handleDataChange();
-                }
-        );
-        memberContactInformationEditForm = new MemberEditComponentContactInformationForm(
-                memberEditDTO.getContact(), value -> {
-                    contactInformationDataChanged = value;
-                    memberEditDTO.setWithContactInformation(value);
-                    memberProfileEditForm.loadMember(memberEditDTO);
-                    handleDataChange();
-                });
-        membershipDetailsEditForm = new MemberEditComponentMembershipForm(
-                memberEditDTO.getMemberships(),
-                membershipTypes,
-                membershipStatuses,
-                membershipPeriodsInMonths,
-                value -> {
-                    membershipDataChanged = value;
-                    handleDataChange();
-                },
-                memberEditDTO
-        );
-
+        configureForms(memberEditDTO);
         configureRootLayout();
 
         getContent().add(
@@ -116,6 +86,46 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         contactInformationDataChanged = false;
         membershipDataChanged = false;
         handleDataChange();
+    }
+
+    private void configureActions() {
+        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        saveButton.setEnabled(false);
+        saveButton.addClickListener(_ -> save());
+
+        closeButton.addClickListener(_ -> closeCallback.close());
+    }
+
+    private void configureForms(MemberEditDTO memberEditDTO) {
+        memberProfileEditForm = new MemberEditComponentProfileForm(
+                memberEditDTO,
+                value -> {
+                    profileDataChanged = value;
+                    handleDataChange();
+                });
+        memberAccountEditForm = new MemberEditComponentAccountForm(
+                memberContext,
+                memberEditDTO.getAccount(),
+                value -> {
+                    accountDataChanged = value;
+                    handleDataChange();
+                });
+        memberContactInformationEditForm = new MemberEditComponentContactInformationForm(
+                memberEditDTO.getContact(),
+                value -> {
+                    contactInformationDataChanged = value;
+                    memberEditDTO.setWithContactInformation(value);
+                    memberProfileEditForm.loadMember(memberEditDTO);
+                    handleDataChange();
+                });
+        membershipDetailsEditForm = new MemberEditComponentMembershipForm(
+                memberContext,
+                memberEditDTO,
+                value -> {
+                    membershipDataChanged = value;
+                    handleDataChange();
+                }
+        );
     }
 
     private void configureRootLayout() {
@@ -141,16 +151,6 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
         return layout;
     }
 
-
-
-    private void configureActions() {
-        saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
-        saveButton.setEnabled(false);
-        saveButton.addClickListener(_ -> save());
-
-        closeButton.addClickListener(_ -> closeCallback.run());
-    }
-
     public void save() {
         var memberships = membershipDetailsEditForm.getFormDataObject();
         if (memberships.isEmpty()) {
@@ -171,7 +171,7 @@ public class MemberEditComponent extends Composite<VerticalLayout> implements St
                 profileDataChanged = false;
                 handleDataChange();
             } catch (RuntimeException e) {
-                errorCallback.handleException(e);
+                uiContext.handleException(e);
             } finally {
                 handleDataChange();
             }

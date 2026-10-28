@@ -1,7 +1,11 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.MemberContext;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.members.MemberEditComponent.WithMembershipDetailsCallback;
 import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -16,35 +20,21 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
     private final VerticalLayout membershipRows = new VerticalLayout();
     private final List<MembershipRow> memberships = new ArrayList<>();
-    private final Set<String> membershipTypes;
-    private final Set<String> membershipStatuses;
     private final HashMap<String, Integer> membershipPeriodsInMonths;
-    private final MemberEditComponent.WithMembershipDetailsCallback callback;
+    private final WithMembershipDetailsCallback callback;
     private final MemberEditDTO memberDTO;
     private List<MembershipEditDTO> snapshot = List.of();
 
-    MemberEditComponentMembershipForm(
-            List<MembershipEditDTO> dtos,
-            Set<String> membershipTypes,
-            Set<String> membershipStatuses,
-            HashMap<String, Integer> membershipPeriodsInMonths,
-            MemberEditComponent.WithMembershipDetailsCallback callback,
-            MemberEditDTO memberDTO
-    ) {
-        this.membershipTypes = membershipTypes;
-        this.membershipStatuses = membershipStatuses;
-        this.membershipPeriodsInMonths = membershipPeriodsInMonths;
+    MemberEditComponentMembershipForm(MemberContext memberContext, MemberEditDTO memberDTO, WithMembershipDetailsCallback callback) {
         this.callback = callback;
         this.memberDTO = memberDTO;
+        this.membershipPeriodsInMonths = memberContext.getMembershipService().getMembershipPeriodsInMonths();
 
         Button addMembership = new Button("Add membership", VaadinIcon.PLUS.create(), _ -> {
             addNewMembership(MembershipEditDTO.builder()
@@ -62,7 +52,7 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
         scroller.setContent(membershipRows);
 
         getContent().add(addMembership, scroller);
-        loadMembershipDetails(dtos);
+        loadMembershipDetails(memberDTO.getMemberships());
     }
 
     void loadMembershipDetails(List<MembershipEditDTO> dtos) {
@@ -118,10 +108,10 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
             number.setPlaceholder("Generated on save");
             Select<String> status = new Select<>();
             membershipType.setLabel("Type");
-            membershipType.setItems(membershipTypes);
+            membershipType.setItems(Arrays.stream(MembershipType.values()).map(MembershipType::name).collect(Collectors.toSet()));
             membershipType.setEmptySelectionAllowed(false);
             status.setLabel("Status");
-            status.setItems(membershipStatuses);
+            status.setItems(Arrays.stream(MembershipStatus.values()).map(MembershipStatus::name).collect(Collectors.toSet()));
             status.setEmptySelectionAllowed(false);
             DatePicker renewalDate = new DatePicker("Renewal date");
             DatePicker cancellationDate = new DatePicker("Cancellation date");

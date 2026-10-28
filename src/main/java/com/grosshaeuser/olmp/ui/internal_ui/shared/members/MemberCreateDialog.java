@@ -1,10 +1,12 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
-import com.grosshaeuser.olmp.memberships.entity.Membership;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.MemberContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -30,9 +32,10 @@ import java.util.stream.Collectors;
 
 public class MemberCreateDialog extends Dialog implements Structurable, Delegatable {
 
+    private final MemberContext memberContext;
+    private final UiContext uiContext;
+
     private final CreateCallback<MemberRegistrationDTO> createCallback;
-    private final ErrorCallback errorCallback;
-    private final PasswordProperties passwordProperties;
 
     private final BeanValidationBinder<MemberRegistrationDTO> binder = new BeanValidationBinder<>(MemberRegistrationDTO.class);
 
@@ -50,18 +53,13 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
     private final MemberContactDetailsForm contactDetailsForm;
     private final MembershipDetailsForm membershipDetailsForm;
 
-    public MemberCreateDialog(
-            CreateCallback<MemberRegistrationDTO> createCallback,
-            ErrorCallback errorCallback,
-            HashMap<String, Integer> membershipPeriodsInMonths,
-            PasswordProperties passwordProperties
-    ){
+    public MemberCreateDialog(MemberContext memberContext, UiContext uiContext, CreateCallback<MemberRegistrationDTO> createCallback){
+        this.memberContext = memberContext;
+        this.uiContext = uiContext;
         this.createCallback = createCallback;
-        this.errorCallback = errorCallback;
-        this.passwordProperties = passwordProperties;
 
         this.contactDetailsForm = new MemberContactDetailsForm(binder);
-        this.membershipDetailsForm = new MembershipDetailsForm(binder, membershipPeriodsInMonths);
+        this.membershipDetailsForm = new MembershipDetailsForm(binder, memberContext.getMembershipService().getMembershipPeriodsInMonths());
 
         configureFields();
         configureActions();
@@ -118,7 +116,7 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
     }
 
     private void configureFields() {
-        passwordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
+        passwordField.setTooltipText(memberContext.getPasswordRequirementDescription());
         passwordField.setRevealButtonVisible(true);
         passwordField.setWidthFull();
         passwordField.setRequiredIndicatorVisible(true);
@@ -135,7 +133,7 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
                     createCallback.create(member);
                     close();
                 } catch (RuntimeException e) {
-                    errorCallback.handleException(e);
+                    uiContext.handleException(e);
                 }
             }
         });
@@ -154,8 +152,8 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
                 .bind(MemberRegistrationDTO::getEmail, MemberRegistrationDTO::setEmail);
         binder.forField(passwordField)
                 .asRequired("Password is required")
-                .withValidator(value -> value.matches(passwordProperties.getRegExPattern()),
-                        passwordProperties.getPasswordRequirementDescription())
+                .withValidator(value -> value.matches(memberContext.getRegExPattern()),
+                        memberContext.getPasswordRequirementDescription())
                 .bind(MemberRegistrationDTO::getPassword, MemberRegistrationDTO::setPassword);
         binder.forField(birthdateField)
                 .bind(MemberRegistrationDTO::getDateOfBirth, MemberRegistrationDTO::setDateOfBirth);
@@ -268,8 +266,8 @@ public class MemberCreateDialog extends Dialog implements Structurable, Delegata
             HorizontalLayout membershipRenewalAndCancellationDate = new HorizontalLayout(membershipRenewalDateField, membershipCancellationDateField);
             layout.add(withMembershipDetails, membershipTypeAndStatus, membershipStartAndEndDate, membershipRenewalAndCancellationDate);
 
-            membershipTypeField.setItems(Arrays.stream(Membership.MembershipType.values()).map(Enum::name).collect(Collectors.toList()));
-            membershipStatusField.setItems(Arrays.stream(Membership.MembershipStatus.values()).map(Enum::name).collect(Collectors.toList()));
+            membershipTypeField.setItems(Arrays.stream(MembershipType.values()).map(Enum::name).collect(Collectors.toList()));
+            membershipStatusField.setItems(Arrays.stream(MembershipStatus.values()).map(Enum::name).collect(Collectors.toList()));
 
             configureBinder();
             setChangeListener();

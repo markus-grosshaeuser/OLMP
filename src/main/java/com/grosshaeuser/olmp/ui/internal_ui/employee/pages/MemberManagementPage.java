@@ -1,14 +1,10 @@
 package com.grosshaeuser.olmp.ui.internal_ui.employee.pages;
 
-import com.grosshaeuser.olmp.members.service.MemberService;
-import com.grosshaeuser.olmp.memberships.service.MembershipCardPrintService;
-import com.grosshaeuser.olmp.memberships.service.MembershipService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.employee.EmployeeLayout;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.MemberContext;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.members.MemberManagementView;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiExceptionHandler;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.UiNotificationHandler;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import jakarta.annotation.security.RolesAllowed;
@@ -17,14 +13,7 @@ import jakarta.annotation.security.RolesAllowed;
 @PageTitle("Member Management")
 @RolesAllowed(SecurityConstants.Roles.STAFF)
 public class MemberManagementPage extends MemberManagementView {
-    public MemberManagementPage(
-            MemberService memberService,
-            MembershipService membershipService,
-            MembershipCardPrintService printService,
-            PasswordProperties passwordProperties,
-            UiExceptionHandler uiExceptionHandler,
-            UiNotificationHandler uiNotificationHandler
-    ) {
-        super(memberService, membershipService, printService, passwordProperties, uiExceptionHandler, uiNotificationHandler);
+    public MemberManagementPage(MemberContext memberContext, UiContext uiContext) {
+        super(memberContext, uiContext);
     }
 }

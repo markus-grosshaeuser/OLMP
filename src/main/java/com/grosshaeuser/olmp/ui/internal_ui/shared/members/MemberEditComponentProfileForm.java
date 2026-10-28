@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.members.MemberEditComponent.ProfileDataChangedCallback;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.datetimepicker.DateTimePicker;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -21,11 +22,11 @@ class MemberEditComponentProfileForm extends HorizontalLayout {
     private final DateTimePicker updatedAtField = new DateTimePicker("Updated At");
 
     private final BeanValidationBinder<MemberEditDTO> primaryBinder = new BeanValidationBinder<>(MemberEditDTO.class);
-    private final MemberEditComponent.ProfileDataChangedCallback changeCallback;
+    private final ProfileDataChangedCallback changeCallback;
     private MemberEditDTO snapshot;
 
 
-    MemberEditComponentProfileForm(MemberEditDTO dto, MemberEditComponent.ProfileDataChangedCallback changeCallback) {
+    MemberEditComponentProfileForm(MemberEditDTO dto, ProfileDataChangedCallback changeCallback) {
         this.changeCallback = changeCallback;
         configureBinder();
         loadMember(dto);
