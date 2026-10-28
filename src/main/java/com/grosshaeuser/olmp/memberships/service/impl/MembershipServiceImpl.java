@@ -1,5 +1,7 @@
 package com.grosshaeuser.olmp.memberships.service.impl;
 
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
@@ -63,13 +65,13 @@ public class MembershipServiceImpl implements MembershipService {
     @Transactional
     public Optional<Membership> updateMembership(MembershipEditDTO dto) {
         checkPermission(SecurityConstants.Privileges.UPDATE_MEMBERSHIP, "You have no permission to update memberships.");
-        if (dto.getMembershipStatus().equals(Membership.MembershipStatus.CANCELLED.name())) {
+        if (dto.getMembershipStatus().equals(MembershipStatus.CANCELLED.name())) {
             checkPermission(SecurityConstants.Privileges.CANCEL_MEMBERSHIP, "You have no permission to cancel memberships.");
         }
         return membershipRepository.findById(dto.getId())
                 .map(membership -> {
-                    membership.setType(Membership.MembershipType.valueOf(dto.getMembershipType()));
-                    membership.setStatus(Membership.MembershipStatus.valueOf(dto.getMembershipStatus()));
+                    membership.setType(MembershipType.valueOf(dto.getMembershipType()));
+                    membership.setStatus(MembershipStatus.valueOf(dto.getMembershipStatus()));
                     membership.setExpirationDate(dto.getExpirationDate());
                     membership.setRenewalDate(dto.getRenewalDate());
                     membership.setCancellationDate(dto.getCancellationDate());

@@ -3,6 +3,8 @@ package com.grosshaeuser.olmp.membership.service;
 import com.grosshaeuser.olmp.TestcontainersConfiguration;
 import com.grosshaeuser.olmp.members.entity.Member;
 import com.grosshaeuser.olmp.members.repository.MemberRepository;
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
@@ -68,8 +70,8 @@ class MembershipServiceIntegrationTest {
         assertThat(createdMembership.getId()).isNotNull();
         assertThat(createdMembership.getMembershipNumber()).isNotBlank();
         assertThat(createdMembership.getMember().getId()).isEqualTo(member.getId());
-        assertThat(createdMembership.getType()).isEqualTo(Membership.MembershipType.PREMIUM);
-        assertThat(createdMembership.getStatus()).isEqualTo(Membership.MembershipStatus.ACTIVE);
+        assertThat(createdMembership.getType()).isEqualTo(MembershipType.PREMIUM);
+        assertThat(createdMembership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
         assertThat(createdMembership.getStartDate()).isEqualTo(LocalDate.of(2026, 10, 1));
         assertThat(createdMembership.getExpirationDate()).isEqualTo(LocalDate.of(2027, 10, 1));
         assertThat(createdMembership.getRenewalDate()).isEqualTo(LocalDate.of(2027, 9, 1));
@@ -79,8 +81,8 @@ class MembershipServiceIntegrationTest {
 
         assertThat(persistedMembership).isPresent();
         assertThat(persistedMembership.get().getMembershipNumber()).isEqualTo(createdMembership.getMembershipNumber());
-        assertThat(persistedMembership.get().getType()).isEqualTo(Membership.MembershipType.PREMIUM);
-        assertThat(persistedMembership.get().getStatus()).isEqualTo(Membership.MembershipStatus.ACTIVE);
+        assertThat(persistedMembership.get().getType()).isEqualTo(MembershipType.PREMIUM);
+        assertThat(persistedMembership.get().getStatus()).isEqualTo(MembershipStatus.ACTIVE);
     }
 
     @Test
@@ -91,8 +93,8 @@ class MembershipServiceIntegrationTest {
         Membership membership = membershipRepository.save(Membership.builder()
                 .member(member)
                 .membershipNumber("MEMBERSHIP-FIND-001")
-                .type(Membership.MembershipType.STANDARD)
-                .status(Membership.MembershipStatus.ACTIVE)
+                .type(MembershipType.STANDARD)
+                .status(MembershipStatus.ACTIVE)
                 .startDate(LocalDate.of(2026, 1, 1))
                 .expirationDate(LocalDate.of(2027, 1, 1))
                 .build());
@@ -103,8 +105,8 @@ class MembershipServiceIntegrationTest {
         assertThat(result.get().getId()).isEqualTo(membership.getId());
         assertThat(result.get().getMember().getId()).isEqualTo(member.getId());
         assertThat(result.get().getMembershipNumber()).isEqualTo("MEMBERSHIP-FIND-001");
-        assertThat(result.get().getType()).isEqualTo(Membership.MembershipType.STANDARD);
-        assertThat(result.get().getStatus()).isEqualTo(Membership.MembershipStatus.ACTIVE);
+        assertThat(result.get().getType()).isEqualTo(MembershipType.STANDARD);
+        assertThat(result.get().getStatus()).isEqualTo(MembershipStatus.ACTIVE);
     }
 
     @Test
@@ -128,8 +130,8 @@ class MembershipServiceIntegrationTest {
         Membership membership = membershipRepository.save(Membership.builder()
                 .member(member)
                 .membershipNumber("MEMBERSHIP-UPDATE-001")
-                .type(Membership.MembershipType.STANDARD)
-                .status(Membership.MembershipStatus.ACTIVE)
+                .type(MembershipType.STANDARD)
+                .status(MembershipStatus.ACTIVE)
                 .startDate(LocalDate.of(2026, 1, 1))
                 .expirationDate(LocalDate.of(2027, 1, 1))
                 .renewalDate(null)
@@ -152,8 +154,8 @@ class MembershipServiceIntegrationTest {
         Membership updatedMembership = result.get();
         assertThat(updatedMembership.getId()).isEqualTo(membership.getId());
         assertThat(updatedMembership.getMembershipNumber()).isEqualTo("MEMBERSHIP-UPDATE-001");
-        assertThat(updatedMembership.getType()).isEqualTo(Membership.MembershipType.STUDENT);
-        assertThat(updatedMembership.getStatus()).isEqualTo(Membership.MembershipStatus.SUSPENDED);
+        assertThat(updatedMembership.getType()).isEqualTo(MembershipType.STUDENT);
+        assertThat(updatedMembership.getStatus()).isEqualTo(MembershipStatus.SUSPENDED);
         assertThat(updatedMembership.getExpirationDate()).isEqualTo(LocalDate.of(2027, 4, 1));
         assertThat(updatedMembership.getRenewalDate()).isEqualTo(LocalDate.of(2027, 3, 1));
         assertThat(updatedMembership.getCancellationDate()).isEqualTo(LocalDate.of(2027, 2, 1));
@@ -161,8 +163,8 @@ class MembershipServiceIntegrationTest {
         Optional<Membership> persistedMembership = membershipRepository.findById(membership.getId());
 
         assertThat(persistedMembership).isPresent();
-        assertThat(persistedMembership.get().getType()).isEqualTo(Membership.MembershipType.STUDENT);
-        assertThat(persistedMembership.get().getStatus()).isEqualTo(Membership.MembershipStatus.SUSPENDED);
+        assertThat(persistedMembership.get().getType()).isEqualTo(MembershipType.STUDENT);
+        assertThat(persistedMembership.get().getStatus()).isEqualTo(MembershipStatus.SUSPENDED);
         assertThat(persistedMembership.get().getExpirationDate()).isEqualTo(LocalDate.of(2027, 4, 1));
         assertThat(persistedMembership.get().getRenewalDate()).isEqualTo(LocalDate.of(2027, 3, 1));
         assertThat(persistedMembership.get().getCancellationDate()).isEqualTo(LocalDate.of(2027, 2, 1));
@@ -179,8 +181,8 @@ class MembershipServiceIntegrationTest {
         Membership membership = membershipRepository.save(Membership.builder()
                 .member(member)
                 .membershipNumber("MEMBERSHIP-BLANK-DATES-001")
-                .type(Membership.MembershipType.PREMIUM)
-                .status(Membership.MembershipStatus.ACTIVE)
+                .type(MembershipType.PREMIUM)
+                .status(MembershipStatus.ACTIVE)
                 .startDate(LocalDate.of(2026, 1, 1))
                 .expirationDate(LocalDate.of(2027, 1, 1))
                 .renewalDate(LocalDate.of(2026, 12, 1))
@@ -199,8 +201,8 @@ class MembershipServiceIntegrationTest {
         Optional<Membership> result = membershipService.updateMembership(dto);
 
         assertThat(result).isPresent();
-        assertThat(result.get().getType()).isEqualTo(Membership.MembershipType.SENIOR);
-        assertThat(result.get().getStatus()).isEqualTo(Membership.MembershipStatus.ACTIVE);
+        assertThat(result.get().getType()).isEqualTo(MembershipType.SENIOR);
+        assertThat(result.get().getStatus()).isEqualTo(MembershipStatus.ACTIVE);
         assertThat(result.get().getExpirationDate()).isEqualTo(LocalDate.of(2027, 6, 1));
         assertThat(result.get().getRenewalDate()).isNull();
         assertThat(result.get().getCancellationDate()).isNull();

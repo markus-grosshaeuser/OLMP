@@ -2,6 +2,8 @@ package com.grosshaeuser.olmp.memberships.mapper;
 
 import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
 import com.grosshaeuser.olmp.members.entity.Member;
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
@@ -26,8 +28,8 @@ public class MembershipMapper extends AbstractMapper {
         return Membership.builder()
                 .member(dto.getMember())
                 .membershipNumber(membershipNumber)
-                .type(Membership.MembershipType.valueOf(dto.getMembershipType()))
-                .status(Membership.MembershipStatus.valueOf(dto.getMembershipStatus()))
+                .type(MembershipType.valueOf(dto.getMembershipType()))
+                .status(MembershipStatus.valueOf(dto.getMembershipStatus()))
                 .startDate(dto.getMembershipStartDate())
                 .expirationDate(dto.getMembershipExpirationDate())
                 .renewalDate(dto.getMembershipRenewalDate())

@@ -1,6 +1,8 @@
 package com.grosshaeuser.olmp.memberships.entity;
 
 import com.grosshaeuser.olmp.members.entity.Member;
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -84,17 +86,4 @@ public class Membership {
         return Objects.hash(membershipNumber);
     }
 
-    public enum MembershipType {
-        STANDARD,
-        STUDENT,
-        SENIOR,
-        PREMIUM
-    }
-
-    public enum MembershipStatus {
-        ACTIVE,
-        EXPIRED,
-        SUSPENDED,
-        CANCELLED
-    }
 }

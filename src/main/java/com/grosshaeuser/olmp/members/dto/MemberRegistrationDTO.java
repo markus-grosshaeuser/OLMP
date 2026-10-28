@@ -1,6 +1,7 @@
 package com.grosshaeuser.olmp.members.dto;
 
-import com.grosshaeuser.olmp.memberships.entity.Membership;
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,8 +28,8 @@ public class MemberRegistrationDTO {
     private String country;
 
     private boolean withMembership = true;
-    private String membershipType = Membership.MembershipType.STANDARD.name();
-    private String membershipStatus = Membership.MembershipStatus.ACTIVE.name();
+    private String membershipType = MembershipType.STANDARD.name();
+    private String membershipStatus = MembershipStatus.ACTIVE.name();
     private LocalDate membershipStartDate = LocalDate.now();
     private LocalDate membershipEndDate = LocalDate.now().plusYears(1);
     private LocalDate membershipRenewalDate;

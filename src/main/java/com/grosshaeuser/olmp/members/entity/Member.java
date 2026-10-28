@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.members.entity;
 
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
 import jakarta.persistence.*;
 import lombok.*;
@@ -65,7 +66,7 @@ public class Member {
 
     public boolean hasActiveMembership() {
         return memberships.stream()
-                .anyMatch(membership -> membership.getStatus() == Membership.MembershipStatus.ACTIVE);
+                .anyMatch(membership -> membership.getStatus() == MembershipStatus.ACTIVE);
     }
 
     @PrePersist

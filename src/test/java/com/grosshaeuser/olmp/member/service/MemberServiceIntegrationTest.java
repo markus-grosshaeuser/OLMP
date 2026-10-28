@@ -9,6 +9,8 @@ import com.grosshaeuser.olmp.members.repository.MemberAccountRepository;
 import com.grosshaeuser.olmp.members.repository.MemberContactInformationRepository;
 import com.grosshaeuser.olmp.members.repository.MemberRepository;
 import com.grosshaeuser.olmp.members.service.MemberService;
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
 import com.grosshaeuser.olmp.memberships.repository.MembershipRepository;
@@ -282,8 +284,8 @@ class MemberServiceIntegrationTest {
         Optional<Membership> membershipResult = membershipRepository.findActiveByMemberId(member.id());
         assertThat(membershipResult).isPresent();
         Membership membership = membershipResult.get();
-        assertThat(membership.getType()).isEqualTo(Membership.MembershipType.valueOf("STANDARD"));
-        assertThat(membership.getStatus()).isEqualTo(Membership.MembershipStatus.valueOf("ACTIVE"));
+        assertThat(membership.getType()).isEqualTo(MembershipType.valueOf("STANDARD"));
+        assertThat(membership.getStatus()).isEqualTo(MembershipStatus.valueOf("ACTIVE"));
         assertThat(membership.getStartDate()).isEqualTo(LocalDate.now());
         assertThat(membership.getExpirationDate()).isEqualTo(LocalDate.now().plusYears(1));
 
@@ -328,8 +330,8 @@ class MemberServiceIntegrationTest {
         Optional<Membership> membershipResult = membershipRepository.findActiveByMemberId(member.id());
         assertThat(membershipResult).isPresent();
         Membership membership = membershipResult.get();
-        assertThat(membership.getType()).isEqualTo(Membership.MembershipType.valueOf("STANDARD"));
-        assertThat(membership.getStatus()).isEqualTo(Membership.MembershipStatus.valueOf("ACTIVE"));
+        assertThat(membership.getType()).isEqualTo(MembershipType.valueOf("STANDARD"));
+        assertThat(membership.getStatus()).isEqualTo(MembershipStatus.valueOf("ACTIVE"));
         assertThat(membership.getStartDate()).isEqualTo(LocalDate.now());
         assertThat(membership.getExpirationDate()).isEqualTo(LocalDate.now().plusYears(1));
     }
@@ -468,8 +470,8 @@ class MemberServiceIntegrationTest {
         givenUserHasPermission(READ_MEMBER_ACCOUNT);
         givenUserHasPermission(READ_MEMBERSHIP);
         Member member = memberRepository.save(Member.builder().firstName("Ada").lastName("Lovelace").build());
-        Membership older = saveMembership(member, "MBR-OLD", LocalDate.of(2024, 1, 1), Membership.MembershipStatus.EXPIRED);
-        Membership newer = saveMembership(member, "MBR-NEW", LocalDate.of(2025, 1, 1), Membership.MembershipStatus.CANCELLED);
+        Membership older = saveMembership(member, "MBR-OLD", LocalDate.of(2024, 1, 1), MembershipStatus.EXPIRED);
+        Membership newer = saveMembership(member, "MBR-NEW", LocalDate.of(2025, 1, 1), MembershipStatus.CANCELLED);
 
         assertThat(serviceUnderTest.getDetailedMember(member.getId()).orElseThrow().getMemberships())
                 .extracting(MembershipEditDTO::getId).containsExactly(newer.getId(), older.getId());
@@ -483,7 +485,7 @@ class MemberServiceIntegrationTest {
         givenUserHasPermission(UPDATE_MEMBERSHIP);
         givenUserHasPermission(CREATE_MEMBERSHIP);
         Member member = memberRepository.save(Member.builder().firstName("Ada").lastName("Lovelace").build());
-        Membership old = saveMembership(member, "MBR-OLD", LocalDate.of(2024, 1, 1), Membership.MembershipStatus.EXPIRED);
+        Membership old = saveMembership(member, "MBR-OLD", LocalDate.of(2024, 1, 1), MembershipStatus.EXPIRED);
         MemberEditDTO dto = serviceUnderTest.getDetailedMember(member.getId()).orElseThrow();
         dto.setAccount(null);
         dto.setWithMembershipDetails(true);
@@ -512,7 +514,7 @@ class MemberServiceIntegrationTest {
         givenUserHasPermission(UPDATE_MEMBER_ACCOUNT);
         givenUserHasPermission(UPDATE_MEMBERSHIP);
         Member member = memberRepository.save(Member.builder().firstName("Ada").lastName("Lovelace").build());
-        Membership old = saveMembership(member, "MBR-OLD", LocalDate.of(2024, 1, 1), Membership.MembershipStatus.EXPIRED);
+        Membership old = saveMembership(member, "MBR-OLD", LocalDate.of(2024, 1, 1), MembershipStatus.EXPIRED);
         MemberEditDTO dto = serviceUnderTest.getDetailedMember(member.getId()).orElseThrow();
         dto.setAccount(null);
         dto.setFirstName("Augusta");
@@ -526,13 +528,13 @@ class MemberServiceIntegrationTest {
         assertThatThrownBy(() -> serviceUnderTest.updateMember(dto))
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
         assertThat(memberRepository.findById(member.getId()).orElseThrow().getFirstName()).isEqualTo("Ada");
-        assertThat(membershipRepository.findById(old.getId()).orElseThrow().getType()).isEqualTo(Membership.MembershipType.STANDARD);
+        assertThat(membershipRepository.findById(old.getId()).orElseThrow().getType()).isEqualTo(MembershipType.STANDARD);
         assertThat(membershipRepository.count()).isEqualTo(1);
     }
 
-    private Membership saveMembership(Member member, String number, LocalDate start, Membership.MembershipStatus status) {
+    private Membership saveMembership(Member member, String number, LocalDate start, MembershipStatus status) {
         return membershipRepository.save(Membership.builder().member(member).membershipNumber(number)
-                .type(Membership.MembershipType.STANDARD).status(status).startDate(start)
+                .type(MembershipType.STANDARD).status(status).startDate(start)
                 .expirationDate(start.plusYears(1)).build());
     }
 

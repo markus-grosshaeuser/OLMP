@@ -6,6 +6,8 @@ import com.grosshaeuser.olmp.members.repository.MemberRepository;
 import com.grosshaeuser.olmp.members.service.MemberAccountService;
 import com.grosshaeuser.olmp.members.service.MemberContactInformationService;
 import com.grosshaeuser.olmp.members.service.impl.MemberServiceImpl;
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
@@ -46,8 +48,8 @@ class MemberMembershipEditTest {
     @Test
     void loadsHistoryEvenWhenThereIsNoActiveMembership() {
         when(authentication.hasAuthority(READ_MEMBER_ACCOUNT)).thenReturn(true);
-        var expired = membership(1L, Membership.MembershipStatus.EXPIRED);
-        var cancelled = membership(2L, Membership.MembershipStatus.CANCELLED);
+        var expired = membership(1L, MembershipStatus.EXPIRED);
+        var cancelled = membership(2L, MembershipStatus.CANCELLED);
         when(memberships.findAllByMemberId(member.getId())).thenReturn(List.of(expired, cancelled));
 
         assertThat(service.getDetailedMember(member.getId()).orElseThrow().getMemberships())
@@ -58,14 +60,14 @@ class MemberMembershipEditTest {
     @Test
     void updatesHistoricalRowCreatesNewRowAndLeavesUnchangedCancelledRowAlone() {
         givenUpdate();
-        var expired = membership(1L, Membership.MembershipStatus.EXPIRED);
-        var cancelled = membership(2L, Membership.MembershipStatus.CANCELLED);
+        var expired = membership(1L, MembershipStatus.EXPIRED);
+        var cancelled = membership(2L, MembershipStatus.CANCELLED);
         var updated = MembershipMapper.mapMembershipToEditDto(expired).toBuilder().membershipType("STUDENT").build();
         var added = MembershipEditDTO.builder().membershipType("PREMIUM").membershipStatus("ACTIVE")
                 .startDate(LocalDate.of(2026, 10, 1)).build();
         when(memberships.findAllByMemberId(member.getId())).thenReturn(List.of(expired, cancelled));
         when(memberships.updateMembership(updated)).thenReturn(Optional.of(expired));
-        when(memberships.createMembership(any())).thenReturn(Optional.of(membership(3L, Membership.MembershipStatus.ACTIVE)));
+        when(memberships.createMembership(any())).thenReturn(Optional.of(membership(3L, MembershipStatus.ACTIVE)));
 
         service.updateMember(edit(List.of(updated, MembershipMapper.mapMembershipToEditDto(cancelled), added))).orElseThrow();
 
@@ -82,7 +84,7 @@ class MemberMembershipEditTest {
     void rejectsForeignMembershipIdBeforeWritingAnyMemberships() {
         givenUpdate();
         when(memberships.findAllByMemberId(member.getId())).thenReturn(List.of());
-        var foreign = MembershipMapper.mapMembershipToEditDto(membership(99L, Membership.MembershipStatus.ACTIVE));
+        var foreign = MembershipMapper.mapMembershipToEditDto(membership(99L, MembershipStatus.ACTIVE));
         var added = MembershipEditDTO.builder().membershipType("STANDARD").membershipStatus("ACTIVE").build();
 
         assertThatThrownBy(() -> service.updateMember(edit(List.of(added, foreign))))
@@ -94,7 +96,7 @@ class MemberMembershipEditTest {
     @Test
     void rejectsDuplicateMembershipIds() {
         givenUpdate();
-        var existing = membership(1L, Membership.MembershipStatus.ACTIVE);
+        var existing = membership(1L, MembershipStatus.ACTIVE);
         when(memberships.findAllByMemberId(member.getId())).thenReturn(List.of(existing));
         var row = MembershipMapper.mapMembershipToEditDto(existing);
 
@@ -106,7 +108,7 @@ class MemberMembershipEditTest {
     @Test
     void preservesMembershipsWhenOnlyProfileWasChanged() {
         givenUpdate();
-        var existing = membership(1L, Membership.MembershipStatus.EXPIRED);
+        var existing = membership(1L, MembershipStatus.EXPIRED);
         when(memberships.findAllByMemberId(member.getId())).thenReturn(List.of(existing));
         var dto = edit(List.of());
         dto.setWithMembershipDetails(false);
@@ -127,9 +129,9 @@ class MemberMembershipEditTest {
                 .withMembershipDetails(true).memberships(rows).build();
     }
 
-    private Membership membership(Long id, Membership.MembershipStatus status) {
+    private Membership membership(Long id, MembershipStatus status) {
         return Membership.builder().id(id).member(member).membershipNumber("MBR-" + id)
-                .type(Membership.MembershipType.STANDARD).status(status)
+                .type(MembershipType.STANDARD).status(status)
                 .startDate(LocalDate.of(2025, 1, 1)).expirationDate(LocalDate.of(2026, 1, 1)).build();
     }
 }

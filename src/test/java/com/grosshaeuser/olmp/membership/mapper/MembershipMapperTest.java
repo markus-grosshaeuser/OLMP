@@ -2,6 +2,8 @@ package com.grosshaeuser.olmp.membership.mapper;
 
 import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
 import com.grosshaeuser.olmp.members.entity.Member;
+import com.grosshaeuser.olmp.memberships.MembershipStatus;
+import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
@@ -61,8 +63,8 @@ class MembershipMapperTest {
         assertThat(result.getId()).isNull();
         assertThat(result.getMember()).isSameAs(member);
         assertThat(result.getMembershipNumber()).isEqualTo("MEMBERSHIP-001");
-        assertThat(result.getType()).isEqualTo(Membership.MembershipType.STUDENT);
-        assertThat(result.getStatus()).isEqualTo(Membership.MembershipStatus.SUSPENDED);
+        assertThat(result.getType()).isEqualTo(MembershipType.STUDENT);
+        assertThat(result.getStatus()).isEqualTo(MembershipStatus.SUSPENDED);
         assertThat(result.getStartDate()).isEqualTo(LocalDate.of(2026, 1, 1));
         assertThat(result.getExpirationDate()).isEqualTo(LocalDate.of(2026, 7, 1));
         assertThat(result.getRenewalDate()).isEqualTo(LocalDate.of(2026, 6, 1));
@@ -77,8 +79,8 @@ class MembershipMapperTest {
                 .id(100L)
                 .member(member)
                 .membershipNumber("MEMBERSHIP-EDIT-001")
-                .type(Membership.MembershipType.SENIOR)
-                .status(Membership.MembershipStatus.CANCELLED)
+                .type(MembershipType.SENIOR)
+                .status(MembershipStatus.CANCELLED)
                 .startDate(LocalDate.of(2026, 2, 1))
                 .expirationDate(LocalDate.of(2027, 2, 1))
                 .renewalDate(LocalDate.of(2027, 1, 1))
@@ -106,8 +108,8 @@ class MembershipMapperTest {
                 .id(100L)
                 .member(member)
                 .membershipNumber("MEMBERSHIP-NULL-DATES-001")
-                .type(Membership.MembershipType.STANDARD)
-                .status(Membership.MembershipStatus.ACTIVE)
+                .type(MembershipType.STANDARD)
+                .status(MembershipStatus.ACTIVE)
                 .startDate(null)
                 .expirationDate(null)
                 .renewalDate(null)
@@ -148,8 +150,8 @@ class MembershipMapperTest {
                 .id(100L)
                 .member(null)
                 .membershipNumber("MEMBERSHIP-NO-MEMBER-001")
-                .type(Membership.MembershipType.STANDARD)
-                .status(Membership.MembershipStatus.ACTIVE)
+                .type(MembershipType.STANDARD)
+                .status(MembershipStatus.ACTIVE)
                 .startDate(LocalDate.of(2026, 1, 1))
                 .expirationDate(LocalDate.of(2027, 1, 1))
                 .build();
