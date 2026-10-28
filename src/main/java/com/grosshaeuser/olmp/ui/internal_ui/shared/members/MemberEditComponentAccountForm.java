@@ -1,7 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberAccountEditDTO;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.MemberContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.members.MemberEditComponent.AccountDataChangedCallback;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.datetimepicker.DateTimePicker;

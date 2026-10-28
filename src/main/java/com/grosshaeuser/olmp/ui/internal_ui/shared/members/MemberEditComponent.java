@@ -2,7 +2,6 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.members;
 
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.MemberContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.Composite;

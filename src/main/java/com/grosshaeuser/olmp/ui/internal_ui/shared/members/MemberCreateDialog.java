@@ -4,7 +4,6 @@ import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
 import com.grosshaeuser.olmp.memberships.MembershipStatus;
 import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.MemberContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.button.Button;

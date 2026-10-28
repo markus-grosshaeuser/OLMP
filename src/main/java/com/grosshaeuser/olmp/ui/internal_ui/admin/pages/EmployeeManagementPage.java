@@ -2,7 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.admin.pages;
 
 import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.grosshaeuser.olmp.ui.internal_ui.admin.AdminLayout;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.EmployeeContext;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.employees.EmployeeContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.employees.EmployeeManagementView;
 import com.vaadin.flow.router.PageTitle;

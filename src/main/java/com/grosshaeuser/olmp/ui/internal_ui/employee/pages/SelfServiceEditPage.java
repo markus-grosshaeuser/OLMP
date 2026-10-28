@@ -2,7 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.employee.pages;
 
 import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.grosshaeuser.olmp.ui.internal_ui.employee.EmployeeLayout;
-import com.grosshaeuser.olmp.ui.internal_ui.shared.EmployeeContext;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.employees.EmployeeContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.employees.EmployeeSelfServiceView;
 import com.vaadin.flow.router.PageTitle;
