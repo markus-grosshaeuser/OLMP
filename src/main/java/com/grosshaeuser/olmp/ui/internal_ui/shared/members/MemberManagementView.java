@@ -12,7 +12,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
-import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -26,22 +25,20 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
-public class MemberManagementView extends VerticalLayout implements Printing, ConfirmDelete {
+public class MemberManagementView extends VerticalLayout implements ConfirmDelete {
     private final MemberContext memberContext;
     private final UiContext uiContext;
     
     private final MemberService memberService;
 
     private final TextField searchField = new TextField("Search Members");
-    private final Grid<MemberDTO> memberGrid = new Grid<>(MemberDTO.class, false);
+    private final Grid<MemberDTO> memberGrid = GridSupport.getPreconfiguredManagementGrid(MemberDTO.class, "No members found");
 
     public MemberManagementView(MemberContext memberContext, UiContext uiContext) {
         this.memberContext = memberContext;
         this.uiContext = uiContext;
         
         this.memberService = memberContext.getMemberService();
-
-        ComponentUtil.addListener(UI.getCurrent(), PrintMembershipCardRequestEvent.class, this::onPrintMembershipCardRequest);
 
         configureSearch();
         configureGrid();
@@ -56,11 +53,6 @@ public class MemberManagementView extends VerticalLayout implements Printing, Co
         add(new H2("Member management"), toolbar, memberGrid);
         setSizeFull();
         setFlexGrow(1, memberGrid);
-    }
-
-    private void onPrintMembershipCardRequest(PrintMembershipCardRequestEvent event) {
-        String document = memberContext.createPrintDocument(event.getMember(), event.getMembership());
-        UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
     }
 
     private void configureSearch() {
@@ -108,36 +100,20 @@ public class MemberManagementView extends VerticalLayout implements Printing, Co
                 .setAutoWidth(true)
                 .setResizable(true);
 
-        memberGrid.addComponentColumn(member -> {
-            Button edit = new Button(
-                    VaadinIcon.EDIT.create(),
-                    _ -> memberGrid.setDetailsVisible(member, !memberGrid.isDetailsVisible(member))
-            );
-            edit.setAriaLabel("Edit "+ member.firstName() + " " + member.lastName());
-            edit.addThemeVariants(ButtonVariant.LUMO_ICON);
-            Button delete = new Button(
-                    VaadinIcon.TRASH.create(),
-                    _ -> confirmDelete(member)
-            );
-            delete.setAriaLabel("Delete "+ member.firstName() + " " + member.lastName());
-            delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
-
-            Span actionElements = new Span(edit, delete);
-            actionElements.setClassName("grid-action-elements");
-            return actionElements;
-        })
+        memberGrid.addComponentColumn(member -> GridSupport
+                .createGridActionElements(
+                        member.firstName() + " " + member.lastName(),
+                        memberGrid,
+                        member,
+                        _ -> confirmDelete(member)
+                ))
                 .setHeader("Actions")
                 .setAutoWidth(true)
                 .setFlexGrow(0);
 
-        memberGrid.setSelectionMode(Grid.SelectionMode.NONE);
-        memberGrid.setDetailsVisibleOnClick(false);
         memberGrid.setItemDetailsRenderer(new ComponentRenderer<>(this::createEditor));
-        memberGrid.addThemeVariants(GridVariant.ROW_STRIPES, GridVariant.WRAP_CELL_CONTENT);
-        memberGrid.setSizeFull();
         memberGrid.setItemsPageable(this::fetchMembers, _ -> countMembers()).setIdentifierProvider(MemberDTO::id);
         memberGrid.sort(List.of(new GridSortOrder<>(memberGrid.getColumnByKey("lastName"), SortDirection.ASCENDING)));
-        memberGrid.setEmptyStateText("No members found");
     }
 
     private List<MemberDTO> fetchMembers(Pageable pageable) {

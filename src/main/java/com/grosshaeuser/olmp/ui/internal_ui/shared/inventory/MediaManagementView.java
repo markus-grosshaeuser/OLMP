@@ -4,6 +4,8 @@ import com.grosshaeuser.olmp.inventory.dto.author.AuthorSummaryDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherSummaryDto;
 import com.grosshaeuser.olmp.inventory.service.*;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaInventoryItemDto;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.ConfirmDelete;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.GridSupport;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaEditDto;
@@ -16,7 +18,6 @@ import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
-import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -32,14 +33,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class MediaManagementView extends VerticalLayout {
+public class MediaManagementView extends VerticalLayout implements ConfirmDelete {
     private final InventoryContext inventoryContext;
     private final UiContext uiContext;
 
     private final TextField searchField = new TextField("Search media");
     private final ComboBox<AuthorSummaryDto> authorFilter = new ComboBox<>("Author");
     private final ComboBox<PublisherSummaryDto> publisherFilter = new ComboBox<>("Publisher");
-    private final Grid<MediaSummaryDto> mediaGrid = new Grid<>(MediaSummaryDto.class, false);
+    private final Grid<MediaSummaryDto> mediaGrid = GridSupport.getPreconfiguredManagementGrid(MediaSummaryDto.class, "No media found");
 
     public MediaManagementView(InventoryContext inventoryContext, UiContext uiContext) {
         this.inventoryContext = Objects.requireNonNull(inventoryContext, "inventoryContext");
@@ -128,29 +129,21 @@ public class MediaManagementView extends VerticalLayout {
                 .setSortProperty("publicationYear")
                 .setAutoWidth(true)
                 .setFlexGrow(0);
-        mediaGrid.addComponentColumn(media -> {
-            Button edit = new Button(VaadinIcon.EDIT.create(), _ -> mediaGrid.setDetailsVisible(media, !mediaGrid.isDetailsVisible(media)));
-            edit.setAriaLabel("Edit " + media.title());
-            edit.addThemeVariants(ButtonVariant.LUMO_ICON);
-            Button delete = new Button(VaadinIcon.TRASH.create(), _ -> confirmDelete(media));
-            delete.setAriaLabel("Delete " + media.title());
-            delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
-            Span actionElements = new Span(edit, delete);
-            actionElements.addClassName("grid-action-elements");
-            return actionElements;
-        })
+        mediaGrid.addComponentColumn(media -> GridSupport
+                        .createGridActionElements(
+                                media.title(),
+                                mediaGrid,
+                                media,
+                                _ -> confirmDelete(media)
+                        )
+                )
                 .setHeader("Actions")
                 .setAutoWidth(true)
                 .setFlexGrow(0);
 
-        mediaGrid.setSelectionMode(Grid.SelectionMode.NONE);
-        mediaGrid.setDetailsVisibleOnClick(false);
         mediaGrid.setItemDetailsRenderer(new ComponentRenderer<>(this::createEditor));
-        mediaGrid.addThemeVariants(GridVariant.ROW_STRIPES, GridVariant.WRAP_CELL_CONTENT);
-        mediaGrid.setSizeFull();
         mediaGrid.setItemsPageable(this::fetchMedia, _ -> countMedia()).setIdentifierProvider(MediaSummaryDto::id);
         mediaGrid.sort(List.of(new GridSortOrder<>(mediaGrid.getColumnByKey("title"), SortDirection.ASCENDING)));
-        mediaGrid.setEmptyStateText("No media found");
     }
 
     private List<MediaSummaryDto> fetchMedia(Pageable pageable) {
@@ -234,14 +227,13 @@ public class MediaManagementView extends VerticalLayout {
     }
 
     private void confirmDelete(MediaSummaryDto medium) {
-        ConfirmDialog dialog = new ConfirmDialog();
-        dialog.addClassName("confirm-delete-dialog");
-        dialog.setHeader("Delete Medium?");
-        dialog.setText(new Html("<p>You are about to delete the medium:<br /><em>" + medium.title() + "</em><br />This action cannot be undone!</p>"));
-        dialog.setCancelable(true);
-        dialog.setConfirmText("Delete");
-        dialog.setConfirmButtonTheme("error primary");
-        dialog.addConfirmListener(_ -> delete(medium));
+        ConfirmDialog dialog = getConfirmDialog(
+                "Delete Medium?",
+                new Html("<p>You are about to delete the medium:<br /><em>" +
+                        medium.title() +
+                        "</em><br />This action cannot be undone!</p>"),
+                _ -> delete(medium)
+        );
         dialog.open();
     }
 

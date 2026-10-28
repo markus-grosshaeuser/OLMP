@@ -12,7 +12,6 @@ import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrder;
-import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -32,7 +31,7 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
 
     private final EmployeeService employeeService;
     private final TextField searchField = new TextField("Search Employees");
-    private final Grid<EmployeeDTO> employeeGrid = new Grid<>(EmployeeDTO.class, false);
+    private final Grid<EmployeeDTO> employeeGrid = GridSupport.getPreconfiguredManagementGrid(EmployeeDTO.class, "No employees found");
 
     public EmployeeManagementView(EmployeeContext employeeContext, UiContext uiContext) {
         this.employeeContext = employeeContext;
@@ -107,36 +106,21 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
                 .setAutoWidth(true)
                 .setResizable(true);
 
-        employeeGrid.addComponentColumn(employee -> {
-            Button edit = new Button(
-                    VaadinIcon.EDIT.create(),
-                    _ -> employeeGrid.setDetailsVisible(employee, !employeeGrid.isDetailsVisible(employee))
-            );
-            edit.setAriaLabel("Edit " + employee.firstName() + " " + employee.lastName());
-            edit.addThemeVariants(ButtonVariant.LUMO_ICON);
-            Button delete = new Button(
-                    VaadinIcon.TRASH.create(),
-                    _ -> confirmDelete(employee)
-            );
-            delete.setAriaLabel("Delete " + employee.firstName() + " " + employee.lastName());
-            delete.addThemeVariants(ButtonVariant.LUMO_ERROR);
-
-            Span actionElements = new Span(edit, delete);
-            actionElements.addClassName("grid-action-elements");
-            return actionElements;
-        })
+        employeeGrid.addComponentColumn(employee -> GridSupport
+                        .createGridActionElements(
+                                employee.firstName() + " " + employee.lastName(),
+                                employeeGrid,
+                                employee,
+                                _ -> confirmDelete(employee)
+                        )
+                )
                 .setHeader("Actions")
                 .setAutoWidth(true)
                 .setFlexGrow(0);
 
-        employeeGrid.setSelectionMode(Grid.SelectionMode.NONE);
-        employeeGrid.setDetailsVisibleOnClick(false);
         employeeGrid.setItemDetailsRenderer(new ComponentRenderer<>(this::createEditor));
-        employeeGrid.addThemeVariants(GridVariant.ROW_STRIPES, GridVariant.WRAP_CELL_CONTENT);
-        employeeGrid.setSizeFull();
         employeeGrid.setItemsPageable(this::fetchEmployee, _ -> countEmployee()).setIdentifierProvider(EmployeeDTO::id);
         employeeGrid.sort(List.of(new GridSortOrder<>(employeeGrid.getColumnByKey("lastName"), SortDirection.ASCENDING)));
-        employeeGrid.setEmptyStateText("No employees found");
     }
 
     private List<EmployeeDTO> fetchEmployee(Pageable pageable) {

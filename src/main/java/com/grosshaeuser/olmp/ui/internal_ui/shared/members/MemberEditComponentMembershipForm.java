@@ -23,6 +23,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
+    private final MemberContext memberContext;
+
     private final VerticalLayout membershipRows = new VerticalLayout();
     private final List<MembershipRow> memberships = new ArrayList<>();
     private final HashMap<String, Integer> membershipPeriodsInMonths;
@@ -31,6 +33,7 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
     private List<MembershipEditDTO> snapshot = List.of();
 
     MemberEditComponentMembershipForm(MemberContext memberContext, MemberEditDTO memberDTO, WithMembershipDetailsCallback callback) {
+        this.memberContext = memberContext;
         this.callback = callback;
         this.memberDTO = memberDTO;
         this.membershipPeriodsInMonths = memberContext.getMembershipService().getMembershipPeriodsInMonths();
@@ -146,7 +149,10 @@ class MemberEditComponentMembershipForm extends Composite<VerticalLayout> {
             baseData.setWidthFull();
             baseData.setAlignItems(FlexComponent.Alignment.BASELINE);
 
-            Button printButton = new Button(VaadinIcon.PRINT.create(), _ -> ComponentUtil.fireEvent(UI.getCurrent(), new PrintMembershipCardRequestEvent(this, false, memberDTO, membershipDTO)));
+            Button printButton = new Button(VaadinIcon.PRINT.create(), _ -> {
+                String document = memberContext.createPrintDocument(memberDTO, membershipDTO);
+                UI.getCurrentOrThrow().getPage().executeJs(jsPrintExpression, document);
+            });
 
             baseData.add(number, printButton, membershipType, status);
             HorizontalLayout dates = new HorizontalLayout();
