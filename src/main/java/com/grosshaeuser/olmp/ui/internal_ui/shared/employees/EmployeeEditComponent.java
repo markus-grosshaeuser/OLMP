@@ -1,9 +1,10 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
+import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -27,13 +28,18 @@ import java.util.Set;
 
 public class EmployeeEditComponent extends Composite<VerticalLayout> implements Structurable, Delegatable {
 
+    @FunctionalInterface
+    public interface CloseCallback {
+        void close();
+    }
+
+    private final EmployeeContext employeeContext;
+    private final UiContext uiContext;
+
     private final Set<String> assignableRoles;
 
     private final UpdateCallback<EmployeeEditDTO> updateCallback;
-    private final ErrorCallback errorCallback;
-    private final Runnable closeCallback;
-
-    private final PasswordProperties passwordProperties;
+    private final CloseCallback closeCallback;
 
     private final BeanValidationBinder<EmployeeEditDTO> binder = new BeanValidationBinder<>(EmployeeEditDTO.class);
 
@@ -62,18 +68,17 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
     private EmployeeEditDTO snapshot;
 
     public EmployeeEditComponent(
+            EmployeeContext employeeContext,
+            UiContext uiContext,
             EmployeeEditDTO employeeEditDTO,
-            Set<String> assignableRoles,
             UpdateCallback<EmployeeEditDTO> updateCallback,
-            ErrorCallback errorCallback,
-            Runnable closeCallback,
-            PasswordProperties passwordProperties
+            CloseCallback closeCallback
     ) {
-        this.assignableRoles = assignableRoles;
+        this.employeeContext = employeeContext;
+        this.uiContext = uiContext;
         this.updateCallback = updateCallback;
-        this.errorCallback = errorCallback;
         this.closeCallback = closeCallback;
-        this.passwordProperties = passwordProperties;
+        this.assignableRoles = EmployeeMapper.mapRolesToRoleNames(employeeContext.getRoleService().getAssignableRoles());
 
         configureRootLayout();
         configureFields();
@@ -147,7 +152,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
 
     private void configureFields() {
         newPasswordField.setPlaceholder("Leave empty to keep current password");
-        newPasswordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
+        newPasswordField.setTooltipText(employeeContext.getPasswordRequirementDescription());
         newPasswordField.setRevealButtonVisible(false);
 
         rolesCheckBoxGroup.setLabel("Roles");
@@ -179,8 +184,8 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
                 .bind(EmployeeEditDTO::getUsername, EmployeeEditDTO::setUsername);
         binder.forField(newPasswordField)
                 .withValidator(
-                        value -> value == null || value.isBlank() || value.matches(passwordProperties.getRegExPattern()),
-                        passwordProperties.getPasswordRequirementDescription()
+                        value -> value == null || value.isBlank() || value.matches(employeeContext.getRegExPattern()),
+                        employeeContext.getPasswordRequirementDescription()
                 )
                 .bind(EmployeeEditDTO::getNewPassword, EmployeeEditDTO::setNewPassword);
         binder.forField(enabledCheckBox).bind(EmployeeEditDTO::isEnabled, EmployeeEditDTO::setEnabled);
@@ -205,7 +210,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         saveButton.setEnabled(false);
         saveButton.addClickListener(_ -> save());
 
-        closeButton.addClickListener(_ -> closeCallback.run());
+        closeButton.addClickListener(_ -> closeCallback.close());
     }
 
     private EmployeeEditDTO createComparableSnapshot(EmployeeEditDTO employee) {
@@ -248,7 +253,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
                 EmployeeEditDTO savedEmployee = updateCallback.update(user);
                 loadEmployee(savedEmployee);
             } catch (RuntimeException e) {
-                errorCallback.handleException(e);
+                uiContext.handleException(e);
             } finally {
                 setActionsEnabled(true);
                 handleDataChange();

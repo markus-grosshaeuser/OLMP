@@ -1,9 +1,10 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeRegistrationDTO;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
+import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -17,17 +18,16 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 
-import java.util.HashSet;
 import java.util.Set;
 
 public class EmployeeCreateDialog extends Dialog implements Structurable, Delegatable {
 
-    private final CreateCallback<EmployeeRegistrationDTO> saveCallback;
-    private final ErrorCallback errorCallback;
+    private final EmployeeContext employeeContext;
+    private final UiContext uiContext;
 
-    private final PasswordProperties passwordProperties;
+    private final CreateCallback<EmployeeRegistrationDTO> createCallback;
 
-    private final Set<String> roles;
+    private final Set<String> assignableRoles;
 
     private final BeanValidationBinder<EmployeeRegistrationDTO> binder = new BeanValidationBinder<>(EmployeeRegistrationDTO.class);
 
@@ -41,16 +41,11 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
 
     private final Button saveButton = new Button("Save");
 
-    public EmployeeCreateDialog(
-            HashSet<String> roles,
-            CreateCallback<EmployeeRegistrationDTO> createCallback,
-            ErrorCallback errorCallback,
-            PasswordProperties passwordProperties
-    ) {
-        this.saveCallback = createCallback;
-        this.errorCallback = errorCallback;
-        this.passwordProperties = passwordProperties;
-        this.roles = roles;
+    public EmployeeCreateDialog(EmployeeContext employeeContext, UiContext uiContext, CreateCallback<EmployeeRegistrationDTO> createCallback) {
+        this.employeeContext = employeeContext;
+        this.uiContext = uiContext;
+        this.createCallback = createCallback;
+        this.assignableRoles = EmployeeMapper.mapRolesToRoleNames(employeeContext.getRoleService().getAssignableRoles());
 
         configureFields();
         configureActions();
@@ -115,10 +110,10 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
             if (binder.validate().isOk()) {
                 try {
                     EmployeeRegistrationDTO employee = binder.getBean();
-                    saveCallback.create(employee);
+                    createCallback.create(employee);
                     close();
                 } catch (RuntimeException e) {
-                    errorCallback.handleException(e);
+                    uiContext.handleException(e);
                 }
             }
         });
@@ -126,12 +121,12 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
     }
 
     private void configureFields() {
-        passwordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
+        passwordField.setTooltipText(employeeContext.getPasswordRequirementDescription());
         passwordField.setRevealButtonVisible(true);
         passwordField.setWidthFull();
         passwordField.setRequiredIndicatorVisible(true);
 
-        roleCheckBoxGroup.setItems(roles);
+        roleCheckBoxGroup.setItems(assignableRoles);
         roleCheckBoxGroup.addThemeVariants(CheckboxGroupVariant.AURA_HORIZONTAL);
         roleCheckBoxGroup.addClassName("employee-creation-dialog-roles");
     }
@@ -151,8 +146,8 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, Delega
                 .bind(EmployeeRegistrationDTO::getEmail, EmployeeRegistrationDTO::setEmail);
         binder.forField(passwordField)
                 .withValidator(
-                        value -> value.matches(passwordProperties.getRegExPattern()),
-                        passwordProperties.getPasswordRequirementDescription()
+                        value -> value.matches(employeeContext.getRegExPattern()),
+                        employeeContext.getPasswordRequirementDescription()
                 )
                 .bind(EmployeeRegistrationDTO::getPassword, EmployeeRegistrationDTO::setPassword);
         binder.forField(enabledField).bind(EmployeeRegistrationDTO::isEnabled, EmployeeRegistrationDTO::setEnabled);

@@ -1,9 +1,9 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Delegatable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.Composite;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -21,9 +21,9 @@ import java.util.Optional;
 
 public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> implements Structurable, Delegatable {
 
+    private final EmployeeContext employeeContext;
+    private final UiContext uiContext;
     private final UpdateCallback<EmployeeEditDTO> updateCallback;
-    private final ErrorCallback errorCallback;
-    private final PasswordProperties passwordProperties;
 
     private final BeanValidationBinder<EmployeeEditDTO> binder = new BeanValidationBinder<>(EmployeeEditDTO.class);
 
@@ -43,14 +43,14 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
     private EmployeeEditDTO snapshot;
 
     public EmployeeSelfServiceEditComponent(
+            EmployeeContext employeeContext,
+            UiContext uiContext,
             EmployeeEditDTO employeeEditDTO,
-            UpdateCallback<EmployeeEditDTO> updateCallback,
-            ErrorCallback errorCallback,
-            PasswordProperties passwordProperties
+            UpdateCallback<EmployeeEditDTO> updateCallback
     ) {
+        this.employeeContext = employeeContext;
+        this.uiContext = uiContext;
         this.updateCallback = updateCallback;
-        this.errorCallback = errorCallback;
-        this.passwordProperties = passwordProperties;
 
         configureRootLayout();
         configureFields();
@@ -101,7 +101,7 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
         lastAccessedField.setReadOnly(true);
 
         newPasswordField.setPlaceholder("Leave empty to keep current password");
-        newPasswordField.setTooltipText(passwordProperties.getPasswordRequirementDescription());
+        newPasswordField.setTooltipText(employeeContext.getPasswordRequirementDescription());
         newPasswordField.setRevealButtonVisible(false);
     }
 
@@ -127,8 +127,8 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
 
         binder.forField(newPasswordField)
                 .withValidator(
-                        value -> value == null || value.isBlank() || value.matches(passwordProperties.getRegExPattern()),
-                        passwordProperties.getPasswordRequirementDescription()
+                        value -> value == null || value.isBlank() || value.matches(employeeContext.getRegExPattern()),
+                        employeeContext.getPasswordRequirementDescription()
                 )
                 .bind(EmployeeEditDTO::getNewPassword, EmployeeEditDTO::setNewPassword);
 
@@ -192,7 +192,7 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
                 EmployeeEditDTO savedEmployee = updateCallback.update(employee);
                 loadEmployee(savedEmployee);
             } catch (RuntimeException e) {
-                errorCallback.handleException(e);
+                uiContext.handleException(e);
             } finally {
                 setActionsEnabled(true);
                 handleDataChange();

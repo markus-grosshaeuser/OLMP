@@ -28,10 +28,10 @@ public class EmployeeSelfServiceView extends VerticalLayout {
 
         employeeService.getCurrentEmployee()
                 .map(employee -> new EmployeeSelfServiceEditComponent(
+                        employeeContext,
+                        uiContext,
                         employee,
-                        this::updateCurrentEmployee,
-                        uiContext::handleException,
-                        employeeContext.getPasswordProperties()
+                        this::updateCurrentEmployee
                 ))
                 .ifPresentOrElse(
                         this::add,

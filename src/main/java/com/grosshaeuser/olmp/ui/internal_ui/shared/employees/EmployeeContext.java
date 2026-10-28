@@ -14,4 +14,12 @@ public class EmployeeContext {
     private final EmployeeService employeeService;
     private final RoleService roleService;
     private final PasswordProperties passwordProperties;
+
+    public String getRegExPattern() {
+        return passwordProperties.getRegExPattern();
+    }
+
+    public String getPasswordRequirementDescription() {
+        return passwordProperties.getPasswordRequirementDescription();
+    }
 }

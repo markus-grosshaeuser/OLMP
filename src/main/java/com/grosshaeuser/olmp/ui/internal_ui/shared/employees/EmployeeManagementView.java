@@ -3,9 +3,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 import com.grosshaeuser.olmp.employees.dto.EmployeeRegistrationDTO;
 import com.grosshaeuser.olmp.employees.dto.EmployeeDTO;
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
-import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
-import com.grosshaeuser.olmp.security.properties.PasswordProperties;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.*;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Html;
@@ -26,26 +24,22 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import org.springframework.data.domain.Pageable;
 
-import java.util.HashSet;
 import java.util.List;
 
 public class EmployeeManagementView extends VerticalLayout implements ConfirmDelete {
+    private final EmployeeContext employeeContext;
     private final UiContext uiContext;
 
     private final EmployeeService employeeService;
-    private final PasswordProperties passwordProperties;
     private final TextField searchField = new TextField("Search Employees");
     private final Grid<EmployeeDTO> employeeGrid = new Grid<>(EmployeeDTO.class, false);
-    private final HashSet<String> assignableRoles;
 
     public EmployeeManagementView(EmployeeContext employeeContext, UiContext uiContext) {
-
+        this.employeeContext = employeeContext;
         this.uiContext = uiContext;
 
         this.employeeService = employeeContext.getEmployeeService();
-        this.passwordProperties = employeeContext.getPasswordProperties();
 
-        this.assignableRoles = EmployeeMapper.mapRolesToRoleNames(employeeContext.getRoleService().getAssignableRoles());
         configureSearch();
         configureGrid();
 
@@ -167,12 +161,12 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
         try {
             return employeeService.getDetailedEmployeeById(employee.id())
                     .<Component>map(dto -> new EmployeeEditComponent(
+                            employeeContext,
+                            uiContext,
                             dto,
-                            assignableRoles,
                             this::updateEmployee,
-                            uiContext::handleException,
-                            () -> employeeGrid.setDetailsVisible(employee, false),
-                            passwordProperties)
+                            () -> employeeGrid.setDetailsVisible(employee, false)
+                            )
                     )
                     .orElseGet(() -> unavailableDetails("This employee does not exist."));
         } catch (RuntimeException exception) {
@@ -188,10 +182,9 @@ public class EmployeeManagementView extends VerticalLayout implements ConfirmDel
     private void openCreateDialog() {
         try {
             new EmployeeCreateDialog(
-                    assignableRoles,
-                    this::createEmployee,
-                    uiContext::handleException,
-                    passwordProperties
+                    employeeContext,
+                    uiContext,
+                    this::createEmployee
             ).open();
         } catch (RuntimeException exception) {
             uiContext.handleException(exception);
