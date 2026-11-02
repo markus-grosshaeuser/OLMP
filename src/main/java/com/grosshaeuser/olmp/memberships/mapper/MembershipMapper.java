@@ -7,11 +7,10 @@ import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
-import com.grosshaeuser.olmp.shared.AbstractMapper;
 
 import java.time.LocalDate;
 
-public class MembershipMapper extends AbstractMapper {
+public class MembershipMapper {
     public static MembershipCreateDTO createMembershipCreateDtoFromMembershipRegistrationData(MemberRegistrationDTO dto, Member member) {
         return new MembershipCreateDTO(
                 member,

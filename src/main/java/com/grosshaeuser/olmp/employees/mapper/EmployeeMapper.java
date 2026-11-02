@@ -1,15 +1,15 @@
 package com.grosshaeuser.olmp.employees.mapper;
 
+import com.grosshaeuser.olmp.shared.MappingChecks;
 import com.grosshaeuser.olmp.employees.dto.*;
 import com.grosshaeuser.olmp.employees.entity.Employee;
 import com.grosshaeuser.olmp.employees.entity.EmployeeAccount;
 import com.grosshaeuser.olmp.employees.entity.Role;
-import com.grosshaeuser.olmp.shared.AbstractMapper;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class EmployeeMapper extends AbstractMapper {
+public class EmployeeMapper {
     public static EmployeeDTO mapEmployeeToEmployeeDto(Employee employee) {
         return new EmployeeDTO(
                 employee.getId(),
@@ -17,8 +17,8 @@ public class EmployeeMapper extends AbstractMapper {
                 employee.getLastName(),
                 employee.getFirstName(),
                 mapRolesToRoleNames(employee.getRoles()),
-                saveOffsetDateTimeToLocalDateTime(employee.getCreatedAt()),
-                saveOffsetDateTimeToLocalDateTime(employee.getUpdatedAt())
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(employee.getCreatedAt()),
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(employee.getUpdatedAt())
         );
     }
 
@@ -28,18 +28,18 @@ public class EmployeeMapper extends AbstractMapper {
                 employee.getEmail(),
                 employee.getLastName(),
                 employee.getFirstName(),
-                saveOffsetDateTimeToLocalDateTime(employee.getCreatedAt()),
-                saveOffsetDateTimeToLocalDateTime(employee.getUpdatedAt()),
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(employee.getCreatedAt()),
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(employee.getUpdatedAt()),
                 account.getId(),
                 account.getUsername(),
                 "",
                 account.isEnabled(),
                 account.getFailedLoginAttempts(),
-                saveOffsetDateTimeToLocalDateTime(account.getLockoutUntil()),
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(account.getLockoutUntil()),
                 account.isLocked(),
-                saveOffsetDateTimeToLocalDateTime(account.getCreatedAt()),
-                saveOffsetDateTimeToLocalDateTime(account.getUpdatedAt()),
-                saveOffsetDateTimeToLocalDateTime(account.getLastAccess()),
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(account.getCreatedAt()),
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(account.getUpdatedAt()),
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(account.getLastAccess()),
                 mapRolesToRoleNames(employee.getRoles())
         );
     }

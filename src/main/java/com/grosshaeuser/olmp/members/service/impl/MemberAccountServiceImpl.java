@@ -1,9 +1,9 @@
 package com.grosshaeuser.olmp.members.service.impl;
 
+import com.grosshaeuser.olmp.shared.MappingChecks;
 import com.grosshaeuser.olmp.members.dto.MemberAccountCreateDTO;
 import com.grosshaeuser.olmp.members.dto.MemberAccountEditDTO;
 import com.grosshaeuser.olmp.members.entity.MemberAccount;
-import com.grosshaeuser.olmp.members.mapper.MemberMapper;
 import com.grosshaeuser.olmp.members.repository.MemberAccountRepository;
 import com.grosshaeuser.olmp.members.service.MemberAccountService;
 import com.grosshaeuser.olmp.security.SecurityConstants;
@@ -66,7 +66,7 @@ public class MemberAccountServiceImpl implements MemberAccountService {
                     account.setEnabled(memberAccountEditDTO.isEnabled());
                     account.setLocked(memberAccountEditDTO.isLocked());
                     account.setFailedLoginAttempts(memberAccountEditDTO.getFailedLoginAttempts());
-                    account.setLockoutUntil(MemberMapper.saveLocalDateTimeToOffsetDateTime(memberAccountEditDTO.getLockoutUntil()));
+                    account.setLockoutUntil(MappingChecks.saveLocalDateTimeToOffsetDateTime(memberAccountEditDTO.getLockoutUntil()));
                     return memberAccountRepository.save(account);
                 });
     }

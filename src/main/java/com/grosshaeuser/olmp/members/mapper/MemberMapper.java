@@ -1,20 +1,20 @@
 package com.grosshaeuser.olmp.members.mapper;
 
+import com.grosshaeuser.olmp.shared.MappingChecks;
 import com.grosshaeuser.olmp.members.dto.*;
 import com.grosshaeuser.olmp.members.entity.Member;
 import com.grosshaeuser.olmp.members.entity.MemberAccount;
 import com.grosshaeuser.olmp.members.entity.MemberContactInformation;
-import com.grosshaeuser.olmp.shared.AbstractMapper;
 
-public class MemberMapper extends AbstractMapper {
+public class MemberMapper {
     public static MemberDTO mapMemberToMemberDTO(Member member) {
         return new MemberDTO(
                 member.getId(),
                 member.getLastName(),
                 member.getFirstName(),
                 member.getDateOfBirth(),
-                saveOffsetDateTimeToLocalDateTime(member.getCreatedAt()),
-                saveOffsetDateTimeToLocalDateTime(member.getUpdatedAt())
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(member.getCreatedAt()),
+                MappingChecks.saveOffsetDateTimeToLocalDateTime(member.getUpdatedAt())
         );
     }
 
@@ -54,8 +54,8 @@ public class MemberMapper extends AbstractMapper {
                 .firstName(member.getFirstName())
                 .lastName(member.getLastName())
                 .birthDate(member.getDateOfBirth())
-                .createdAt(saveOffsetDateTimeToLocalDateTime(member.getCreatedAt()))
-                .updatedAt(saveOffsetDateTimeToLocalDateTime(member.getUpdatedAt()))
+                .createdAt(MappingChecks.saveOffsetDateTimeToLocalDateTime(member.getCreatedAt()))
+                .updatedAt(MappingChecks.saveOffsetDateTimeToLocalDateTime(member.getUpdatedAt()))
 
                 .account(mapMemberAccountToEditDto(account))
                 .contact(mapMemberContactInformationToEditDto(contactInformation))
@@ -70,11 +70,11 @@ public class MemberMapper extends AbstractMapper {
                     .verified(account.isVerified())
                     .enabled(account.isEnabled())
                     .failedLoginAttempts(account.getFailedLoginAttempts())
-                    .lockoutUntil(saveOffsetDateTimeToLocalDateTime(account.getLockoutUntil()))
+                    .lockoutUntil(MappingChecks.saveOffsetDateTimeToLocalDateTime(account.getLockoutUntil()))
                     .locked(account.isLocked())
-                    .accountCreatedAt(saveOffsetDateTimeToLocalDateTime(account.getCreatedAt()))
-                    .accountUpdatedAt(saveOffsetDateTimeToLocalDateTime(account.getUpdatedAt()))
-                    .accountLastAccessedAt(saveOffsetDateTimeToLocalDateTime(account.getLastAccess()))
+                    .accountCreatedAt(MappingChecks.saveOffsetDateTimeToLocalDateTime(account.getCreatedAt()))
+                    .accountUpdatedAt(MappingChecks.saveOffsetDateTimeToLocalDateTime(account.getUpdatedAt()))
+                    .accountLastAccessedAt(MappingChecks.saveOffsetDateTimeToLocalDateTime(account.getLastAccess()))
                     .build();
         }
         return new MemberAccountEditDTO();
