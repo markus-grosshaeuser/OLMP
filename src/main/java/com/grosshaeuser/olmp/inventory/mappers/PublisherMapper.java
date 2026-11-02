@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.inventory.mappers;
 
+import com.grosshaeuser.olmp.MappingChecks;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherDetailDto;
 import com.grosshaeuser.olmp.inventory.dto.publisher.PublisherEditDto;

@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.inventory.mappers;
 
+import com.grosshaeuser.olmp.MappingChecks;
 import com.grosshaeuser.olmp.inventory.dto.location.LocationCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.location.LocationDetailDto;
 import com.grosshaeuser.olmp.inventory.dto.location.LocationEditDto;

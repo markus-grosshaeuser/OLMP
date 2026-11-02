@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.inventory.mappers;
 
+import com.grosshaeuser.olmp.MappingChecks;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaTypeCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaTypeDetailDto;
 import com.grosshaeuser.olmp.inventory.dto.media.MediaTypeEditDto;

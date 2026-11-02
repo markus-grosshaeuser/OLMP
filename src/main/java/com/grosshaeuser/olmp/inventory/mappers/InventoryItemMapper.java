@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.inventory.mappers;
 
+import com.grosshaeuser.olmp.MappingChecks;
 import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCondition;
 import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemCreateDto;
 import com.grosshaeuser.olmp.inventory.dto.inventory.InventoryItemDetailDto;
