@@ -5,12 +5,14 @@ import com.grosshaeuser.olmp.employees.dto.*;
 import com.grosshaeuser.olmp.employees.entity.Employee;
 import com.grosshaeuser.olmp.employees.entity.EmployeeAccount;
 import com.grosshaeuser.olmp.employees.entity.Role;
+import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 import java.util.Set;
 
+@Component
 public class EmployeeMapper {
-    public static EmployeeDTO mapEmployeeToEmployeeDto(Employee employee) {
+    public EmployeeDTO mapEmployeeToEmployeeDto(Employee employee) {
         return new EmployeeDTO(
                 employee.getId(),
                 employee.getEmail(),
@@ -22,7 +24,7 @@ public class EmployeeMapper {
         );
     }
 
-    public static EmployeeEditDTO mergeEmployeeAndEmployeeAccountToEmployeeEditDto(Employee employee, EmployeeAccount account) {
+    public EmployeeEditDTO mergeEmployeeAndEmployeeAccountToEmployeeEditDto(Employee employee, EmployeeAccount account) {
         return new EmployeeEditDTO(
                 employee.getId(),
                 employee.getEmail(),
@@ -44,7 +46,7 @@ public class EmployeeMapper {
         );
     }
 
-    public static Employee createEmployeeFromEmployeeRegistrationData(EmployeeRegistrationDTO dto, Set<Role> roles) {
+    public Employee createEmployeeFromEmployeeRegistrationData(EmployeeRegistrationDTO dto, Set<Role> roles) {
         return Employee.builder()
                 .email(dto.getEmail())
                 .lastName(dto.getLastName())
@@ -53,7 +55,7 @@ public class EmployeeMapper {
                 .build();
     }
 
-    public static EmployeeAccountCreateDTO createEmployeeAccountDTOFromEmployeeRegistrationData(EmployeeRegistrationDTO dto, Employee employee) {
+    public EmployeeAccountCreateDTO createEmployeeAccountDTOFromEmployeeRegistrationData(EmployeeRegistrationDTO dto, Employee employee) {
         return new EmployeeAccountCreateDTO(
                 employee,
                 dto.getUsername(),
@@ -62,7 +64,7 @@ public class EmployeeMapper {
         );
     }
 
-    public static EmployeeAccountEditDTO createAccountEditDtoFromEmployeeUpdateData(EmployeeEditDTO dto) {
+    public EmployeeAccountEditDTO createAccountEditDtoFromEmployeeUpdateData(EmployeeEditDTO dto) {
         return new EmployeeAccountEditDTO(
                 dto.getAccountId(),
                 dto.getUsername(),
@@ -74,7 +76,7 @@ public class EmployeeMapper {
         );
     }
 
-    public static HashSet<String> mapRolesToRoleNames(Set<Role> roles) {
+    public HashSet<String> mapRolesToRoleNames(Set<Role> roles) {
         return new HashSet<>(roles.stream().map(Role::getName).toList());
     }
 

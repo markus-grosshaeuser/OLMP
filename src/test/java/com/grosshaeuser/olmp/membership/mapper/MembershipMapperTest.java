@@ -16,6 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MembershipMapperTest {
 
+    private final MembershipMapper membershipMapper = new MembershipMapper();
+
     @Test
     void createMembershipCreateDtoFromMembershipRegistrationDataMapsMembershipFields() {
         Member member = member(1L, "Doe", "Jane");
@@ -28,7 +30,7 @@ class MembershipMapperTest {
         registrationDto.setMembershipRenewalDate(LocalDate.of(2027, 9, 1));
         registrationDto.setMembershipCancellationDate(null);
 
-        MembershipCreateDTO result = MembershipMapper.createMembershipCreateDtoFromMembershipRegistrationData(
+        MembershipCreateDTO result = membershipMapper.createMembershipCreateDtoFromMembershipRegistrationData(
                 registrationDto,
                 member
         );
@@ -55,7 +57,7 @@ class MembershipMapperTest {
         dto.setMembershipRenewalDate(LocalDate.of(2026, 6, 1));
         dto.setMembershipCancellationDate(LocalDate.of(2026, 5, 1));
 
-        Membership result = MembershipMapper.createMembershipFromMembershipCreateDto(
+        Membership result = membershipMapper.createMembershipFromMembershipCreateDto(
                 dto,
                 "MEMBERSHIP-001"
         );
@@ -87,7 +89,7 @@ class MembershipMapperTest {
                 .cancellationDate(LocalDate.of(2026, 12, 1))
                 .build();
 
-        MembershipEditDTO result = MembershipMapper.mapMembershipToEditDto(membership);
+        MembershipEditDTO result = membershipMapper.mapMembershipToEditDto(membership);
 
         assertThat(result.getId()).isEqualTo(100L);
         assertThat(result.getMemberId()).isEqualTo(10L);
@@ -116,7 +118,7 @@ class MembershipMapperTest {
                 .cancellationDate(null)
                 .build();
 
-        MembershipEditDTO result = MembershipMapper.mapMembershipToEditDto(membership);
+        MembershipEditDTO result = membershipMapper.mapMembershipToEditDto(membership);
 
         assertThat(result.getId()).isEqualTo(100L);
         assertThat(result.getMemberId()).isEqualTo(10L);
@@ -131,7 +133,7 @@ class MembershipMapperTest {
 
     @Test
     void mapMembershipToEditDtoReturnsEmptyDtoWhenMembershipIsNull() {
-        MembershipEditDTO result = MembershipMapper.mapMembershipToEditDto(null);
+        MembershipEditDTO result = membershipMapper.mapMembershipToEditDto(null);
 
         assertThat(result.getId()).isNull();
         assertThat(result.getMemberId()).isNull();
@@ -156,7 +158,7 @@ class MembershipMapperTest {
                 .expirationDate(LocalDate.of(2027, 1, 1))
                 .build();
 
-        MembershipEditDTO result = MembershipMapper.mapMembershipToEditDto(membership);
+        MembershipEditDTO result = membershipMapper.mapMembershipToEditDto(membership);
 
         assertThat(result.getId()).isNull();
         assertThat(result.getMemberId()).isNull();

@@ -31,13 +31,14 @@ import java.util.stream.Collectors;
 public class EmployeeServiceImpl implements EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final EmployeeAccountService employeeAccountService;
+    private final EmployeeMapper employeeMapper;
     private final RoleRepository roleRepository;
     private final AuthenticationContext authenticationContext;
 
     @Override
     public Page<EmployeeDTO> getEmployees(String searchTerm, Pageable pageable) {
         Set<String> accessibleRoles = getReadableRoles();
-        return employeeRepository.searchWithRolesIn(searchTerm, accessibleRoles, pageable).map(EmployeeMapper::mapEmployeeToEmployeeDto);
+        return employeeRepository.searchWithRolesIn(searchTerm, accessibleRoles, pageable).map(employeeMapper::mapEmployeeToEmployeeDto);
     }
 
     @Override
@@ -53,10 +54,10 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new IllegalArgumentException("Attempted to create an employee with non-existent roles");
         }
 
-        Employee persistedEmployee = employeeRepository.save(EmployeeMapper.createEmployeeFromEmployeeRegistrationData(dto, roles));
-        employeeAccountService.createEmployeeAccount(EmployeeMapper.createEmployeeAccountDTOFromEmployeeRegistrationData(dto, persistedEmployee));
+        Employee persistedEmployee = employeeRepository.save(employeeMapper.createEmployeeFromEmployeeRegistrationData(dto, roles));
+        employeeAccountService.createEmployeeAccount(employeeMapper.createEmployeeAccountDTOFromEmployeeRegistrationData(dto, persistedEmployee));
 
-        return Optional.of(EmployeeMapper.mapEmployeeToEmployeeDto(persistedEmployee));
+        return Optional.of(employeeMapper.mapEmployeeToEmployeeDto(persistedEmployee));
     }
 
     @Override
@@ -66,7 +67,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             validateRolePermission(readableRoles, employee.getRoles());
             return employeeAccountService.findByEmployeeId(employee.getId())
                     .map(account ->
-                            EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(employee, account)
+                            employeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(employee, account)
                     );
         });
     }
@@ -94,10 +95,10 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         Employee updatedEmployee = employeeRepository.save(existingEmployee);
 
-        EmployeeAccount updatedAccount = employeeAccountService.updateEmployeeAccount(EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(dto))
+        EmployeeAccount updatedAccount = employeeAccountService.updateEmployeeAccount(employeeMapper.createAccountEditDtoFromEmployeeUpdateData(dto))
                 .orElseThrow(() -> new RuntimeException("Account Update failed."));
 
-        return Optional.of(EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(updatedEmployee, updatedAccount));
+        return Optional.of(employeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(updatedEmployee, updatedAccount));
     }
 
     @Override
@@ -119,7 +120,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee currentEmployee = employeeRepository.findById(currentAccount.getEmployee().getId())
                 .orElseThrow(() -> new AccessDeniedException("No authenticated employee found."));
 
-        return Optional.of(EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(currentEmployee, currentAccount));
+        return Optional.of(employeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(currentEmployee, currentAccount));
     }
 
     @Transactional
@@ -147,7 +148,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee updatedEmployee = employeeRepository.save(currentEmployee);
 
         EmployeeEditDTO sanitizedDto = dto.toBuilder()
-                .roles(EmployeeMapper.mapRolesToRoleNames(currentEmployee.getRoles()))
+                .roles(employeeMapper.mapRolesToRoleNames(currentEmployee.getRoles()))
                 .enabled(currentAccount.isEnabled())
                 .failedLoginAttempts(currentAccount.getFailedLoginAttempts())
                 .lockoutUntil(currentAccount.getLockoutUntil() != null ? currentAccount.getLockoutUntil().toLocalDateTime() : null)
@@ -155,10 +156,10 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
 
         EmployeeAccount updatedAccount = employeeAccountService.updateEmployeeAccount(
-                EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(sanitizedDto)
+                employeeMapper.createAccountEditDtoFromEmployeeUpdateData(sanitizedDto)
         ).orElseThrow(() -> new RuntimeException("Account update failed."));
 
-        return Optional.of(EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(
+        return Optional.of(employeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(
                 updatedEmployee,
                 updatedAccount
         ));

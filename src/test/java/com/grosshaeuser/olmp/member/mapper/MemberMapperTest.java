@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MemberMapperTest {
 
+    private final MemberMapper memberMapper = new MemberMapper();
+
     @Test
     void mapMemberToMemberDTOMapsAllFieldsAndFormatsDates() {
         Member member = member(
@@ -30,7 +32,7 @@ class MemberMapperTest {
                 LocalDate.of(1990, 1, 1)
         );
 
-        MemberDTO result = MemberMapper.mapMemberToMemberDTO(member);
+        MemberDTO result = memberMapper.mapMemberToMemberDTO(member);
 
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.lastName()).isEqualTo("Doe");
@@ -51,7 +53,7 @@ class MemberMapperTest {
                 .updatedAt(null)
                 .build();
 
-        MemberDTO result = MemberMapper.mapMemberToMemberDTO(member);
+        MemberDTO result = memberMapper.mapMemberToMemberDTO(member);
 
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.lastName()).isEqualTo("Doe");
@@ -65,7 +67,7 @@ class MemberMapperTest {
     void createMemberFromMemberRegistrationDataMapsBasicMemberFields() {
         MemberRegistrationDTO dto = registrationDto();
 
-        Member result = MemberMapper.createMemberFromMemberRegistrationData(dto);
+        Member result = memberMapper.createMemberFromMemberRegistrationData(dto);
 
         assertThat(result.getId()).isNull();
         assertThat(result.getFirstName()).isEqualTo("John");
@@ -83,7 +85,7 @@ class MemberMapperTest {
                 LocalDate.of(1990, 1, 1)
         );
 
-        MemberAccountCreateDTO result = MemberMapper.createAccountDtoFromMemberRegistrationData(dto, member);
+        MemberAccountCreateDTO result = memberMapper.createAccountDtoFromMemberRegistrationData(dto, member);
 
         assertThat(result.getMember()).isSameAs(member);
         assertThat(result.getEmail()).isEqualTo("john.doe@example.org");
@@ -103,7 +105,7 @@ class MemberMapperTest {
         );
 
         MemberContactInformationCreateDTO result =
-                MemberMapper.createContactDetailsDtoFromMemberRegistrationData(dto, member);
+                memberMapper.createContactDetailsDtoFromMemberRegistrationData(dto, member);
 
         assertThat(result.getMember()).isSameAs(member);
         assertThat(result.getPhoneNumber()).isEqualTo("+49 123 456789");
@@ -134,7 +136,7 @@ class MemberMapperTest {
                 member
         );
 
-        MemberEditDTO result = MemberMapper.mergeMemberInformationToEditDto(
+        MemberEditDTO result = memberMapper.mergeMemberInformationToEditDto(
                 member,
                 account,
                 contactInformation
@@ -181,7 +183,7 @@ class MemberMapperTest {
                 .updatedAt(null)
                 .build();
 
-        MemberEditDTO result = MemberMapper.mergeMemberInformationToEditDto(
+        MemberEditDTO result = memberMapper.mergeMemberInformationToEditDto(
                 member,
                 null,
                 null
@@ -215,7 +217,7 @@ class MemberMapperTest {
                 "john.doe@example.org"
         );
 
-        MemberAccountEditDTO result = MemberMapper.mapMemberAccountToEditDto(account);
+        MemberAccountEditDTO result = memberMapper.mapMemberAccountToEditDto(account);
 
         assertThat(result.getId()).isEqualTo(20L);
         assertThat(result.getEmail()).isEqualTo("john.doe@example.org");
@@ -232,7 +234,7 @@ class MemberMapperTest {
 
     @Test
     void mapMemberAccountToEditDtoReturnsEmptyDtoWhenAccountIsNull() {
-        MemberAccountEditDTO result = MemberMapper.mapMemberAccountToEditDto(null);
+        MemberAccountEditDTO result = memberMapper.mapMemberAccountToEditDto(null);
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isNull();
@@ -264,7 +266,7 @@ class MemberMapperTest {
                 .lastAccess(null)
                 .build();
 
-        MemberAccountEditDTO result = MemberMapper.mapMemberAccountToEditDto(account);
+        MemberAccountEditDTO result = memberMapper.mapMemberAccountToEditDto(account);
 
         assertThat(result.getId()).isEqualTo(20L);
         assertThat(result.getLockoutUntil()).isNull();
@@ -288,7 +290,7 @@ class MemberMapperTest {
         );
 
         MemberContactInformationEditDTO result =
-                MemberMapper.mapMemberContactInformationToEditDto(contactInformation);
+                memberMapper.mapMemberContactInformationToEditDto(contactInformation);
 
         assertThat(result.getId()).isEqualTo(30L);
         assertThat(result.getMemberId()).isEqualTo(1L);
@@ -303,7 +305,7 @@ class MemberMapperTest {
     @Test
     void mapMemberContactInformationToEditDtoReturnsEmptyDtoWhenContactInformationIsNull() {
         MemberContactInformationEditDTO result =
-                MemberMapper.mapMemberContactInformationToEditDto(null);
+                memberMapper.mapMemberContactInformationToEditDto(null);
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isNull();
@@ -330,7 +332,7 @@ class MemberMapperTest {
                 .build();
 
         MemberContactInformationEditDTO result =
-                MemberMapper.mapMemberContactInformationToEditDto(contactInformation);
+                memberMapper.mapMemberContactInformationToEditDto(contactInformation);
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isNull();

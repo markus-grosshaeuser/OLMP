@@ -1,7 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeRegistrationDTO;
-import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.CrudCallbacks;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
@@ -45,7 +44,7 @@ public class EmployeeCreateDialog extends Dialog implements Structurable, CrudCa
         this.employeeContext = employeeContext;
         this.uiContext = uiContext;
         this.createCallback = createCallback;
-        this.assignableRoles = EmployeeMapper.mapRolesToRoleNames(employeeContext.getRoleService().getAssignableRoles());
+        this.assignableRoles = employeeContext.getMapper().mapRolesToRoleNames(employeeContext.getRoleService().getAssignableRoles());
 
         configureFields();
         configureActions();

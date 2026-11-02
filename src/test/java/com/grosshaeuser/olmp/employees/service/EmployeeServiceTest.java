@@ -2,6 +2,7 @@ package com.grosshaeuser.olmp.employees.service;
 
 import com.grosshaeuser.olmp.employees.dto.*;
 import com.grosshaeuser.olmp.employees.entity.*;
+import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.employees.repository.*;
 import com.grosshaeuser.olmp.employees.service.impl.EmployeeServiceImpl;
 import com.vaadin.flow.spring.security.AuthenticationContext;
@@ -31,7 +32,9 @@ class EmployeeServiceTest {
     @Mock private EmployeeAccountService accountService;
     @Mock private RoleRepository roleRepository;
     @Mock private AuthenticationContext authenticationContext;
+    @Spy private EmployeeMapper employeeMapper = new EmployeeMapper();
     @InjectMocks private EmployeeServiceImpl service;
+
 
     @ParameterizedTest
     @ValueSource(strings = {ADMIN, STAFF})

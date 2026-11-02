@@ -1,5 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
+import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.employees.service.EmployeeService;
 import com.grosshaeuser.olmp.employees.service.RoleService;
 import com.grosshaeuser.olmp.security.properties.PasswordProperties;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 @Getter
 public class EmployeeContext {
     private final EmployeeService employeeService;
+    private final EmployeeMapper employeeMapper;
     private final RoleService roleService;
     private final PasswordProperties passwordProperties;
 
@@ -21,5 +23,9 @@ public class EmployeeContext {
 
     public String getPasswordRequirementDescription() {
         return passwordProperties.getPasswordRequirementDescription();
+    }
+
+    public EmployeeMapper getMapper() {
+        return employeeMapper;
     }
 }

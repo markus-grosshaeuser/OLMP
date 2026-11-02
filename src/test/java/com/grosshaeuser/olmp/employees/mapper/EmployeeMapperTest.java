@@ -20,9 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class EmployeeMapperTest {
 
+    private final EmployeeMapper employeeMapper = new EmployeeMapper();
+    
     @Test
     void mapEmployeeToEmployeeDtoMapsAllFieldsAndConvertsTimestamps() {
-        EmployeeDTO result = EmployeeMapper.mapEmployeeToEmployeeDto(employee());
+        EmployeeDTO result = employeeMapper.mapEmployeeToEmployeeDto(employee());
 
         assertThat(result.id()).isEqualTo(1L);
         assertThat(result.email()).isEqualTo("jane.doe@example.org");
@@ -35,7 +37,7 @@ class EmployeeMapperTest {
 
     @Test
     void mapEmployeeToEmployeeDtoPreservesNullTimestampsAndEmptyRoles() {
-        EmployeeDTO result = EmployeeMapper.mapEmployeeToEmployeeDto(Employee.builder().build());
+        EmployeeDTO result = employeeMapper.mapEmployeeToEmployeeDto(Employee.builder().build());
 
         assertThat(result.creationTimestamp()).isNull();
         assertThat(result.lastModifiedTimestamp()).isNull();
@@ -60,7 +62,7 @@ class EmployeeMapperTest {
                 .lastAccess(OffsetDateTime.parse("2026-10-12T12:15:00+02:00"))
                 .build();
 
-        EmployeeEditDTO result = EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(employee, account);
+        EmployeeEditDTO result = employeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(employee, account);
 
         assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getEmail()).isEqualTo("jane.doe@example.org");
@@ -83,7 +85,7 @@ class EmployeeMapperTest {
 
     @Test
     void mergeEmployeeAndEmployeeAccountToEmployeeEditDtoPreservesNullTimestampsAndEmptyRoles() {
-        EmployeeEditDTO result = EmployeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(
+        EmployeeEditDTO result = employeeMapper.mergeEmployeeAndEmployeeAccountToEmployeeEditDto(
                 Employee.builder().build(), EmployeeAccount.builder().build());
 
         assertThat(result.getCreatedAt()).isNull();
@@ -102,7 +104,7 @@ class EmployeeMapperTest {
         dto.setRoles(Set.of("IGNORED_REGISTRATION_ROLE"));
         Set<Role> roles = Set.of(Role.builder().name("EMPLOYEE").build());
 
-        Employee result = EmployeeMapper.createEmployeeFromEmployeeRegistrationData(dto, roles);
+        Employee result = employeeMapper.createEmployeeFromEmployeeRegistrationData(dto, roles);
 
         assertThat(result.getId()).isNull();
         assertThat(result.getEmail()).isEqualTo("jane.doe@example.org");
@@ -120,7 +122,7 @@ class EmployeeMapperTest {
         dto.setEnabled(enabled);
         Employee employee = employee();
 
-        EmployeeAccountCreateDTO result = EmployeeMapper.createEmployeeAccountDTOFromEmployeeRegistrationData(dto, employee);
+        EmployeeAccountCreateDTO result = employeeMapper.createEmployeeAccountDTOFromEmployeeRegistrationData(dto, employee);
 
         assertThat(result.getEmployee()).isSameAs(employee);
         assertThat(result.getUsername()).isEqualTo("jane.doe");
@@ -142,7 +144,7 @@ class EmployeeMapperTest {
                 .locked(!enabled)
                 .build();
 
-        EmployeeAccountEditDTO result = EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(dto);
+        EmployeeAccountEditDTO result = employeeMapper.createAccountEditDtoFromEmployeeUpdateData(dto);
 
         assertThat(result.getId()).isEqualTo(20L);
         assertThat(result.getUsername()).isEqualTo("jane.doe");
@@ -155,7 +157,7 @@ class EmployeeMapperTest {
 
     @Test
     void createAccountEditDtoFromEmployeeUpdateDataPreservesEmptyPasswordAndNullLockout() {
-        EmployeeAccountEditDTO result = EmployeeMapper.createAccountEditDtoFromEmployeeUpdateData(new EmployeeEditDTO());
+        EmployeeAccountEditDTO result = employeeMapper.createAccountEditDtoFromEmployeeUpdateData(new EmployeeEditDTO());
 
         assertThat(result.getNewPassword()).isEmpty();
         assertThat(result.getLockoutUntil()).isNull();
@@ -168,12 +170,12 @@ class EmployeeMapperTest {
                 Role.builder().name("ADMIN").build(),
                 Role.builder().name("EMPLOYEE").build());
 
-        assertThat(EmployeeMapper.mapRolesToRoleNames(roles)).containsExactlyInAnyOrder("ADMIN", "EMPLOYEE");
+        assertThat(employeeMapper.mapRolesToRoleNames(roles)).containsExactlyInAnyOrder("ADMIN", "EMPLOYEE");
     }
 
     @Test
     void mapRolesToRoleNamesReturnsEmptySetForEmptyRoles() {
-        assertThat(EmployeeMapper.mapRolesToRoleNames(Set.of())).isEmpty();
+        assertThat(employeeMapper.mapRolesToRoleNames(Set.of())).isEmpty();
     }
 
     private static Employee employee() {

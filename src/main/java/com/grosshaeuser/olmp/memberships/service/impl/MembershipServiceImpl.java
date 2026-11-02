@@ -36,7 +36,8 @@ public class MembershipServiceImpl implements MembershipService {
             int period = getMembershipPeriodsInMonths().get(dto.getMembershipType());
             dto.setMembershipExpirationDate(dto.getMembershipStartDate().plusMonths(period));
         }
-        return Optional.of(membershipRepository.save(MembershipMapper.createMembershipFromMembershipCreateDto(dto, membershipNumberGenerator.generate())));
+        MembershipMapper membershipMapper = new MembershipMapper();
+        return Optional.of(membershipRepository.save(membershipMapper.createMembershipFromMembershipCreateDto(dto, membershipNumberGenerator.generate())));
     }
 
     @Override

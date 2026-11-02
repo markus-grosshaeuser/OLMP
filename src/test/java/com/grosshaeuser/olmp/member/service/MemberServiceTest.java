@@ -2,6 +2,7 @@ package com.grosshaeuser.olmp.member.service;
 
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
 import com.grosshaeuser.olmp.members.dto.MemberRegistrationDTO;
+import com.grosshaeuser.olmp.members.mapper.MemberMapper;
 import com.grosshaeuser.olmp.members.repository.MemberRepository;
 import com.grosshaeuser.olmp.members.service.impl.MemberServiceImpl;
 import com.vaadin.flow.spring.security.AuthenticationContext;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,14 +25,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
 
-    @Mock
-    private MemberRepository memberRepository;
-
-    @Mock
-    private AuthenticationContext authenticationContext;
-
-    @InjectMocks
-    private MemberServiceImpl serviceUnderTest;
+    @Mock private MemberRepository memberRepository;
+    @Mock private AuthenticationContext authenticationContext;
+    @Spy private MemberMapper memberMapper;
+    @InjectMocks private MemberServiceImpl serviceUnderTest;
 
     @BeforeEach
     void setUp() {

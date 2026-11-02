@@ -1,7 +1,6 @@
 package com.grosshaeuser.olmp.ui.internal_ui.shared.employees;
 
 import com.grosshaeuser.olmp.employees.dto.EmployeeEditDTO;
-import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.CrudCallbacks;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
@@ -78,7 +77,7 @@ public class EmployeeEditComponent extends Composite<VerticalLayout> implements 
         this.uiContext = uiContext;
         this.updateCallback = updateCallback;
         this.closeCallback = closeCallback;
-        this.assignableRoles = EmployeeMapper.mapRolesToRoleNames(employeeContext.getRoleService().getAssignableRoles());
+        this.assignableRoles = employeeContext.getMapper().mapRolesToRoleNames(employeeContext.getRoleService().getAssignableRoles());
 
         configureRootLayout();
         configureFields();

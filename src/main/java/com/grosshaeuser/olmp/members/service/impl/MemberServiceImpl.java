@@ -36,27 +36,29 @@ public class MemberServiceImpl implements MemberService {
     private final MemberContactInformationService memberContactInformationService;
     private final MembershipService membershipService;
     private final AuthenticationContext authenticationContext;
+    private final MemberMapper memberMapper;
+    private final MembershipMapper membershipMapper;
 
     @Override
     public Page<MemberDTO> getMembers(String searchTerm, Pageable pageable) {
         checkPermission(SecurityConstants.Privileges.READ_MEMBER_ACCOUNT, "You have no permission to read members.");
         searchTerm = searchTerm == null ? "" : searchTerm.trim();
-        return memberRepository.search(searchTerm, pageable).map(MemberMapper::mapMemberToMemberDTO);
+        return memberRepository.search(searchTerm, pageable).map(memberMapper::mapMemberToMemberDTO);
     }
 
     @Override
     @Transactional
     public Optional<MemberDTO> createMember(MemberRegistrationDTO dto) {
         checkPermission(SecurityConstants.Privileges.CREATE_MEMBER_ACCOUNT, "You have no permission to create a member.");
-        Member persistedMember = memberRepository.save(MemberMapper.createMemberFromMemberRegistrationData(dto));
-        memberAccountService.createMemberAccount(MemberMapper.createAccountDtoFromMemberRegistrationData(dto, persistedMember));
+        Member persistedMember = memberRepository.save(memberMapper.createMemberFromMemberRegistrationData(dto));
+        memberAccountService.createMemberAccount(memberMapper.createAccountDtoFromMemberRegistrationData(dto, persistedMember));
         if (dto.isWithContactDetails()) {
-            memberContactInformationService.create(MemberMapper.createContactDetailsDtoFromMemberRegistrationData(dto, persistedMember));
+            memberContactInformationService.create(memberMapper.createContactDetailsDtoFromMemberRegistrationData(dto, persistedMember));
         }
         if (dto.isWithMembership()) {
-            membershipService.createMembership(MembershipMapper.createMembershipCreateDtoFromMembershipRegistrationData(dto, persistedMember));
+            membershipService.createMembership(membershipMapper.createMembershipCreateDtoFromMembershipRegistrationData(dto, persistedMember));
         }
-        return Optional.of(MemberMapper.mapMemberToMemberDTO(persistedMember));
+        return Optional.of(memberMapper.mapMemberToMemberDTO(persistedMember));
     }
 
     @Override
@@ -66,7 +68,7 @@ public class MemberServiceImpl implements MemberService {
         return memberRepository.findById(memberId).flatMap(member -> {
             MemberAccount account = memberAccountService.findByMemberId(member.getId()).orElse(new MemberAccount());
             MemberContactInformation contact = memberContactInformationService.findByMemberId(member.getId()).orElse(new MemberContactInformation());
-            MemberEditDTO dto = MemberMapper.mergeMemberInformationToEditDto(member, account, contact);
+            MemberEditDTO dto = memberMapper.mergeMemberInformationToEditDto(member, account, contact);
             dto.setMemberships(loadMemberships(member.getId()));
             return Optional.of(dto);
         });
@@ -91,7 +93,7 @@ public class MemberServiceImpl implements MemberService {
                     MemberContactInformation updatedContactInfo = handleContactInformationUpdate(dto, updatedMember);
                     handleMembershipUpdate(dto, updatedMember);
 
-                    MemberEditDTO result = MemberMapper.mergeMemberInformationToEditDto(updatedMember, updatedAccount, updatedContactInfo);
+                    MemberEditDTO result = memberMapper.mergeMemberInformationToEditDto(updatedMember, updatedAccount, updatedContactInfo);
                     result.setMemberships(loadMemberships(updatedMember.getId()));
                     return result;
                 });
@@ -103,7 +105,7 @@ public class MemberServiceImpl implements MemberService {
                 return memberContactInformationService.updateContactInformation(dto.getContact()).orElse(new MemberContactInformation());
             } else {
                 return memberContactInformationService.create(
-                        MemberMapper.createDtoForNewContactInformationInUpdateProcess(member, dto.getContact())
+                        memberMapper.createDtoForNewContactInformationInUpdateProcess(member, dto.getContact())
                 ).orElse(null);
             }
         } else {
@@ -113,7 +115,7 @@ public class MemberServiceImpl implements MemberService {
 
     private List<MembershipEditDTO> loadMemberships(Long memberId) {
         return membershipService.findAllByMemberId(memberId).stream()
-                .map(MembershipMapper::mapMembershipToEditDto)
+                .map(membershipMapper::mapMembershipToEditDto)
                 .toList();
     }
 
@@ -133,7 +135,7 @@ public class MemberServiceImpl implements MemberService {
         for (MembershipEditDTO membership : dto.getMemberships()) {
             if (membership.getId() == null) {
                 membershipService.createMembership(
-                        MembershipMapper.createDtoForNewMembershipInUpdateProcess(member, membership)
+                        membershipMapper.createDtoForNewMembershipInUpdateProcess(member, membership)
                 ).orElseThrow(() -> new IllegalStateException("Could not create membership."));
             } else if (!membership.equals(existing.get(membership.getId()))) {
                 membershipService.updateMembership(membership)

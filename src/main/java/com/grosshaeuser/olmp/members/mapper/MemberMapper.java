@@ -5,9 +5,11 @@ import com.grosshaeuser.olmp.members.dto.*;
 import com.grosshaeuser.olmp.members.entity.Member;
 import com.grosshaeuser.olmp.members.entity.MemberAccount;
 import com.grosshaeuser.olmp.members.entity.MemberContactInformation;
+import org.springframework.stereotype.Component;
 
+@Component
 public class MemberMapper {
-    public static MemberDTO mapMemberToMemberDTO(Member member) {
+    public MemberDTO mapMemberToMemberDTO(Member member) {
         return new MemberDTO(
                 member.getId(),
                 member.getLastName(),
@@ -18,7 +20,7 @@ public class MemberMapper {
         );
     }
 
-    public static Member createMemberFromMemberRegistrationData(MemberRegistrationDTO dto) {
+    public Member createMemberFromMemberRegistrationData(MemberRegistrationDTO dto) {
         return Member.builder()
                 .lastName(dto.getLastName())
                 .firstName(dto.getFirstName())
@@ -26,7 +28,7 @@ public class MemberMapper {
                 .build();
     }
 
-    public static MemberAccountCreateDTO createAccountDtoFromMemberRegistrationData(MemberRegistrationDTO dto, Member member) {
+    public MemberAccountCreateDTO createAccountDtoFromMemberRegistrationData(MemberRegistrationDTO dto, Member member) {
         return new MemberAccountCreateDTO(
                 member,
                 dto.getEmail(),
@@ -36,7 +38,7 @@ public class MemberMapper {
         );
     }
 
-    public static MemberContactInformationCreateDTO createContactDetailsDtoFromMemberRegistrationData(MemberRegistrationDTO dto, Member member) {
+    public MemberContactInformationCreateDTO createContactDetailsDtoFromMemberRegistrationData(MemberRegistrationDTO dto, Member member) {
         return new MemberContactInformationCreateDTO(
                 member,
                 dto.getPhoneNumber(),
@@ -48,7 +50,7 @@ public class MemberMapper {
         );
     }
 
-    public static MemberEditDTO mergeMemberInformationToEditDto(Member member, MemberAccount account, MemberContactInformation contactInformation) {
+    public MemberEditDTO mergeMemberInformationToEditDto(Member member, MemberAccount account, MemberContactInformation contactInformation) {
         return MemberEditDTO.builder()
                 .id(member.getId())
                 .firstName(member.getFirstName())
@@ -62,7 +64,7 @@ public class MemberMapper {
                 .build();
     }
 
-    public static MemberAccountEditDTO mapMemberAccountToEditDto(MemberAccount account) {
+    public MemberAccountEditDTO mapMemberAccountToEditDto(MemberAccount account) {
         if (account != null) {
             return MemberAccountEditDTO.builder()
                     .id(account.getId())
@@ -80,7 +82,7 @@ public class MemberMapper {
         return new MemberAccountEditDTO();
     }
 
-    public static MemberContactInformationEditDTO mapMemberContactInformationToEditDto(MemberContactInformation memberContactInformation) {
+    public MemberContactInformationEditDTO mapMemberContactInformationToEditDto(MemberContactInformation memberContactInformation) {
         if (memberContactInformation != null && memberContactInformation.getMember() != null){
             return MemberContactInformationEditDTO.builder()
                     .id(memberContactInformation.getId())
@@ -96,7 +98,7 @@ public class MemberMapper {
         return new MemberContactInformationEditDTO();
     }
 
-    public static MemberContactInformationCreateDTO createDtoForNewContactInformationInUpdateProcess(Member member, MemberContactInformationEditDTO dto) {
+    public MemberContactInformationCreateDTO createDtoForNewContactInformationInUpdateProcess(Member member, MemberContactInformationEditDTO dto) {
         return new MemberContactInformationCreateDTO(
                 member,
                 dto.getPhoneNumber(),

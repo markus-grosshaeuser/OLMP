@@ -7,11 +7,13 @@ import com.grosshaeuser.olmp.memberships.MembershipType;
 import com.grosshaeuser.olmp.memberships.dto.MembershipCreateDTO;
 import com.grosshaeuser.olmp.memberships.dto.MembershipEditDTO;
 import com.grosshaeuser.olmp.memberships.entity.Membership;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 
+@Component
 public class MembershipMapper {
-    public static MembershipCreateDTO createMembershipCreateDtoFromMembershipRegistrationData(MemberRegistrationDTO dto, Member member) {
+    public MembershipCreateDTO createMembershipCreateDtoFromMembershipRegistrationData(MemberRegistrationDTO dto, Member member) {
         return new MembershipCreateDTO(
                 member,
                 dto.getMembershipType(),
@@ -23,7 +25,7 @@ public class MembershipMapper {
         );
     }
 
-    public static Membership createMembershipFromMembershipCreateDto(MembershipCreateDTO dto, String membershipNumber) {
+    public Membership createMembershipFromMembershipCreateDto(MembershipCreateDTO dto, String membershipNumber) {
         return Membership.builder()
                 .member(dto.getMember())
                 .membershipNumber(membershipNumber)
@@ -36,7 +38,7 @@ public class MembershipMapper {
                 .build();
     }
 
-    public static MembershipEditDTO mapMembershipToEditDto(Membership membership) {
+    public MembershipEditDTO mapMembershipToEditDto(Membership membership) {
         if (membership != null && membership.getMember() != null) {
             return new MembershipEditDTO(
                     membership.getId(),
@@ -53,7 +55,7 @@ public class MembershipMapper {
         return new MembershipEditDTO();
     }
 
-    public static MembershipCreateDTO createDtoForNewMembershipInUpdateProcess(Member member, MembershipEditDTO dto) {
+    public MembershipCreateDTO createDtoForNewMembershipInUpdateProcess(Member member, MembershipEditDTO dto) {
         return new MembershipCreateDTO(
                 member,
                 dto.getMembershipType(),

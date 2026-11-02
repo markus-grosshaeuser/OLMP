@@ -2,6 +2,7 @@ package com.grosshaeuser.olmp.member.service;
 
 import com.grosshaeuser.olmp.members.dto.MemberEditDTO;
 import com.grosshaeuser.olmp.members.entity.Member;
+import com.grosshaeuser.olmp.members.mapper.MemberMapper;
 import com.grosshaeuser.olmp.members.repository.MemberRepository;
 import com.grosshaeuser.olmp.members.service.MemberAccountService;
 import com.grosshaeuser.olmp.members.service.MemberContactInformationService;
@@ -37,11 +38,14 @@ class MemberMembershipEditTest {
     @Mock private MembershipService memberships;
     @Mock private AuthenticationContext authentication;
     private MemberServiceImpl service;
+    private MembershipMapper membershipMapper;
     private final Member member = Member.builder().id(10L).firstName("Ada").lastName("Lovelace").build();
 
     @BeforeEach
     void setUp() {
-        service = new MemberServiceImpl(members, accounts, contacts, memberships, authentication);
+        MemberMapper memberMapper = new MemberMapper();
+        membershipMapper = new MembershipMapper();
+        service = new MemberServiceImpl(members, accounts, contacts, memberships, authentication, memberMapper, membershipMapper);
         when(members.findById(member.getId())).thenReturn(Optional.of(member));
     }
 
@@ -62,14 +66,14 @@ class MemberMembershipEditTest {
         givenUpdate();
         var expired = membership(1L, MembershipStatus.EXPIRED);
         var cancelled = membership(2L, MembershipStatus.CANCELLED);
-        var updated = MembershipMapper.mapMembershipToEditDto(expired).toBuilder().membershipType("STUDENT").build();
+        var updated = membershipMapper.mapMembershipToEditDto(expired).toBuilder().membershipType("STUDENT").build();
         var added = MembershipEditDTO.builder().membershipType("PREMIUM").membershipStatus("ACTIVE")
                 .startDate(LocalDate.of(2026, 10, 1)).build();
         when(memberships.findAllByMemberId(member.getId())).thenReturn(List.of(expired, cancelled));
         when(memberships.updateMembership(updated)).thenReturn(Optional.of(expired));
         when(memberships.createMembership(any())).thenReturn(Optional.of(membership(3L, MembershipStatus.ACTIVE)));
 
-        service.updateMember(edit(List.of(updated, MembershipMapper.mapMembershipToEditDto(cancelled), added))).orElseThrow();
+        service.updateMember(edit(List.of(updated, membershipMapper.mapMembershipToEditDto(cancelled), added))).orElseThrow();
 
         verify(memberships).updateMembership(updated);
         verify(memberships, times(1)).updateMembership(any());
@@ -84,7 +88,7 @@ class MemberMembershipEditTest {
     void rejectsForeignMembershipIdBeforeWritingAnyMemberships() {
         givenUpdate();
         when(memberships.findAllByMemberId(member.getId())).thenReturn(List.of());
-        var foreign = MembershipMapper.mapMembershipToEditDto(membership(99L, MembershipStatus.ACTIVE));
+        var foreign = membershipMapper.mapMembershipToEditDto(membership(99L, MembershipStatus.ACTIVE));
         var added = MembershipEditDTO.builder().membershipType("STANDARD").membershipStatus("ACTIVE").build();
 
         assertThatThrownBy(() -> service.updateMember(edit(List.of(added, foreign))))
@@ -98,7 +102,7 @@ class MemberMembershipEditTest {
         givenUpdate();
         var existing = membership(1L, MembershipStatus.ACTIVE);
         when(memberships.findAllByMemberId(member.getId())).thenReturn(List.of(existing));
-        var row = MembershipMapper.mapMembershipToEditDto(existing);
+        var row = membershipMapper.mapMembershipToEditDto(existing);
 
         assertThatThrownBy(() -> service.updateMember(edit(List.of(row, row))))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -114,7 +118,7 @@ class MemberMembershipEditTest {
         dto.setWithMembershipDetails(false);
 
         assertThat(service.updateMember(dto).orElseThrow().getMemberships())
-                .containsExactly(MembershipMapper.mapMembershipToEditDto(existing));
+                .containsExactly(membershipMapper.mapMembershipToEditDto(existing));
         verify(memberships, never()).createMembership(any());
         verify(memberships, never()).updateMembership(any());
     }
