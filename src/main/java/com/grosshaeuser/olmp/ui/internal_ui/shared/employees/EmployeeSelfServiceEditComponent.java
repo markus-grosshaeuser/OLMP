@@ -90,7 +90,6 @@ public class EmployeeSelfServiceEditComponent extends Composite<VerticalLayout> 
         form.addFormRow(emailField, newPasswordField);
         form.addFormRow(createdAtField, updatedAtField, lastAccessedField);
 
-
         return createSection("Profile and account", "Update your own profile and account data.", form);
     }
 
