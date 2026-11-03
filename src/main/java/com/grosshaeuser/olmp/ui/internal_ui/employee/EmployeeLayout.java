@@ -2,6 +2,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.employee;
 
 import com.grosshaeuser.olmp.security.SecurityConstants;
 import com.grosshaeuser.olmp.ui.internal_ui.MainLayout;
+import com.grosshaeuser.olmp.ui.internal_ui.employee.pages.LoanManagementPage;
 import com.grosshaeuser.olmp.ui.internal_ui.employee.pages.MediaManagementPage;
 import com.grosshaeuser.olmp.ui.internal_ui.employee.pages.MemberManagementPage;
 import com.grosshaeuser.olmp.ui.internal_ui.employee.pages.SelfServiceEditPage;
@@ -23,6 +24,7 @@ public class EmployeeLayout extends MainLayout {
 
         SideNav inventory = new SideNav("Inventory");
         inventory.setCollapsible(true);
+        inventory.addItem(new SideNavItem("Loan Management", LoanManagementPage.class, VaadinIcon.BOOK.create()));
         inventory.addItem(new SideNavItem("Media Management", MediaManagementPage.class, VaadinIcon.FOLDER_OPEN.create()));
 
         addToDrawer(people, inventory);
