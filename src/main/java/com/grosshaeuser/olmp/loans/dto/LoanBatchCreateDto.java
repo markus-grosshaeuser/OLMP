@@ -1,4 +1,3 @@
-
 package com.grosshaeuser.olmp.loans.dto;
 
 import jakarta.validation.constraints.NotBlank;
@@ -20,13 +19,13 @@ public class LoanBatchCreateDto {
     private String membershipNumber;
 
     @NotEmpty
-    private List<Long> inventoryItemIds;
+    private List<@NotNull Long> inventoryItemIds;
 
     @NotNull
     private OffsetDateTime dueDate;
 
     private String notes;
 
-    @NotNull
+    // Optional legacy input; the service records the authenticated employee.
     private Long employeeId;
 }

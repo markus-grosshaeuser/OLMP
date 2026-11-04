@@ -1,4 +1,3 @@
-
 package com.grosshaeuser.olmp.loans.dto;
 
 import com.grosshaeuser.olmp.loans.LoanStatus;
@@ -20,7 +19,14 @@ public class LoanEditDto {
     @NotNull
     private LoanStatus status;
 
+    @NotNull
+    private OffsetDateTime dueDate;
+
+    // Return timestamps are assigned by the service when a loan is returned.
     private OffsetDateTime returnDate;
 
     private String notes;
+
+    // Supplied by the UI to detect edits made since the dialog was opened.
+    private OffsetDateTime expectedUpdatedAt;
 }

@@ -1,4 +1,3 @@
-
 package com.grosshaeuser.olmp.loans.mappers;
 
 import com.grosshaeuser.olmp.employees.mapper.EmployeeMapper;
@@ -31,7 +30,7 @@ public class LoanMapper {
                 source.getId(),
                 memberMapper.mapMemberToMemberDTO(source.getMember()),
                 inventoryItemMapper.toDetail(source.getInventoryItem()),
-                employeeMapper.mapEmployeeToEmployeeDto(source.getEmployee()),
+                source.getEmployee() == null ? null : employeeMapper.mapEmployeeToEmployeeDto(source.getEmployee()),
                 source.getLoanDate(),
                 source.getDueDate(),
                 source.getReturnDate(),
@@ -63,8 +62,10 @@ public class LoanMapper {
         return LoanEditDto.builder()
                 .id(source.getId())
                 .status(source.getStatus())
+                .dueDate(source.getDueDate())
                 .returnDate(source.getReturnDate())
                 .notes(source.getNotes())
+                .expectedUpdatedAt(source.getUpdatedAt())
                 .build();
     }
 
@@ -72,10 +73,10 @@ public class LoanMapper {
         Objects.requireNonNull(source, "source");
         Objects.requireNonNull(target, "target");
 
-        // Assuming MappingChecks is available via import as used in AuthorMapper/PublisherMapper
         MappingChecks.sameId(source.getId(), target.getId(), "id");
 
         target.setStatus(source.getStatus());
+        target.setDueDate(source.getDueDate());
         target.setReturnDate(source.getReturnDate());
         target.setNotes(source.getNotes());
     }
