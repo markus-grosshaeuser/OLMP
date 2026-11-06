@@ -7,7 +7,7 @@
     padding: var(--lumo-space-s);
 }
 
-.employee-edit-component, .member-edit-component, .media-edit-component, .loan-edit-component {
+.employee-edit-component, .member-edit-component, .media-edit-component, .loan-edit-component, .reservation-edit-component {
     background: linear-gradient(
             180deg,
             var(--lumo-base-color),

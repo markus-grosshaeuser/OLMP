@@ -5,6 +5,8 @@ import com.grosshaeuser.olmp.reservations.ReservationStatus;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.time.OffsetDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,4 +21,6 @@ public class ReservationEditDto {
     private ReservationStatus status;
 
     private String notes;
+
+    private OffsetDateTime expectedUpdatedAt;
 }

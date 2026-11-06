@@ -23,6 +23,7 @@ public class AdminLayout extends MainLayout {
         SideNav inventory = new SideNav("Inventory");
         inventory.setCollapsible(true);
         inventory.addItem(new SideNavItem("Loan Management", LoanManagementPage.class, VaadinIcon.BOOK.create()));
+        inventory.addItem(new SideNavItem("Reservation Management", ReservationManagementPage.class, VaadinIcon.BOOKMARK.create()));
         inventory.addItem(new SideNavItem("Media Management", MediaManagementPage.class, VaadinIcon.FOLDER_OPEN.create()));
 
         addToDrawer(people, inventory);

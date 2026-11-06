@@ -58,6 +58,7 @@ public class ReservationMapper {
                 .id(source.getId())
                 .status(source.getStatus())
                 .notes(source.getNotes())
+                .expectedUpdatedAt(source.getUpdatedAt())
                 .build();
     }
 
