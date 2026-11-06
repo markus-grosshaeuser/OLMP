@@ -34,8 +34,8 @@ import static org.mockito.Mockito.*;
 
 class LoanDialogsTest {
     private final LoanService service = mock(LoanService.class);
-    private final UiContext ui = mock(UiContext.class);
-    private final LoanContext context = new LoanContext(service, ui);
+    private final LoanContext loanContext = new LoanContext(service);
+    private final UiContext uiContext = mock(UiContext.class);
     private final AtomicInteger refreshes = new AtomicInteger();
     private UI currentUi;
 
@@ -56,13 +56,13 @@ class LoanDialogsTest {
         when(service.findCopy("SCAN-1")).thenReturn(Optional.of(new LoanCopyDto(1L, "COPY-1", "Book")));
         when(service.createLoans(any())).thenThrow(new IllegalArgumentException("Membership expired"))
                 .thenReturn(List.of());
-        LoanBatchDialog dialog = new LoanBatchDialog(context, true, refreshes::incrementAndGet);
+        LoanBatchDialog dialog = new LoanBatchDialog(loanContext, uiContext, true, refreshes::incrementAndGet);
         dialog.open();
         field(dialog, "Membership number").setValue("CARD-123");
         assertThat(overdueWarning(dialog).isVisible()).isTrue();
         scan(dialog, "SCAN-1");
         scan(dialog, "SCAN-1");
-        verify(ui).showWarning("This copy is already in the batch.");
+        verify(uiContext).showWarning("This copy is already in the batch.");
         Button submit = button(dialog, "Check out copies (1)");
         submit.click();
         assertThat(dialog.isOpened()).isTrue();
@@ -80,7 +80,7 @@ class LoanDialogsTest {
     @Test
     void overdueWarningUpdatesWhenMembershipNumberChangesAndClearsWhenEmptied() {
         when(service.hasOverdueLoans("OVERDUE-CARD")).thenReturn(true);
-        LoanBatchDialog dialog = new LoanBatchDialog(context, true, refreshes::incrementAndGet);
+        LoanBatchDialog dialog = new LoanBatchDialog(loanContext, uiContext, true, refreshes::incrementAndGet);
         TextField membership = field(dialog, "Membership number");
         Span warning = overdueWarning(dialog);
         assertThat(warning.isVisible()).isFalse();
@@ -100,30 +100,30 @@ class LoanDialogsTest {
     void failedOverdueCheckShowsUnavailableWarningInsteadOfPreviousMembersWarning() {
         when(service.hasOverdueLoans("OVERDUE-CARD")).thenReturn(true);
         when(service.hasOverdueLoans("OTHER-CARD")).thenThrow(new IllegalArgumentException("Lookup failed"));
-        LoanBatchDialog dialog = new LoanBatchDialog(context, true, refreshes::incrementAndGet);
+        LoanBatchDialog dialog = new LoanBatchDialog(loanContext, uiContext, true, refreshes::incrementAndGet);
         TextField membership = field(dialog, "Membership number");
         membership.setValue("OVERDUE-CARD");
         membership.setValue("OTHER-CARD");
         assertThat(overdueWarning(dialog).isVisible()).isTrue();
         assertThat(overdueWarning(dialog).getText()).isEqualTo("Overdue loans could not be checked.");
-        verify(ui).handleException(any(IllegalArgumentException.class));
+        verify(uiContext).handleException(any(IllegalArgumentException.class));
     }
 
     @Test
     void typedButUnaddedCodePreventsSubmittingAnIncompleteBatch() {
         when(service.findCopy("SCAN-1")).thenReturn(Optional.of(new LoanCopyDto(1L, "COPY-1", "Book")));
-        LoanBatchDialog dialog = new LoanBatchDialog(context, false, refreshes::incrementAndGet);
+        LoanBatchDialog dialog = new LoanBatchDialog(loanContext, uiContext, false, refreshes::incrementAndGet);
         scan(dialog, "SCAN-1");
         field(dialog, "Inventory number or barcode").setValue("SCAN-2");
         button(dialog, "Return copies (1)").click();
         verify(service, never()).returnLoans(any());
-        verify(ui).handleException(any(IllegalArgumentException.class));
+        verify(uiContext).handleException(any(IllegalArgumentException.class));
     }
 
     @Test
     void returningDoesNotRequireMembershipAndRefreshesAfterSuccess() {
         when(service.findCopy("SCAN-1")).thenReturn(Optional.of(new LoanCopyDto(1L, "COPY-1", "Book")));
-        LoanBatchDialog dialog = new LoanBatchDialog(context, false, refreshes::incrementAndGet);
+        LoanBatchDialog dialog = new LoanBatchDialog(loanContext, uiContext, false, refreshes::incrementAndGet);
         dialog.open();
         assertThat(button(dialog, "Return copies (0)").isEnabled()).isFalse();
         scan(dialog, "SCAN-1");
@@ -139,7 +139,7 @@ class LoanDialogsTest {
     void editingHistoricalLoanPreservesDatePrecisionAndSendsStaleEditToken() {
         OffsetDateTime due = OffsetDateTime.parse("2026-01-02T12:34:56.123456+01:00");
         LoanDto loan = loan(due);
-        LoanEditComponent editor = new LoanEditComponent(context, loan, refreshes::incrementAndGet, () -> {
+        LoanEditComponent editor = new LoanEditComponent(loanContext, uiContext, loan, refreshes::incrementAndGet, () -> {
         });
         DateTimePicker picker = descendants(editor).filter(DateTimePicker.class::isInstance)
                 .map(DateTimePicker.class::cast).findFirst().orElseThrow();
@@ -160,7 +160,7 @@ class LoanDialogsTest {
         LoanSummaryDto summary = new LoanSummaryDto(loan.id(), "Ada Lovelace", "COPY-1", "Book", loan.dueDate(), loan.status());
         when(service.findLoan(loan.id())).thenReturn(Optional.of(loan));
         currentUi.getInternals().setSession(mock(VaadinSession.class, RETURNS_DEEP_STUBS));
-        LoanManagementView view = new LoanManagementView(context);
+        LoanManagementView view = new LoanManagementView(loanContext, uiContext);
         currentUi.add(view);
         Grid<LoanSummaryDto> grid = (Grid<LoanSummaryDto>) descendants(view).filter(Grid.class::isInstance)
                 .findFirst().orElseThrow();
@@ -187,7 +187,7 @@ class LoanDialogsTest {
         when(service.findLoan(loan.id())).thenReturn(Optional.of(loan));
         doThrow(new IllegalArgumentException("Save failed")).doNothing().when(service).updateLoan(any());
         currentUi.getInternals().setSession(mock(VaadinSession.class, RETURNS_DEEP_STUBS));
-        LoanManagementView view = new LoanManagementView(context);
+        LoanManagementView view = new LoanManagementView(loanContext, uiContext);
         currentUi.add(view);
         Grid<LoanSummaryDto> grid = (Grid<LoanSummaryDto>) descendants(view).filter(Grid.class::isInstance)
                 .findFirst().orElseThrow();
@@ -199,7 +199,7 @@ class LoanDialogsTest {
         assertThat(grid.isDetailsVisible(summary)).isTrue();
         assertThat(save.isEnabled()).isTrue();
         assertThat(refreshes).hasValue(0);
-        verify(ui).handleException(any(IllegalArgumentException.class));
+        verify(uiContext).handleException(any(IllegalArgumentException.class));
         save.click();
         assertThat(grid.isDetailsVisible(summary)).isFalse();
         assertThat(refreshes).hasValue(1);

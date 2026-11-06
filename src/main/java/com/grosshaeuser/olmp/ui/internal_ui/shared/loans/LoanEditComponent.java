@@ -4,6 +4,7 @@ import com.grosshaeuser.olmp.loans.LoanStatus;
 import com.grosshaeuser.olmp.loans.dto.LoanDto;
 import com.grosshaeuser.olmp.loans.dto.LoanEditDto;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.Structurable;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -19,7 +20,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 class LoanEditComponent extends VerticalLayout implements Structurable {
-    private final LoanContext context;
+    private final LoanContext loanContext;
+    private final UiContext uiContext;
     private final LoanDto loan;
     private final Runnable onSaved;
     private final DateTimePicker due = new DateTimePicker("Due date");
@@ -28,10 +30,11 @@ class LoanEditComponent extends VerticalLayout implements Structurable {
     private final TextArea notes = new TextArea("Notes");
     private final Button save = new Button("Save changes", _ -> confirmAndSave());
 
-    LoanEditComponent(LoanContext context, LoanDto loan, Runnable onSaved, Runnable onClose) {
-        this.context = context;
+    LoanEditComponent(LoanContext loanContext, UiContext uiContext, LoanDto loan, Runnable onSaved, Runnable onClose) {
+        this.loanContext = loanContext;
         this.loan = loan;
         this.onSaved = onSaved;
+        this.uiContext = uiContext;
         setWidthFull();
         setPadding(false);
         addClassName("loan-edit-component");
@@ -102,12 +105,12 @@ class LoanEditComponent extends VerticalLayout implements Structurable {
             }
             var dueDate = due.getValue().equals(initialDueValue) ? loan.dueDate()
                     : due.getValue().atZone(ZoneId.systemDefault()).toOffsetDateTime();
-            context.getLoanService().updateLoan(LoanEditDto.builder().id(loan.id()).dueDate(dueDate)
+            loanContext.getLoanService().updateLoan(LoanEditDto.builder().id(loan.id()).dueDate(dueDate)
                     .status(status.getValue()).notes(notes.getValue()).expectedUpdatedAt(loan.updatedAt()).build());
-            context.getUiContext().showSuccessNotification("Loan updated.");
+            uiContext.showSuccessNotification("Loan updated.");
             onSaved.run();
         } catch (RuntimeException exception) {
-            context.getUiContext().handleException(exception);
+            uiContext.handleException(exception);
         } finally {
             save.setEnabled(true);
         }

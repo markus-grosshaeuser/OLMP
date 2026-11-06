@@ -3,6 +3,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.loans;
 import com.grosshaeuser.olmp.loans.dto.LoanBatchCreateDto;
 import com.grosshaeuser.olmp.loans.dto.LoanBatchReturnDto;
 import com.grosshaeuser.olmp.loans.dto.LoanCopyDto;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -25,7 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 class LoanBatchDialog extends Dialog {
-    private final LoanContext context;
+    private final LoanContext loanContext;
+    private final UiContext uiContext;
     private final boolean checkout;
     private final Runnable onSaved;
     private final List<LoanCopyDto> copies = new ArrayList<>();
@@ -37,8 +39,9 @@ class LoanBatchDialog extends Dialog {
     private final Grid<LoanCopyDto> basket = new Grid<>(LoanCopyDto.class, false);
     private final Button submit;
 
-    LoanBatchDialog(LoanContext context, boolean checkout, Runnable onSaved) {
-        this.context = context;
+    LoanBatchDialog(LoanContext loanContext, UiContext uiContext, boolean checkout, Runnable onSaved) {
+        this.loanContext = loanContext;
+        this.uiContext = uiContext;
         this.checkout = checkout;
         this.onSaved = onSaved;
         setHeaderTitle(checkout ? "Check out copies" : "Return copies");
@@ -118,20 +121,20 @@ class LoanBatchDialog extends Dialog {
         }
         try {
             overdueWarning.setText("Warning: this member has overdue loans.");
-            overdueWarning.setVisible(context.getLoanService().hasOverdueLoans(membership.getValue().strip()));
+            overdueWarning.setVisible(loanContext.getLoanService().hasOverdueLoans(membership.getValue().strip()));
         } catch (RuntimeException exception) {
             overdueWarning.setText("Overdue loans could not be checked.");
             overdueWarning.setVisible(true);
-            context.getUiContext().handleException(exception);
+            uiContext.handleException(exception);
         }
     }
 
     private void addCopy() {
         try {
-            LoanCopyDto copy = context.getLoanService().findCopy(code.getValue())
+            LoanCopyDto copy = loanContext.getLoanService().findCopy(code.getValue())
                     .orElseThrow(() -> new IllegalArgumentException("No copy found for this code."));
             if (copies.stream().anyMatch(existing -> existing.id().equals(copy.id()))) {
-                context.getUiContext().showWarning("This copy is already in the batch.");
+                uiContext.showWarning("This copy is already in the batch.");
             } else {
                 copies.add(copy);
                 refreshBasket();
@@ -139,7 +142,7 @@ class LoanBatchDialog extends Dialog {
             code.clear();
             code.focus();
         } catch (RuntimeException exception) {
-            context.getUiContext().handleException(exception);
+            uiContext.handleException(exception);
         }
     }
 
@@ -161,18 +164,18 @@ class LoanBatchDialog extends Dialog {
                 if (membership.isInvalid() || due.isInvalid()) {
                     throw new IllegalArgumentException("Enter a membership number and a valid future due date.");
                 }
-                context.getLoanService().createLoans(LoanBatchCreateDto.builder()
+                loanContext.getLoanService().createLoans(LoanBatchCreateDto.builder()
                         .membershipNumber(membership.getValue().strip()).inventoryItemIds(ids)
                         .dueDate(due.getValue().atZone(ZoneId.systemDefault()).toOffsetDateTime())
                         .notes(notes.getValue()).build());
             } else {
-                context.getLoanService().returnLoans(LoanBatchReturnDto.builder().inventoryItemIds(ids).build());
+                loanContext.getLoanService().returnLoans(LoanBatchReturnDto.builder().inventoryItemIds(ids).build());
             }
             close();
-            context.getUiContext().showSuccessNotification(ids.size() + (checkout ? " copies checked out." : " copies returned."));
+            uiContext.showSuccessNotification(ids.size() + (checkout ? " copies checked out." : " copies returned."));
             onSaved.run();
         } catch (RuntimeException exception) {
-            context.getUiContext().handleException(exception);
+            uiContext.handleException(exception);
         } finally {
             submit.setEnabled(!copies.isEmpty());
         }

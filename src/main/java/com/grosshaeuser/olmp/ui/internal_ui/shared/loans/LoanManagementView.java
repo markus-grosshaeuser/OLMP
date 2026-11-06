@@ -3,6 +3,7 @@ package com.grosshaeuser.olmp.ui.internal_ui.shared.loans;
 import com.grosshaeuser.olmp.loans.LoanStatus;
 import com.grosshaeuser.olmp.loans.dto.LoanSummaryDto;
 import com.grosshaeuser.olmp.ui.internal_ui.shared.GridSupport;
+import com.grosshaeuser.olmp.ui.internal_ui.shared.UiContext;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -28,13 +29,15 @@ import java.util.Locale;
 import java.util.Objects;
 
 public class LoanManagementView extends VerticalLayout {
-    private final LoanContext context;
+    private final LoanContext loanContext;
+    private final UiContext uiContext;
     private final TextField search = new TextField("Search loans");
     private final ComboBox<LoanStatus> status = new ComboBox<>("Status");
     private final Grid<LoanSummaryDto> grid = GridSupport.getPreconfiguredManagementGrid(LoanSummaryDto.class, "No loans found");
 
-    public LoanManagementView(LoanContext loanContext) {
-        context = Objects.requireNonNull(loanContext, "loanContext");
+    public LoanManagementView(LoanContext loanContext, UiContext uiContext) {
+        this.loanContext = Objects.requireNonNull(loanContext, "loanContext");
+        this.uiContext = uiContext;
         search.setPlaceholder("Member, membership number, title or copy code");
         search.setPrefixComponent(VaadinIcon.SEARCH.create());
         search.setClearButtonVisible(true);
@@ -49,10 +52,10 @@ public class LoanManagementView extends VerticalLayout {
         status.addValueChangeListener(_ -> refreshGrid());
 
         Button checkout = new Button("Check out", VaadinIcon.PLUS.create(), _ ->
-                new LoanBatchDialog(context, true, this::refreshGrid).open());
+                new LoanBatchDialog(this.loanContext, this.uiContext, true, this::refreshGrid).open());
         checkout.addThemeVariants(ButtonVariant.PRIMARY);
         Button returns = new Button("Return copies", VaadinIcon.ARROW_BACKWARD.create(), _ ->
-                new LoanBatchDialog(context, false, this::refreshGrid).open());
+                new LoanBatchDialog(this.loanContext, this.uiContext, false, this::refreshGrid).open());
         Button refresh = new Button("Refresh", VaadinIcon.REFRESH.create(), _ -> refreshGrid());
         HorizontalLayout toolbar = new HorizontalLayout(search, status, checkout, returns, refresh);
         toolbar.setWidthFull();
@@ -97,26 +100,26 @@ public class LoanManagementView extends VerticalLayout {
 
     private List<LoanSummaryDto> fetchLoans(Pageable pageable) {
         try {
-            return context.getLoanService().findLoans(search.getValue().strip(), status.getValue(), pageable);
+            return loanContext.getLoanService().findLoans(search.getValue().strip(), status.getValue(), pageable);
         } catch (RuntimeException exception) {
-            context.getUiContext().handleException(exception);
+            uiContext.handleException(exception);
             return List.of();
         }
     }
 
     private int countLoans() {
         try {
-            return Math.toIntExact(context.getLoanService().countLoans(search.getValue().strip(), status.getValue()));
+            return Math.toIntExact(loanContext.getLoanService().countLoans(search.getValue().strip(), status.getValue()));
         } catch (RuntimeException exception) {
-            context.getUiContext().handleException(exception);
+            uiContext.handleException(exception);
             return 0;
         }
     }
 
     private Component createEditor(LoanSummaryDto loan) {
         try {
-            return context.getLoanService().findLoan(loan.id())
-                    .<Component>map(details -> new LoanEditComponent(context, details,
+            return loanContext.getLoanService().findLoan(loan.id())
+                    .<Component>map(details -> new LoanEditComponent(loanContext, uiContext, details,
                             () -> {
                                 grid.setDetailsVisible(loan, false);
                                 grid.getDataProvider().refreshAll();
@@ -124,7 +127,7 @@ public class LoanManagementView extends VerticalLayout {
                             () -> grid.setDetailsVisible(loan, false)))
                     .orElseGet(() -> unavailableDetails("This loan no longer exists."));
         } catch (RuntimeException exception) {
-            context.getUiContext().handleException(exception);
+            uiContext.handleException(exception);
             return unavailableDetails("Loan details could not be loaded.");
         }
     }
